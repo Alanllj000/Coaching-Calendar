@@ -6,27 +6,22 @@
 <title>Calendrier Interactif - Alanllj000's Coaching</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e2e8f0; border-radius: 0.75rem; overflow: hidden; }
-    .calendar-day { aspect-ratio: 1 / 1; background-color: white; padding: 0.5rem; transition: all 0.2s; cursor: pointer; position: relative; }
-    .calendar-day:hover { background-color: #f1f5f9; }
-    .calendar-day.selected { background-color: #eff6ff; outline: 2px solid #3b82f6; z-index: 10; }
-    .calendar-day.today { font-weight: 700; color: #3b82f6; }
-    .dot { height: 6px; width: 6px; background-color: #3b82f6; border-radius: 50%; display: inline-block; margin-top: 4px; }
-    #pip-window { position: fixed; bottom: 2rem; right: 2rem; width: 320px; height: 250px; background: white; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); display: none; flex-direction: column; z-index: 1000; border: 1px solid #e2e8f0; overflow: hidden; animation: slideUp 0.3s ease-out; }
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .pip-header { padding: 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; cursor: move; }
-    .pip-content { padding: 1rem; flex-grow: 1; overflow-y: auto; }
+body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e2e8f0; border-radius: 0.75rem; overflow: hidden; }
+.calendar-day { aspect-ratio: 1 / 1; background-color: white; padding: 0.5rem; cursor: pointer; position: relative; display: flex; justify-content: flex-end; flex-direction: column; }
+.calendar-day:hover { background-color: #f1f5f9; }
+.dot { height: 6px; width: 6px; background-color: #3b82f6; border-radius: 50%; display: inline-block; margin-top: 4px; }
+#pip-window { position: fixed; bottom: 2rem; right: 2rem; width: 320px; height: 250px; background: white; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); display: none; flex-direction: column; z-index: 1000; border: 1px solid #e2e8f0; overflow: hidden; }
+.pip-header { padding: 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; cursor: move; }
+.pip-content { padding: 1rem; flex-grow: 1; overflow-y: auto; }
 </style>
 </head>
 <body class="p-4 md:p-8">
 
 <div class="max-w-4xl mx-auto">
-    <!-- Connexion / Inscription -->
     <div id="auth-container" class="mb-4 p-4 bg-white rounded shadow">
         <h2 class="text-lg font-bold mb-2">Connexion / Inscription</h2>
         <input id="email" type="email" placeholder="Email" class="border p-2 rounded w-full mb-2">
@@ -36,12 +31,11 @@
         <p id="auth-message" class="text-sm text-red-500 mt-2"></p>
     </div>
 
-    <!-- Calendrier -->
     <div class="flex items-center justify-between mb-2">
-        <h1 id="month-display" class="text-3xl font-bold text-slate-800">Décembre 2025</h1>
+        <h1 id="month-display" class="text-3xl font-bold text-slate-800"></h1>
         <div class="flex gap-2">
-            <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-200 rounded-full transition">&lt;</button>
-            <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-200 rounded-full transition">&gt;</button>
+            <button id="prev-month" class="p-2 hover:bg-slate-200 rounded-full">&lt;</button>
+            <button id="next-month" class="p-2 hover:bg-slate-200 rounded-full">&gt;</button>
         </div>
     </div>
 
@@ -52,144 +46,134 @@
     <div id="calendar-grid" class="calendar-grid shadow-xl"></div>
 </div>
 
-<!-- PiP détails -->
 <div id="pip-window">
     <div class="pip-header" id="pip-handle">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Détails du jour</span>
-        <button onclick="closePiP()" class="text-slate-400 hover:text-slate-600">X</button>
+        <span>Détails du jour</span>
+        <button onclick="closePiP()">X</button>
     </div>
-    <div id="pip-body" class="pip-content text-sm text-slate-700"></div>
+    <div id="pip-body" class="pip-content"></div>
 </div>
 
 <script>
-    // ---------- Supabase setup ----------
-    const supabaseUrl = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
-    const supabaseKey = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
+const supabaseKey = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let currentUser = null;
+let currentUser = null;
+let currentDate = new Date();
+let events = {};
 
-    // ---------- Auth ----------
-    document.getElementById('signup-btn').onclick = async () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if(error) return showAuthMessage(error.message);
-        showAuthMessage("Inscription réussie ! Vérifiez votre email.");
-    };
+const grid = document.getElementById('calendar-grid');
+const monthDisplay = document.getElementById('month-display');
+const pipWindow = document.getElementById('pip-window');
+const pipBody = document.getElementById('pip-body');
 
-    document.getElementById('login-btn').onclick = async () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if(error) return showAuthMessage(error.message);
-        currentUser = data.user;
-        showAuthMessage("Connecté !");
-        document.getElementById('auth-container').style.display = 'none';
-        fetchEvents();
-    };
+// ---------- Auth ----------
+document.getElementById('signup-btn').addEventListener('click', async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    document.getElementById('auth-message').innerText = error ? error.message : "Inscription réussie ! Vérifiez votre email.";
+});
 
-    function showAuthMessage(msg){
-        document.getElementById('auth-message').innerText = msg;
-    }
+document.getElementById('login-btn').addEventListener('click', async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error){ document.getElementById('auth-message').innerText = error.message; return; }
+    currentUser = data.user;
+    document.getElementById('auth-message').innerText = "Connecté !";
+    document.getElementById('auth-container').style.display='none';
+    fetchEvents();
+});
 
-    // ---------- Calendar ----------
-    let currentDate = new Date();
-    const grid = document.getElementById('calendar-grid');
-    const monthDisplay = document.getElementById('month-display');
-    const pipWindow = document.getElementById('pip-window');
-    const pipBody = document.getElementById('pip-body');
-    let events = {}; // { "YYYY-MM-DD": [event objects] }
+// ---------- Calendar ----------
+document.getElementById('prev-month').addEventListener('click', ()=> changeMonth(-1));
+document.getElementById('next-month').addEventListener('click', ()=> changeMonth(1));
 
-    async function fetchEvents(){
-        const { data, error } = await supabase.from('events').select('*');
-        if(error){ console.log(error); return; }
-        events = {};
-        data.forEach(ev => {
-            const dateStr = ev.date.split('T')[0];
-            if(!events[dateStr]) events[dateStr] = [];
-            events[dateStr].push(ev);
-        });
-        renderCalendar();
-    }
-
-    function renderCalendar(){
-        grid.innerHTML = '';
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        const monthNames = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-        monthDisplay.innerText = `${monthNames[month]} ${year}`;
-
-        const firstDayOfMonth = new Date(year, month, 1).getDay();
-        const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        for(let i=0;i<adjustedFirstDay;i++){
-            const emptyCell = document.createElement('div');
-            emptyCell.className='calendar-day bg-slate-50 pointer-events-none';
-            grid.appendChild(emptyCell);
-        }
-
-        for(let day=1; day<=daysInMonth; day++){
-            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const dayEl = document.createElement('div');
-            dayEl.className='calendar-day flex flex-col items-end';
-            dayEl.innerHTML = `<span>${day}</span>`;
-            if(events[dateStr]) dayEl.innerHTML += `<div class="dot"></div>`;
-            dayEl.onclick = () => showDay(dateStr);
-            grid.appendChild(dayEl);
-        }
-    }
-
-    function showDay(dateStr){
-        const dayEvents = events[dateStr] || [];
-        let html = `<h3 class="font-bold mb-2">${dateStr}</h3>`;
-        if(dayEvents.length === 0) html += "<p>Aucun événement</p>";
-        else {
-            dayEvents.forEach(ev=>{
-                html += `<div class="border p-2 rounded mb-1">
-                            <strong>${ev.title}</strong>
-                            <p>${ev.description || ''}</p>
-                            ${currentUser ? `<button onclick="registerEvent(${ev.id})" class="bg-blue-500 text-white px-2 py-1 mt-1 rounded">S'inscrire</button>` : '<p class="text-gray-400">Connectez-vous pour vous inscrire</p>'}
-                         </div>`;
-            });
-        }
-        pipBody.innerHTML = html;
-        pipWindow.style.display='flex';
-    }
-
-    async function registerEvent(eventId){
-        if(!currentUser) return alert("Connectez-vous pour vous inscrire");
-        const { data, error } = await supabase.from('registrations').insert([{user_id: currentUser.id, event_id: eventId}]);
-        if(error) return alert(error.message);
-        alert("Inscription réussie !");
-        fetchEvents();
-    }
-
-    function closePiP(){ pipWindow.style.display='none'; }
-
-    function changeMonth(delta){ currentDate.setMonth(currentDate.getMonth()+delta); renderCalendar(); closePiP(); }
-
-    // Drag PiP
-    let isDragging=false, currentX, currentY, initialX, initialY, xOffset=0, yOffset=0;
-    const handle = document.getElementById("pip-handle");
-    handle.addEventListener("mousedown",dragStart);
-    document.addEventListener("mousemove",drag);
-    document.addEventListener("mouseup",dragEnd);
-    function dragStart(e){ initialX = e.clientX - xOffset; initialY = e.clientY - yOffset; if(e.target===handle || handle.contains(e.target)) isDragging=true; }
-    function drag(e){ if(isDragging){ e.preventDefault(); currentX=e.clientX-initialX; currentY=e.clientY-initialY; xOffset=currentX; yOffset=currentY; setTranslate(currentX,currentY,pipWindow); } }
-    function setTranslate(x,y,el){ el.style.transform=`translate3d(${x}px,${y}px,0)`; }
-    function dragEnd(){ initialX=currentX; initialY=currentY; isDragging=false; }
-
-    // Check si déjà connecté
-    supabase.auth.getSession().then(({ data })=>{
-        if(data.session){
-            currentUser = data.session.user;
-            document.getElementById('auth-container').style.display = 'none';
-            fetchEvents();
-        }
+async function fetchEvents(){
+    const { data, error } = await supabase.from('events').select('*');
+    if(error){ console.log(error); return; }
+    events = {};
+    data.forEach(ev => {
+        const dateStr = ev.date.split('T')[0];
+        if(!events[dateStr]) events[dateStr] = [];
+        events[dateStr].push(ev);
     });
+    renderCalendar();
+}
 
+function renderCalendar(){
+    grid.innerHTML = '';
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const monthNames = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+    monthDisplay.innerText = `${monthNames[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
+    const daysInMonth = new Date(year, month +1, 0).getDate();
+
+    for(let i=0;i<adjustedFirstDay;i++){
+        const emptyCell = document.createElement('div');
+        emptyCell.className='calendar-day bg-slate-50 pointer-events-none';
+        grid.appendChild(emptyCell);
+    }
+
+    for(let day=1; day<=daysInMonth; day++){
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dayEl = document.createElement('div');
+        dayEl.className='calendar-day';
+        dayEl.innerHTML = `<span>${day}</span>`;
+        if(events[dateStr]) dayEl.innerHTML += `<div class="dot"></div>`;
+        dayEl.addEventListener('click', ()=> showDay(dateStr));
+        grid.appendChild(dayEl);
+    }
+}
+
+function showDay(dateStr){
+    const dayEvents = events[dateStr] || [];
+    let html = `<h3 class="font-bold mb-2">${dateStr}</h3>`;
+    if(dayEvents.length === 0) html += "<p>Aucun événement</p>";
+    else {
+        dayEvents.forEach(ev=>{
+            html += `<div class="border p-2 rounded mb-1">
+                        <strong>${ev.title}</strong>
+                        <p>${ev.description || ''}</p>
+                        ${currentUser ? `<button onclick="registerEvent(${ev.id})" class="bg-blue-500 text-white px-2 py-1 mt-1 rounded">S'inscrire</button>` : '<p class="text-gray-400">Connectez-vous pour vous inscrire</p>'}
+                     </div>`;
+        });
+    }
+    pipBody.innerHTML = html;
+    pipWindow.style.display='flex';
+}
+
+async function registerEvent(eventId){
+    if(!currentUser) return alert("Connectez-vous pour vous inscrire");
+    const { error } = await supabase.from('registrations').insert([{user_id: currentUser.id, event_id: eventId}]);
+    if(error) return alert(error.message);
+    alert("Inscription réussie !");
+    fetchEvents();
+}
+
+function changeMonth(delta){ currentDate.setMonth(currentDate.getMonth()+delta); renderCalendar(); pipWindow.style.display='none'; }
+function closePiP(){ pipWindow.style.display='none'; }
+
+// Charger au démarrage si déjà connecté
+supabase.auth.getSession().then(({ data })=>{
+    if(data.session){
+        currentUser = data.session.user;
+        document.getElementById('auth-container').style.display='none';
+        fetchEvents();
+    }
+});
+
+// Drag PiP (optionnel)
+let isDragging=false, currentX, currentY, initialX, initialY, xOffset=0, yOffset=0;
+const handle = document.getElementById("pip-handle");
+handle.addEventListener("mousedown", e=>{ initialX=e.clientX-xOffset; initialY=e.clientY-yOffset; isDragging=true; });
+document.addEventListener("mousemove", e=>{ if(isDragging){ e.preventDefault(); currentX=e.clientX-initialX; currentY=e.clientY-initialY; xOffset=currentX; yOffset=currentY; pipWindow.style.transform=`translate3d(${currentX}px,${currentY}px,0)`;}});
+document.addEventListener("mouseup", ()=> isDragging=false);
 </script>
 </body>
 </html>
