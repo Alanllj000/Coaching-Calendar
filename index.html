@@ -274,7 +274,7 @@ function showSettings() {
                 </div>
                 <div id="notif-zone" class="${isEnabled ? '' : 'disabled-zone'} space-y-4">
                     <button onclick="sendTest()" class="w-full py-2 bg-slate-100 text-[10px] font-bold rounded-lg uppercase">Tester la notification</button>
-                    <p class="text-[10px] text-slate-400 italic">Sur mobile : assurez-vous de fermer les autres applis en superposition si un blocage survient.</p>
+                    <p class="text-[10px] text-slate-400 italic">En mode PWA, assurez-vous que les notifications sont autorisées dans les réglages de votre téléphone.</p>
                 </div>
             </section>
         </div>
@@ -286,19 +286,9 @@ async function handleToggleNotif(checkbox) {
     const val = checkbox.checked;
     checkbox.disabled = true;
 
-    if (val) {
-        // --- ÉTAPE CRUCIALE POUR MOBILE / BRAVE ---
-        // On cache momentanément l'interface PiP pour éviter le message de "superposition détectée"
-        const pip = document.getElementById('pip-window');
-        pip.style.opacity = "0"; 
-
-        try {
-            // Utilisation d'une promesse avec timeout pour ne pas rester bloqué si Brave ignore la requête
-            const permission = await Promise.race([
-                Notification.requestPermission(),
-                new Promise((_, reject) => setTimeout(() => reject('timeout'), 8000))
-            ]);
-
+    try {
+        if (val) {
+            const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 await updateProfile({ notif_enabled: true });
                 showToast("Notifications synchronisées ✅");
@@ -306,25 +296,19 @@ async function handleToggleNotif(checkbox) {
                 checkbox.checked = false;
                 showToast("Permission refusée par le système");
             }
-        } catch (e) {
-            checkbox.checked = false;
-            if (e === 'timeout') {
-                showToast("Délai dépassé. Vérifiez vos réglages Brave.");
-            } else {
-                showToast("Erreur : superposition détectée");
-            }
-        } finally {
-            pip.style.opacity = "1";
-            setTimeout(() => {
-                checkbox.disabled = false;
-                showSettings();
-            }, 500);
+        } else {
+            await updateProfile({ notif_enabled: false });
+            showToast("Désactivé");
         }
-    } else {
-        await updateProfile({ notif_enabled: false });
-        checkbox.disabled = false;
-        showSettings();
-        showToast("Désactivé");
+    } catch (e) {
+        console.error(e);
+        checkbox.checked = !val;
+        showToast("Erreur système");
+    } finally {
+        setTimeout(() => {
+            checkbox.disabled = false;
+            showSettings();
+        }, 300);
     }
 }
 
