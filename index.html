@@ -164,7 +164,9 @@
             font-size: 0.875rem;
             font-weight: 600;
             outline: none;
+            transition: border-color 0.2s;
         }
+        .setting-input:focus { border-color: #3b82f6; }
 
         .disabled-zone { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
         
@@ -175,6 +177,25 @@
             transition: opacity 0.2s;
         }
         .icon-btn:hover { opacity: 0.7; }
+
+        .btn-save {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #0f172a;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-save:hover { background-color: #1e293b; transform: translateY(-1px); }
+        .btn-save:active { transform: translateY(0); }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -364,30 +385,36 @@ function showSettings() {
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 ml-1">Prénom</label>
-                            <input type="text" value="${profileData?.first_name || ''}" class="setting-input" onchange="updateProfile({first_name: this.value})">
+                            <input type="text" id="set-fname" value="${profileData?.first_name || ''}" class="setting-input">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 ml-1">Nom</label>
-                            <input type="text" value="${profileData?.last_name || ''}" class="setting-input" onchange="updateProfile({last_name: this.value})">
+                            <input type="text" id="set-lname" value="${profileData?.last_name || ''}" class="setting-input">
                         </div>
                     </div>
                     <div>
                         <label class="text-[10px] font-bold text-slate-400 ml-1">Email</label>
                         <div class="flex gap-2">
                              <input type="email" value="${user?.email || ''}" class="setting-input bg-slate-100" readonly>
-                             <button onclick="showToast('Contactez votre coach pour changer d email')" class="bg-white border border-slate-200 px-3 rounded-xl text-xs font-bold">Modif.</button>
+                             <button onclick="showToast('Contactez votre coach pour changer d email')" class="bg-white border border-slate-200 px-3 rounded-xl text-xs font-bold whitespace-nowrap">Modif.</button>
                         </div>
                     </div>
-                    <div>
+                    
+                    <button onclick="saveProfileChanges()" class="btn-save">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        Enregistrer les modifications
+                    </button>
+
+                    <div class="pt-4">
                         <label class="text-[10px] font-bold text-slate-400 ml-1">Mot de passe</label>
-                        <div class="flex gap-2 items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <div class="flex gap-2 items-center bg-slate-50 p-3 rounded-xl border border-slate-200 mt-1">
                              <input type="${showRealPassword ? 'text' : 'password'}" value="${userPasswordInput || '••••••••'}" class="bg-transparent text-xs font-mono font-bold flex-grow outline-none" readonly>
                              <button onclick="togglePasswordVisibility()" class="icon-btn text-slate-900">
                                 ${showRealPassword ? EYE_CLOSED : EYE_OPEN}
                              </button>
                         </div>
+                        <button onclick="openPasswordReset()" class="w-full py-3 bg-white border border-slate-200 text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-xl mt-2 hover:bg-slate-50 transition">Changer le mot de passe</button>
                     </div>
-                    <button onclick="openPasswordReset()" class="w-full py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl mt-2">Changer le mot de passe</button>
                 </div>
             </section>
 
@@ -421,6 +448,23 @@ function showSettings() {
         </div>
     `;
     document.getElementById('pip-window').style.display = 'flex';
+}
+
+async function saveProfileChanges() {
+    const fn = document.getElementById('set-fname').value.trim();
+    const ln = document.getElementById('set-lname').value.trim();
+    
+    if (!fn || !ln) {
+        showToast("Le prénom et le nom sont requis");
+        return;
+    }
+
+    await updateProfile({
+        first_name: fn,
+        last_name: ln
+    });
+    
+    showToast("Profil mis à jour avec succès !");
 }
 
 function togglePasswordVisibility() {
