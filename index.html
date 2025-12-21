@@ -182,6 +182,10 @@
     function dragEnd(){ initialX=currentX; initialY=currentY; isDragging=false; }
 
     window.onload = renderCalendar;
+
+    const { data, error } = await supabase.from('events').select('*');
+    console.log(data, error);
 </script>
 </body>
 </html>
+
