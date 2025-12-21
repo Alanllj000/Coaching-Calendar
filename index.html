@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendrier de Coaching</title>
+    <title>Calendrier Sportif - Coaching</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -211,7 +211,7 @@
     <div class="flex items-center justify-between mb-8 pr-16">
         <div>
             <h1 id="month-name" class="text-5xl font-black text-slate-900 tracking-tighter"></h1>
-            <p class="text-slate-400 text-sm font-medium mt-1">Planning de coaching</p>
+            <p class="text-slate-400 text-sm font-medium mt-1">Planning d'entraînement</p>
         </div>
         <div class="flex gap-2">
             <button id="prev" class="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all active:scale-95">&larr;</button>
@@ -270,7 +270,7 @@ async function syncUI(u) {
         const { data: profile } = await sb.from('profiles').select('*').eq('id', u.id).single();
         profileData = profile;
         
-        const fullName = profile ? `${profile.first_name} ${profile.last_name}` : "Utilisateur";
+        const fullName = profile ? `${profile.first_name} ${profile.last_name}` : "Sportif";
         document.getElementById('acc-name-top').innerText = fullName;
         document.getElementById('acc-name-menu').innerText = fullName;
         document.getElementById('acc-email-menu').innerText = u.email;
@@ -311,6 +311,7 @@ function showSettings() {
     document.getElementById('pip-header-label').innerText = "Mon Profil & Réglages";
     document.getElementById('pip-status-dot').className = "w-2 h-2 rounded-full bg-slate-900";
     
+    const isGranted = Notification.permission === "granted";
     const isEnabled = profileData?.notif_enabled || false;
     const customNotifs = profileData?.notif_custom || [];
     const storedPwd = localStorage.getItem('user_pwd_display') || "";
@@ -325,7 +326,7 @@ function showSettings() {
                     <input id="set-fn" type="text" value="${profileData?.first_name || ''}" placeholder="Prénom" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
                     <input id="set-ln" type="text" value="${profileData?.last_name || ''}" placeholder="Nom" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
                     <input id="set-email" type="email" value="${user?.email || ''}" placeholder="Email" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                    <button onclick="updateBasicInfo()" class="w-full bg-blue-600 text-white text-[10px] font-black py-3 rounded-xl uppercase tracking-wider">Enregistrer l'identité</button>
+                    <button onclick="updateBasicInfo()" class="w-full bg-blue-600 text-white text-[10px] font-black py-3 rounded-xl uppercase tracking-wider">Enregistrer</button>
                 </div>
             </section>
 
@@ -334,12 +335,12 @@ function showSettings() {
                 <h3 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4">Sécurité</h3>
                 <div class="space-y-3">
                     <div class="relative">
-                        <input id="view-pwd" type="password" readonly value="${storedPwd}" placeholder="Masqué" class="w-full bg-slate-50 p-3 pr-12 rounded-xl border border-slate-100 outline-none font-bold text-slate-900">
+                        <input id="view-pwd" type="password" readonly value="${storedPwd}" class="w-full bg-slate-50 p-3 pr-12 rounded-xl border border-slate-100 outline-none font-bold text-slate-900">
                         <button onclick="togglePwdVisibility('view-pwd')" class="absolute right-4 top-3 text-slate-400 hover:text-blue-500 transition">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                     </div>
-                    <button onclick="showChangePwdPip()" class="w-full bg-white border border-slate-200 text-slate-900 text-[10px] font-black py-3 rounded-xl uppercase tracking-wider hover:bg-slate-50">Modifier le mot de passe</button>
+                    <button onclick="showChangePwdPip()" class="w-full bg-white border border-slate-200 text-slate-900 text-[10px] font-black py-3 rounded-xl uppercase tracking-wider hover:bg-slate-50">Changer le code</button>
                 </div>
             </section>
 
@@ -347,10 +348,15 @@ function showSettings() {
             <section>
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xs font-black text-slate-300 uppercase tracking-widest">Notifications</h3>
-                    <label class="switch">
-                        <input type="checkbox" id="notif-enabled-check" ${isEnabled ? 'checked' : ''} onchange="toggleNotifMaster(this.checked)">
-                        <span class="slider"></span>
-                    </label>
+                    <div class="flex items-center gap-2">
+                         ${(isGranted && !isEnabled) ? `
+                            <button onclick="showSettings()" class="text-[10px] font-black text-blue-500 uppercase underline">Sync</button>
+                         ` : ''}
+                        <label class="switch">
+                            <input type="checkbox" id="notif-enabled-check" ${isEnabled ? 'checked' : ''} onchange="toggleNotifMaster(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                 </div>
                 
                 <div id="notif-controls-zone" class="${isEnabled ? '' : 'disabled-zone'} bg-slate-50 p-4 rounded-2xl space-y-4">
@@ -379,14 +385,14 @@ function showSettings() {
                             `).join('')}
                             ${customNotifs.length < 3 ? `
                                 <button onclick="showCustomNotifPip()" class="w-full py-2 border border-dashed border-slate-300 text-slate-400 text-[10px] font-bold uppercase rounded-xl hover:bg-white transition-all">
-                                    + Ajouter un rappel personnalisé
+                                    + Ajouter un rappel
                                 </button>
                             ` : ''}
                         </div>
                     </div>
 
                     <button onclick="sendTestNotification()" class="w-full mt-2 bg-slate-200 text-slate-700 text-[9px] font-black py-2 rounded-lg uppercase tracking-widest hover:bg-slate-300 transition-colors">
-                        Tester une notification (Maintenant)
+                        Tester une notification
                     </button>
                 </div>
             </section>
@@ -395,43 +401,37 @@ function showSettings() {
     document.getElementById('pip-window').style.display = 'flex';
 }
 
-// --- LOGIQUE NOTIF AVEC SYNC SUPABASE ---
 async function updateServerNotifs(payload) {
     if (!user) return;
     const { error } = await sb.from('profiles').update(payload).eq('id', user.id);
-    if (error) {
-        showToast("Erreur de synchronisation");
-    } else {
-        profileData = { ...profileData, ...payload };
-    }
+    if (error) showToast("Erreur de synchronisation");
+    else profileData = { ...profileData, ...payload };
 }
 
 async function toggleNotifMaster(val) {
     const checkbox = document.getElementById('notif-enabled-check');
-
     if (val) {
         if (!("Notification" in window)) {
-            showToast("Navigateur non compatible");
+            showToast("Incompatible");
             checkbox.checked = false;
             return;
         }
-
-        // Vérification Iframe
-        if (window.self !== window.top && Notification.permission === 'denied') {
-            showToast("Blocage Iframe détecté. Ouvrez le fichier séparément pour activer.");
-            checkbox.checked = false;
-            return;
-        }
-
-        const res = await Notification.requestPermission();
-        if (res === 'granted') {
+        if (Notification.permission === "granted") {
             await updateServerNotifs({ notif_enabled: true });
-            showSettings();
-            showToast("Notifications synchronisées !");
-        } else {
-            checkbox.checked = false;
-            showToast("Accès refusé ou bloqué par l'Iframe.");
+            setTimeout(showSettings, 300);
+            return;
         }
+        const res = await Notification.requestPermission();
+        setTimeout(async () => {
+            if (Notification.permission === 'granted') {
+                await updateServerNotifs({ notif_enabled: true });
+                showSettings();
+                showToast("Activé !");
+            } else {
+                checkbox.checked = false;
+                showToast("Accès refusé.");
+            }
+        }, 600);
     } else {
         await updateServerNotifs({ notif_enabled: false });
         showSettings();
@@ -440,13 +440,11 @@ async function toggleNotifMaster(val) {
 
 function sendTestNotification() {
     if (Notification.permission === "granted") {
-        new Notification("Coaching Alan Llorente", {
-            body: "Ceci est un test de notification. Tes rappels sont prêts !",
+        new Notification("Calendrier Sportif", {
+            body: "Tes notifications sont maintenant synchronisées !",
             icon: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png"
         });
-    } else {
-        showToast("Active d'abord les notifications.");
-    }
+    } else showToast("Vérifiez les permissions Edge.");
 }
 
 async function togglePredefined(column) {
@@ -460,38 +458,32 @@ async function addCustomNotif() {
     const d = parseInt(document.getElementById('c-d').value) || 0;
     const h = parseInt(document.getElementById('c-h').value) || 0;
     const m = parseInt(document.getElementById('c-m').value) || 0;
-    
-    const currentList = profileData?.notif_custom || [];
-    const newList = [...currentList, { d, h, m }];
+    const newList = [...(profileData?.notif_custom || []), { d, h, m }];
     await updateServerNotifs({ notif_custom: newList });
     showSettings();
 }
 
 async function removeCustomNotif(index) {
-    const currentList = profileData?.notif_custom || [];
-    const newList = currentList.filter((_, i) => i !== index);
+    const newList = (profileData?.notif_custom || []).filter((_, i) => i !== index);
     await updateServerNotifs({ notif_custom: newList });
     showSettings();
 }
 
-// --- AUTRES FONCTIONS ---
 function togglePwdVisibility(id) {
     const input = document.getElementById(id);
     input.type = input.type === 'password' ? 'text' : 'password';
 }
 
 function showChangePwdPip() {
-    document.getElementById('pip-header-label').innerText = "Changement de mot de passe";
-    const body = document.getElementById('pip-body');
-    body.innerHTML = `
+    document.getElementById('pip-header-label').innerText = "Sécurité";
+    document.getElementById('pip-body').innerHTML = `
         <div class="space-y-6">
             <h3 class="text-xl font-black">Nouveau code</h3>
-            <p class="text-xs text-slate-400 font-bold">Veuillez insérer votre nouveau mot de passe deux fois pour confirmation.</p>
             <div class="space-y-3">
-                <input id="new-pwd-1" type="password" placeholder="Nouveau mot de passe" class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                <input id="new-pwd-2" type="password" placeholder="Confirmer le mot de passe" class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                <input id="new-pwd-1" type="password" placeholder="Code secret" class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                <input id="new-pwd-2" type="password" placeholder="Confirmation" class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
             </div>
-            <button onclick="confirmUpdatePassword()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg">Confirmer le changement</button>
+            <button onclick="confirmUpdatePassword()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg">Mettre à jour</button>
             <button onclick="showSettings()" class="w-full text-slate-400 font-bold text-sm">Annuler</button>
         </div>
     `;
@@ -500,14 +492,10 @@ function showChangePwdPip() {
 async function confirmUpdatePassword() {
     const p1 = document.getElementById('new-pwd-1').value;
     const p2 = document.getElementById('new-pwd-2').value;
-    if (p1 !== p2 || !p1) return alert("Les codes ne correspondent pas.");
+    if (p1 !== p2 || !p1) return alert("Codes non identiques.");
     const { error } = await sb.auth.updateUser({ password: p1 });
     if (error) alert(error.message);
-    else { 
-        localStorage.setItem('user_pwd_display', p1);
-        showToast("Code modifié !"); 
-        showSettings(); 
-    }
+    else { localStorage.setItem('user_pwd_display', p1); showToast("Code modifié !"); showSettings(); }
 }
 
 async function updateBasicInfo() {
@@ -516,37 +504,26 @@ async function updateBasicInfo() {
     const em = document.getElementById('set-email').value;
     const { error: pErr } = await sb.from('profiles').update({ first_name: fn, last_name: ln }).eq('id', user.id);
     const { error: aErr } = await sb.auth.updateUser({ email: em });
-    if (pErr || aErr) alert("Erreur lors de la mise à jour");
-    else { showToast("Profil mis à jour !"); syncUI(user); }
+    if (pErr || aErr) alert("Erreur");
+    else { showToast("Profil à jour !"); syncUI(user); }
 }
 
 function showCustomNotifPip() {
-    document.getElementById('pip-header-label').innerText = "Rappel Personnalisé";
-    const body = document.getElementById('pip-body');
-    body.innerHTML = `
+    document.getElementById('pip-header-label').innerText = "Rappel";
+    document.getElementById('pip-body').innerHTML = `
         <div class="space-y-6">
-            <h3 class="text-xl font-black">Nouveau rappel</h3>
-            <div class="grid grid-cols-3 gap-2 text-center">
-                <div>
-                    <label class="text-[9px] font-black uppercase text-slate-300">Jours</label>
-                    <input id="c-d" type="number" value="0" min="0" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none text-center font-bold">
-                </div>
-                <div>
-                    <label class="text-[9px] font-black uppercase text-slate-300">Heures</label>
-                    <input id="c-h" type="number" value="0" min="0" max="23" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none text-center font-bold">
-                </div>
-                <div>
-                    <label class="text-[9px] font-black uppercase text-slate-300">Min</label>
-                    <input id="c-m" type="number" value="15" min="0" max="59" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 outline-none text-center font-bold">
-                </div>
+            <h3 class="text-xl font-black">Programmer un rappel</h3>
+            <div class="grid grid-cols-3 gap-2">
+                <div><label class="text-[9px] font-black uppercase text-slate-300">Jours</label><input id="c-d" type="number" value="0" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 text-center font-bold"></div>
+                <div><label class="text-[9px] font-black uppercase text-slate-300">Heures</label><input id="c-h" type="number" value="0" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 text-center font-bold"></div>
+                <div><label class="text-[9px] font-black uppercase text-slate-300">Min</label><input id="c-m" type="number" value="15" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 text-center font-bold"></div>
             </div>
-            <button onclick="addCustomNotif()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg">Ajouter ce rappel</button>
+            <button onclick="addCustomNotif()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl">Enregistrer</button>
             <button onclick="showSettings()" class="w-full text-slate-400 font-bold text-sm">Retour</button>
         </div>
     `;
 }
 
-// --- CALENDRIER & DRAG ---
 function initDraggable() {
     const el = document.getElementById('pip-window');
     const header = document.getElementById('pip-drag');
@@ -587,20 +564,14 @@ function render() {
 }
 
 function showDay(iso) {
-    document.getElementById('pip-header-label').innerText = "Séances du Jour";
+    document.getElementById('pip-header-label').innerText = "Détails séance";
     const list = events[iso] || [];
-    const body = document.getElementById('pip-body');
     let html = `<h3 class="text-xl font-black mb-4 capitalize">${new Date(iso).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}</h3>`;
-    if (list.length === 0) html += `<div class="py-10 text-center bg-slate-50 rounded-3xl"><p class="text-slate-400 text-sm italic">Libre</p></div>`;
+    if (list.length === 0) html += `<div class="py-10 text-center bg-slate-50 rounded-3xl"><p class="text-slate-400 text-sm italic">Aucun entraînement</p></div>`;
     else list.forEach(ev => {
-        html += `<div class="p-5 bg-white border border-slate-100 rounded-2xl mb-3 shadow-sm">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[10px] font-black text-blue-500 uppercase">Coaching</span>
-                    </div>
-                    <h4 class="font-bold">${ev.title}</h4>
-                </div>`;
+        html += `<div class="p-5 bg-white border border-slate-100 rounded-2xl mb-3 shadow-sm"><h4 class="font-bold text-blue-600">${ev.title}</h4></div>`;
     });
-    body.innerHTML = html;
+    document.getElementById('pip-body').innerHTML = html;
     document.getElementById('pip-window').style.display = 'flex';
 }
 
@@ -610,5 +581,3 @@ document.getElementById('next').onclick = () => { currentDate.setMonth(currentDa
 </script>
 </body>
 </html>
-
-
