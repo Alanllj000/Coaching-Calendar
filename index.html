@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendrier Interactif - Alanllj000's Coaching</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e2e8f0; border-radius: 0.75rem; overflow: hidden; }
-        .calendar-day { aspect-ratio: 1 / 1; background-color: white; padding: 0.5rem; transition: all 0.2s; cursor: pointer; position: relative; }
-        .calendar-day:hover { background-color: #f1f5f9; }
-        .calendar-day.selected { background-color: #eff6ff; outline: 2px solid #3b82f6; z-index: 10; }
-        .calendar-day.today { font-weight: 700; color: #3b82f6; }
-        .dot { height: 6px; width: 6px; background-color: #3b82f6; border-radius: 50%; display: inline-block; margin-top: 4px; }
-        #pip-window { position: fixed; bottom: 2rem; right: 2rem; width: 320px; height: 250px; background: white; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); display: none; flex-direction: column; z-index: 1000; border: 1px solid #e2e8f0; overflow: hidden; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .pip-header { padding: 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; cursor: move; }
-        .pip-content { padding: 1rem; flex-grow: 1; overflow-y: auto; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendrier Interactif - Alanllj000's Coaching</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e2e8f0; border-radius: 0.75rem; overflow: hidden; }
+    .calendar-day { aspect-ratio: 1 / 1; background-color: white; padding: 0.5rem; transition: all 0.2s; cursor: pointer; position: relative; }
+    .calendar-day:hover { background-color: #f1f5f9; }
+    .calendar-day.selected { background-color: #eff6ff; outline: 2px solid #3b82f6; z-index: 10; }
+    .calendar-day.today { font-weight: 700; color: #3b82f6; }
+    .dot { height: 6px; width: 6px; background-color: #3b82f6; border-radius: 50%; display: inline-block; margin-top: 4px; }
+    #pip-window { position: fixed; bottom: 2rem; right: 2rem; width: 320px; height: 250px; background: white; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); display: none; flex-direction: column; z-index: 1000; border: 1px solid #e2e8f0; overflow: hidden; animation: slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .pip-header { padding: 0.75rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; cursor: move; }
+    .pip-content { padding: 1rem; flex-grow: 1; overflow-y: auto; }
+</style>
 </head>
 <body class="p-4 md:p-8">
 
@@ -63,7 +65,7 @@
     // ---------- Supabase setup ----------
     const supabaseUrl = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
     const supabaseKey = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     let currentUser = null;
 
@@ -100,9 +102,7 @@
     let events = {}; // { "YYYY-MM-DD": [event objects] }
 
     async function fetchEvents(){
-        const { data, error } = await supabase
-            .from('events')
-            .select('*');
+        const { data, error } = await supabase.from('events').select('*');
         if(error){ console.log(error); return; }
         events = {};
         data.forEach(ev => {
@@ -181,11 +181,15 @@
     function setTranslate(x,y,el){ el.style.transform=`translate3d(${x}px,${y}px,0)`; }
     function dragEnd(){ initialX=currentX; initialY=currentY; isDragging=false; }
 
-    window.onload = renderCalendar;
+    // Check si déjà connecté
+    supabase.auth.getSession().then(({ data })=>{
+        if(data.session){
+            currentUser = data.session.user;
+            document.getElementById('auth-container').style.display = 'none';
+            fetchEvents();
+        }
+    });
 
-    const { data, error } = await supabase.from('events').select('*');
-    console.log(data, error);
 </script>
 </body>
 </html>
-
