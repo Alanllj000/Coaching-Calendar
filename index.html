@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendrier Interactif - Alanllj000's Coaching</title>
+    <title>Coaching Pro - Alan Llorente</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chargement correct de Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: #f8fafc; 
-            color: #1e293b;
+            color: #0f172a;
         }
 
         .calendar-grid { 
@@ -23,7 +22,7 @@
             grid-template-columns: repeat(7, 1fr); 
             gap: 1px; 
             background-color: #e2e8f0; 
-            border-radius: 0.75rem; 
+            border-radius: 1.5rem; 
             overflow: hidden; 
             border: 1px solid #e2e8f0;
         }
@@ -33,355 +32,336 @@
             background-color: white; 
             padding: 0.75rem; 
             cursor: pointer; 
-            position: relative; 
             display: flex; 
             flex-direction: column; 
             justify-content: space-between;
-            transition: background-color 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .calendar-day:hover { background-color: #f1f5f9; }
-        
-        .calendar-day.selected {
-            background-color: #eff6ff;
-            box-shadow: inset 0 0 0 2px #3b82f6;
-            z-index: 10;
-        }
+        .calendar-day:hover:not(.empty) { background-color: #f1f5f9; }
+        .calendar-day.selected { background-color: #eff6ff; box-shadow: inset 0 0 0 2px #3b82f6; z-index: 10; }
 
-        .dot { 
-            height: 8px; 
-            width: 8px; 
-            background-color: #3b82f6; 
-            border-radius: 50%; 
-            display: block;
-        }
+        .dot { height: 6px; width: 6px; background-color: #3b82f6; border-radius: 50%; }
+        .dot-booked { background-color: #10b981; }
 
-        /* Fenêtre Picture-in-Picture */
         #pip-window { 
             position: fixed; 
-            bottom: 2rem; 
-            right: 2rem; 
-            width: 340px; 
-            max-height: 400px; 
+            bottom: 1.5rem; 
+            right: 1.5rem; 
+            width: 360px; 
+            max-height: 550px; 
             background: white; 
-            border-radius: 1rem; 
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04); 
+            border-radius: 2rem; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.2); 
             display: none; 
             flex-direction: column; 
             z-index: 1000; 
-            border: 1px solid #e2e8f0; 
-            overflow: hidden;
-            transition: transform 0.1s ease-out;
-        }
-
-        .pip-header { 
-            padding: 0.75rem 1rem; 
-            background: #f8fafc; 
-            border-bottom: 1px solid #e2e8f0; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            cursor: move; 
-            user-select: none;
-        }
-
-        .pip-content { 
-            padding: 1.25rem; 
-            flex-grow: 1; 
-            overflow-y: auto; 
-        }
-
-        .auth-card {
-            background: white;
             border: 1px solid #e2e8f0;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .pip-header { padding: 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; cursor: move; }
+        .pip-content { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
+
+        .admin-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        #toast {
+            position: fixed;
+            top: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, -20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-10">
+
+<div id="toast" class="bg-slate-900 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl"></div>
 
 <div class="max-w-4xl mx-auto">
-    <!-- Section Authentification -->
-    <div id="auth-section" class="mb-8">
-        <div id="auth-logged-out" class="auth-card">
-            <h2 class="text-xl font-bold mb-4">Espace Coaching</h2>
-            <div class="space-y-3">
-                <input id="email" type="email" placeholder="Email" class="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                <input id="password" type="password" placeholder="Mot de passe" class="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                <div class="flex gap-3">
-                    <button id="login-btn" class="flex-1 bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition">Se connecter</button>
-                    <button id="signup-btn" class="flex-1 bg-slate-100 text-slate-700 font-semibold py-2 rounded-lg hover:bg-slate-200 transition">S'inscrire</button>
+    <!-- Authentification -->
+    <div id="auth-zone" class="mb-10">
+        <div id="login-card" class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-extrabold mb-6 tracking-tight">Accès Espace Coaching</h2>
+            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                <input id="email" type="email" placeholder="Email" class="flex-1 bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition">
+                <input id="password" type="password" placeholder="Mot de passe" class="flex-1 bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition">
+            </div>
+            <div class="flex gap-3">
+                <button id="btn-login" class="flex-1 bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition active:scale-95 shadow-lg shadow-blue-200">Connexion</button>
+                <button id="btn-signup" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-50 transition">Créer un compte</button>
+            </div>
+            <p id="auth-error" class="text-center text-red-500 text-sm mt-4 font-medium h-5"></p>
+        </div>
+
+        <div id="profile-card" class="hidden bg-white p-6 rounded-[2rem] border border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div id="user-avatar" class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white font-bold text-xl uppercase shadow-md"></div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="display-email" class="font-bold text-slate-800"></span>
+                        <span id="admin-indicator" class="admin-badge hidden">Coach</span>
+                    </div>
+                    <span class="text-xs text-slate-400">Session active</span>
                 </div>
             </div>
+            <button id="btn-logout" class="text-slate-400 hover:text-red-500 font-bold text-xs uppercase tracking-widest transition">Quitter</button>
         </div>
-
-        <div id="auth-logged-in" class="auth-card hidden flex items-center justify-between">
-            <div>
-                <p class="text-sm text-slate-500">Connecté en tant que</p>
-                <p id="user-display-email" class="font-bold text-slate-800"></p>
-            </div>
-            <button id="logout-btn" class="text-red-500 hover:text-red-700 font-semibold text-sm">Déconnexion</button>
-        </div>
-        <p id="auth-message" class="text-sm mt-3 text-center"></p>
     </div>
 
-    <!-- Header du Calendrier -->
-    <div class="flex items-center justify-between mb-6">
-        <h1 id="month-display" class="text-3xl font-bold text-slate-800 tracking-tight"></h1>
+    <!-- Calendrier Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 id="month-name" class="text-4xl font-black text-slate-900 tracking-tighter"></h1>
+            <p class="text-slate-400 text-sm font-medium mt-1">Réservez votre prochain créneau de coaching.</p>
+        </div>
         <div class="flex gap-2">
-            <button id="prev-month" class="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition">&larr;</button>
-            <button id="next-month" class="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition">&rarr;</button>
+            <button id="prev" class="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button id="next" class="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
         </div>
     </div>
 
-    <!-- Jours de la semaine -->
-    <div class="grid grid-cols-7 mb-3 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+    <div class="grid grid-cols-7 mb-4 text-center text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
         <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
     </div>
 
-    <!-- Grille -->
-    <div id="calendar-grid" class="calendar-grid shadow-2xl"></div>
+    <div id="calendar-grid" class="calendar-grid shadow-sm"></div>
 </div>
 
-<!-- Fenêtre Picture-in-Picture -->
+<!-- Fenêtre Détails (PiP) -->
 <div id="pip-window">
-    <div class="pip-header" id="pip-handle">
-        <span class="text-xs font-bold uppercase tracking-widest text-slate-500">Détails de la séance</span>
-        <button onclick="closePiP()" class="text-slate-400 hover:text-slate-600">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <div class="pip-header" id="pip-drag">
+        <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Planning Journalier</span>
+        <button onclick="closePiP()" class="text-slate-300 hover:text-slate-600 p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
     </div>
-    <div id="pip-body" class="pip-content">
-        <!-- Contenu dynamique -->
-    </div>
+    <div id="pip-body" class="pip-content"></div>
 </div>
 
 <script>
-// --- Initialisation Supabase ---
-const supabaseUrl = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
-const supabaseKey = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
-// Utilisation du client Supabase depuis l'objet global chargé via CDN
-const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+// --- CONFIGURATION ---
+const S_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
+const S_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+const sb = supabase.createClient(S_URL, S_KEY);
 
-let currentUser = null;
+// CONFIGURATION ADMIN
+const ADMIN_EMAIL = "alanllorentej@gmail.com"; 
+
+let user = null;
+let isAdmin = false;
 let currentDate = new Date();
 let events = {};
+let myBookings = [];
 
-// Éléments DOM
-const grid = document.getElementById('calendar-grid');
-const monthDisplay = document.getElementById('month-display');
-const pipWindow = document.getElementById('pip-window');
-const pipBody = document.getElementById('pip-body');
-const authMessage = document.getElementById('auth-message');
-
-// ---------- Gestion de l'Authentification ----------
-const updateUIForAuth = (user) => {
-    currentUser = user;
-    const loggedOutDiv = document.getElementById('auth-logged-out');
-    const loggedInDiv = document.getElementById('auth-logged-in');
-    
-    if (user) {
-        loggedOutDiv.classList.add('hidden');
-        loggedInDiv.classList.remove('hidden');
-        document.getElementById('user-display-email').innerText = user.email;
-    } else {
-        loggedOutDiv.classList.remove('hidden');
-        loggedInDiv.classList.add('hidden');
-    }
-    fetchEvents(); // Rafraîchir les événements et le calendrier
-};
-
-document.getElementById('signup-btn').addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const { data, error } = await _supabase.auth.signUp({ email, password });
-    
-    if (error) {
-        authMessage.className = "text-sm mt-3 text-center text-red-500";
-        authMessage.innerText = error.message;
-    } else {
-        authMessage.className = "text-sm mt-3 text-center text-green-600";
-        authMessage.innerText = "Inscription réussie ! Vérifiez vos emails.";
-    }
-});
-
-document.getElementById('login-btn').addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-    
-    if (error) {
-        authMessage.className = "text-sm mt-3 text-center text-red-500";
-        authMessage.innerText = error.message;
-    } else {
-        authMessage.innerText = "";
-        updateUIForAuth(data.user);
-    }
-});
-
-document.getElementById('logout-btn').addEventListener('click', async () => {
-    await _supabase.auth.signOut();
-    updateUIForAuth(null);
-    closePiP();
-});
-
-// ---------- Logique du Calendrier ----------
-document.getElementById('prev-month').addEventListener('click', () => changeMonth(-1));
-document.getElementById('next-month').addEventListener('click', () => changeMonth(1));
-
-async function fetchEvents() {
-    const { data, error } = await _supabase.from('events').select('*');
-    
-    if (error) {
-        console.error("Erreur Supabase:", error);
-        return;
-    }
-
-    events = {};
-    data.forEach(ev => {
-        // On attend un format de date YYYY-MM-DD
-        const dateKey = ev.date; 
-        if (!events[dateKey]) events[dateKey] = [];
-        events[dateKey].push(ev);
-    });
-    renderCalendar();
+// --- NOTIFICATIONS ---
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
 }
 
-function renderCalendar() {
-    grid.innerHTML = '';
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+// --- AUTH ---
+const updateAuthUI = async (u) => {
+    user = u;
+    isAdmin = u && u.email === ADMIN_EMAIL;
     
-    monthDisplay.innerText = `${monthNames[month]} ${year}`;
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1; // Commencer par Lundi
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    // Jours vides du mois précédent
-    for (let i = 0; i < adjustedFirstDay; i++) {
-        const empty = document.createElement('div');
-        empty.className = 'calendar-day bg-slate-50/50 pointer-events-none';
-        grid.appendChild(empty);
+    document.getElementById('login-card').classList.toggle('hidden', !!u);
+    document.getElementById('profile-card').classList.toggle('hidden', !u);
+    document.getElementById('admin-indicator').classList.toggle('hidden', !isAdmin);
+    
+    if (u) {
+        document.getElementById('display-email').innerText = u.email;
+        document.getElementById('user-avatar').innerText = u.email[0];
+        // Charger les réservations du user
+        const { data } = await sb.from('registrations').select('event_id').eq('user_id', u.id);
+        myBookings = data ? data.map(r => r.event_id) : [];
     }
+    fetchData();
+};
 
-    // Jours du mois en cours
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+document.getElementById('btn-login').onclick = async () => {
+    const e = document.getElementById('email').value, p = document.getElementById('password').value;
+    const { data, error } = await sb.auth.signInWithPassword({ email: e, password: p });
+    if (error) document.getElementById('auth-error').innerText = "Identifiants incorrects.";
+    else updateAuthUI(data.user);
+};
+
+document.getElementById('btn-signup').onclick = async () => {
+    const e = document.getElementById('email').value, p = document.getElementById('password').value;
+    if(p.length < 8) return document.getElementById('auth-error').innerText = "Mot de passe : 8 caractères min.";
+    const { data, error } = await sb.auth.signUp({ email: e, password: p });
+    if (error) document.getElementById('auth-error').innerText = error.message;
+    else {
+        showToast("Compte prêt !");
+        updateAuthUI(data.user);
+    }
+};
+
+document.getElementById('btn-logout').onclick = async () => {
+    await sb.auth.signOut();
+    updateAuthUI(null);
+    closePiP();
+};
+
+// --- CALENDRIER ---
+async function fetchData() {
+    const { data } = await sb.from('events').select('*');
+    events = {};
+    if (data) data.forEach(ev => {
+        if (!events[ev.date]) events[ev.date] = [];
+        events[ev.date].push(ev);
+    });
+    render();
+}
+
+function render() {
+    const grid = document.getElementById('calendar-grid');
+    grid.innerHTML = '';
+    const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    const names = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+    document.getElementById('month-name').innerText = `${names[m]} ${y}`;
+
+    const start = (new Date(y, m, 1).getDay() || 7) - 1;
+    const days = new Date(y, m + 1, 0).getDate();
+
+    for (let i = 0; i < start; i++) grid.appendChild(Object.assign(document.createElement('div'), {className: 'calendar-day empty bg-slate-50/50 pointer-events-none'}));
+
+    for (let d = 1; d <= days; d++) {
+        const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const dayEl = document.createElement('div');
-        dayEl.className = 'calendar-day font-semibold text-slate-700';
-        dayEl.innerHTML = `<span>${day}</span>`;
-
-        if (events[dateStr]) {
-            const dotContainer = document.createElement('div');
-            dotContainer.className = 'w-full flex justify-end';
-            dotContainer.innerHTML = `<div class="dot"></div>`;
-            dayEl.appendChild(dotContainer);
+        dayEl.className = 'calendar-day font-bold text-slate-700';
+        dayEl.innerHTML = `<span class="text-xs">${d}</span>`;
+        
+        const dayEvs = events[iso] || [];
+        if (dayEvs.length > 0) {
+            const booked = dayEvs.some(e => myBookings.includes(e.id));
+            dayEl.innerHTML += `<div class="flex justify-end"><div class="dot ${booked ? 'dot-booked' : ''}"></div></div>`;
         }
 
-        dayEl.addEventListener('click', () => {
-            document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+        dayEl.onclick = () => {
+            document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
             dayEl.classList.add('selected');
-            showDayDetails(dateStr);
-        });
-        
+            showDay(iso);
+        };
         grid.appendChild(dayEl);
     }
 }
 
-function showDayDetails(dateStr) {
-    const dayEvents = events[dateStr] || [];
-    const dateObj = new Date(dateStr);
-    const dateLong = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-    let html = `<h3 class="font-bold text-xl text-slate-800 mb-4 capitalize">${dateLong}</h3>`;
+function showDay(iso) {
+    const list = events[iso] || [];
+    const pipBody = document.getElementById('pip-body');
+    const displayDate = new Date(iso).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
     
-    if (dayEvents.length === 0) {
-        html += `<p class="text-slate-400 text-sm italic">Aucune séance prévue pour ce jour.</p>`;
+    let html = `<h3 class="text-2xl font-extrabold mb-6 capitalize tracking-tight">${displayDate}</h3>`;
+
+    if (isAdmin) {
+        html += `
+            <div class="mb-6 p-5 bg-blue-50 rounded-[1.5rem] border border-blue-100">
+                <p class="text-[10px] font-black uppercase text-blue-400 mb-3 tracking-widest">Admin : Nouveau créneau</p>
+                <input id="new-title" placeholder="Ex: Coaching Solo 1h" class="w-full mb-3 p-3 rounded-xl text-sm border-none shadow-sm outline-none">
+                <button onclick="createEvent('${iso}')" class="w-full bg-blue-600 text-white text-xs font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-md">Publier la séance</button>
+            </div>`;
+    }
+
+    if (list.length === 0) {
+        html += `<div class="text-center py-12"><p class="text-slate-300 italic text-sm font-medium">Aucune séance prévue ce jour.</p></div>`;
     } else {
-        dayEvents.forEach(ev => {
+        list.forEach(ev => {
+            const isBooked = myBookings.includes(ev.id);
             html += `
-                <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-3">
-                    <div class="flex justify-between items-start mb-1">
-                        <span class="font-bold text-blue-700">${ev.title}</span>
-                        <span class="text-[10px] font-bold bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full uppercase">Coaching</span>
+                <div class="p-5 bg-white border border-slate-100 rounded-[1.5rem] mb-4 shadow-sm">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="font-extrabold text-slate-800">${ev.title}</span>
+                        ${isAdmin ? `<button onclick="deleteEvent('${ev.id}', '${iso}')" class="text-red-400 hover:text-red-600 text-[10px] font-black uppercase transition">Supprimer</button>` : ''}
                     </div>
-                    <p class="text-sm text-slate-600 mb-4">${ev.description || 'Description non disponible.'}</p>
-                    ${currentUser 
-                        ? `<button onclick="registerForEvent('${ev.id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm transition">Réserver ce créneau</button>`
-                        : `<p class="text-[10px] text-center text-slate-400 font-medium">Connectez-vous pour réserver</p>`
+                    ${user && !isAdmin
+                        ? (isBooked 
+                            ? `<div class="bg-emerald-50 text-emerald-600 text-center py-3 rounded-xl text-[10px] font-black tracking-widest">CRÉNEAU RÉSERVÉ</div>` 
+                            : `<button onclick="book('${ev.id}', '${iso}')" class="w-full bg-slate-900 text-white text-[10px] font-black py-3 rounded-xl hover:bg-blue-600 transition shadow-lg shadow-slate-100">RÉSERVER MAINTENANT</button>`)
+                        : (!user ? `<p class="text-[9px] text-center text-slate-300 font-black uppercase pt-4 border-t mt-2 tracking-widest">Connectez-vous pour réserver</p>` : '')
                     }
                 </div>`;
         });
     }
-
     pipBody.innerHTML = html;
-    pipWindow.style.display = 'flex';
+    document.getElementById('pip-window').style.display = 'flex';
 }
 
-async function registerForEvent(eventId) {
-    if (!currentUser) return;
-
-    const { error } = await _supabase
-        .from('registrations')
-        .insert([{ user_id: currentUser.id, event_id: eventId }]);
-
-    if (error) {
-        alert("Erreur lors de la réservation : " + error.message);
-    } else {
-        alert("Réservation confirmée !");
-        fetchEvents();
+// --- DB ACTIONS ---
+async function createEvent(date) {
+    if (!isAdmin) return;
+    const title = document.getElementById('new-title').value;
+    if (!title) return;
+    const { error } = await sb.from('events').insert([{ date, title }]);
+    if (error) showToast("Erreur serveur.");
+    else {
+        showToast("Séance publiée !");
+        await fetchData();
+        showDay(date);
     }
 }
 
-function changeMonth(delta) {
-    currentDate.setMonth(currentDate.getMonth() + delta);
-    renderCalendar();
-    closePiP();
-}
-
-function closePiP() {
-    pipWindow.style.display = 'none';
-    document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
-}
-
-// Initialisation au chargement
-_supabase.auth.getSession().then(({ data }) => {
-    updateUIForAuth(data.session?.user || null);
-});
-
-// ---------- Gestion du Drag and Drop pour le PiP ----------
-let isDragging = false;
-let currentX = 0, currentY = 0, initialX, initialY, xOffset = 0, yOffset = 0;
-const handle = document.getElementById("pip-handle");
-
-handle.addEventListener("mousedown", dragStart);
-document.addEventListener("mousemove", drag);
-document.addEventListener("mouseup", dragEnd);
-
-function dragStart(e) {
-    initialX = e.clientX - xOffset;
-    initialY = e.clientY - yOffset;
-    if (e.target === handle || handle.contains(e.target)) isDragging = true;
-}
-
-function drag(e) {
-    if (isDragging) {
-        e.preventDefault();
-        currentX = e.clientX - initialX;
-        currentY = e.clientY - initialY;
-        xOffset = currentX;
-        yOffset = currentY;
-        pipWindow.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+async function deleteEvent(id, date) {
+    if (!isAdmin) return;
+    if (!confirm("Supprimer cette séance ?")) return;
+    const { error } = await sb.from('events').delete().eq('id', id);
+    if (error) showToast("Impossible de supprimer.");
+    else {
+        showToast("Séance retirée.");
+        await fetchData();
+        showDay(date);
     }
 }
 
-function dragEnd() {
-    isDragging = false;
+async function book(id, date) {
+    if (!user) return;
+    const { error } = await sb.from('registrations').insert([{ user_id: user.id, event_id: id }]);
+    if (error) showToast("Déjà réservé ou erreur.");
+    else {
+        showToast("C'est réservé !");
+        const { data } = await sb.from('registrations').select('event_id').eq('user_id', user.id);
+        myBookings = data ? data.map(r => r.event_id) : [];
+        await fetchData();
+        showDay(date);
+    }
 }
+
+function closePiP() { 
+    document.getElementById('pip-window').style.display = 'none';
+    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+}
+
+document.getElementById('prev').onclick = () => { currentDate.setMonth(currentDate.getMonth()-1); render(); closePiP(); };
+document.getElementById('next').onclick = () => { currentDate.setMonth(currentDate.getMonth()+1); render(); closePiP(); };
+
+sb.auth.getSession().then(({data}) => updateAuthUI(data.session?.user || null));
+
+// PIP DRAG
+let isDragging = false, offsetX = 0, offsetY = 0, startX, startY;
+const pip = document.getElementById('pip-window');
+document.getElementById('pip-drag').onmousedown = (e) => { startX = e.clientX - offsetX; startY = e.clientY - offsetY; isDragging = true; };
+document.onmousemove = (e) => { if(isDragging) { offsetX = e.clientX - startX; offsetY = e.clientY - startY; pip.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`; } };
+document.onmouseup = () => isDragging = false;
 </script>
 </body>
 </html>
