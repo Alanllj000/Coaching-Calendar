@@ -55,6 +55,7 @@ body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
 </div>
 
 <script>
+// --- Supabase setup ---
 const supabaseUrl = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
 const supabaseKey = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -96,7 +97,7 @@ async function fetchEvents(){
     if(error){ console.log(error); return; }
     events = {};
     data.forEach(ev => {
-        const dateStr = ev.date.split('T')[0];
+        const dateStr = ev.date.toString().split('T')[0];
         if(!events[dateStr]) events[dateStr] = [];
         events[dateStr].push(ev);
     });
@@ -134,13 +135,14 @@ function renderCalendar(){
 function showDay(dateStr){
     const dayEvents = events[dateStr] || [];
     let html = `<h3 class="font-bold mb-2">${dateStr}</h3>`;
-    if(dayEvents.length === 0) html += "<p>Aucun événement</p>";
-    else {
+    if(dayEvents.length === 0){
+        html += "<p>Aucun événement</p>";
+    } else {
         dayEvents.forEach(ev=>{
             html += `<div class="border p-2 rounded mb-1">
                         <strong>${ev.title}</strong>
                         <p>${ev.description || ''}</p>
-                        ${currentUser ? `<button onclick="registerEvent(${ev.id})" class="bg-blue-500 text-white px-2 py-1 mt-1 rounded">S'inscrire</button>` : '<p class="text-gray-400">Connectez-vous pour vous inscrire</p>'}
+                        ${currentUser ? '<button onclick="registerEvent(\''+ev.id+'\')" class="bg-blue-500 text-white px-2 py-1 mt-1 rounded">S\'inscrire</button>' : '<p class="text-gray-400">Connectez-vous pour vous inscrire</p>'}
                      </div>`;
         });
     }
@@ -156,7 +158,11 @@ async function registerEvent(eventId){
     fetchEvents();
 }
 
-function changeMonth(delta){ currentDate.setMonth(currentDate.getMonth()+delta); renderCalendar(); pipWindow.style.display='none'; }
+function changeMonth(delta){ 
+    currentDate.setMonth(currentDate.getMonth()+delta); 
+    renderCalendar(); 
+    pipWindow.style.display='none'; 
+}
 function closePiP(){ pipWindow.style.display='none'; }
 
 // Charger au démarrage si déjà connecté
@@ -168,7 +174,7 @@ supabase.auth.getSession().then(({ data })=>{
     }
 });
 
-// Drag PiP (optionnel)
+// Drag PiP
 let isDragging=false, currentX, currentY, initialX, initialY, xOffset=0, yOffset=0;
 const handle = document.getElementById("pip-handle");
 handle.addEventListener("mousedown", e=>{ initialX=e.clientX-xOffset; initialY=e.clientY-yOffset; isDragging=true; });
