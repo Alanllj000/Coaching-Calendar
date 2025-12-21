@@ -51,11 +51,12 @@
 
         .dot { height: 6px; width: 6px; background-color: #3b82f6; border-radius: 50%; }
 
-        #pip-window { 
+        /* PIP WINDOW */
+        #pip-window, #sub-pip-window { 
             position: fixed; 
             bottom: 1.5rem; 
             right: 1.5rem; 
-            width: 400px; 
+            width: 420px; 
             max-height: 85vh; 
             background: white; 
             border-radius: 2rem; 
@@ -66,13 +67,15 @@
             border: 1px solid #e2e8f0;
         }
 
+        #sub-pip-window { z-index: 3100; width: 380px; right: 2rem; bottom: 2rem; }
+
         .pip-header { 
             padding: 1.25rem; 
             border-bottom: 1px solid #f1f5f9; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            cursor: move; /* Curseur 4 flèches pour le déplacement */
+            cursor: move; 
         }
         
         .pip-content { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
@@ -117,6 +120,7 @@
             font-size: 0.875rem;
             transition: all 0.2s;
             color: #475569;
+            text-align: left;
         }
         .menu-item:hover { background-color: #f8fafc; color: #0f172a; }
 
@@ -147,7 +151,32 @@
         input:checked + .slider { background-color: #3b82f6; }
         input:checked + .slider:before { transform: translateX(18px); }
 
+        .setting-input {
+            width: 100%;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            outline: none;
+        }
+
         .disabled-zone { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
+
+        .eye-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #000;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .eye-btn:hover { opacity: 1; }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -196,8 +225,15 @@
         <p id="acc-email-menu" class="text-[10px] text-slate-400 font-bold">...</p>
     </div>
     <div class="p-3">
-        <button onclick="showSettings()" class="menu-item">Réglages</button>
-        <button onclick="handleLogout()" class="menu-item text-red-500">Déconnexion</button>
+        <button onclick="showSettings(); toggleAccountPopup();" class="menu-item">
+            <span>⚙️</span> Réglages
+        </button>
+        <button onclick="showToast('Bientôt disponible')" class="menu-item">
+            <span>📈</span> Statistiques
+        </button>
+        <button onclick="handleLogout()" class="menu-item text-red-500">
+            <span>🚪</span> Déconnexion
+        </button>
     </div>
 </div>
 
@@ -215,13 +251,22 @@
     <div id="calendar-grid" class="calendar-grid shadow-sm"></div>
 </div>
 
-<!-- PIP WINDOW -->
+<!-- PIP WINDOW MAIN -->
 <div id="pip-window">
     <div class="pip-header" id="pip-drag">
         <span id="pip-header-label" class="text-[10px] font-black uppercase text-slate-400 tracking-widest">...</span>
-        <button onclick="closePiP()" class="text-slate-300 hover:text-slate-600">&times;</button>
+        <button onclick="closePiP()" class="text-slate-300 hover:text-slate-600 text-2xl">&times;</button>
     </div>
     <div id="pip-body" class="pip-content"></div>
+</div>
+
+<!-- SUB-PIP WINDOW (Overlays) -->
+<div id="sub-pip-window">
+    <div class="pip-header" id="sub-pip-drag">
+        <span id="sub-pip-label" class="text-[10px] font-black uppercase text-slate-400 tracking-widest">...</span>
+        <button onclick="closeSubPiP()" class="text-slate-300 hover:text-slate-600 text-2xl">&times;</button>
+    </div>
+    <div id="sub-pip-body" class="pip-content"></div>
 </div>
 
 <script>
@@ -233,16 +278,16 @@ let user = null;
 let profileData = null;
 let currentDate = new Date();
 let events = {};
+let sessionPassword = ''; // Stockage temporaire du code de connexion
 
 window.onload = () => {
-    // Register service worker for PWA if available
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
-    
     sb.auth.onAuthStateChange((_, session) => { syncUI(session?.user || null); });
     render();
-    initDraggable();
+    initDraggable('pip-window', 'pip-drag');
+    initDraggable('sub-pip-window', 'sub-pip-drag');
 };
 
 function showToast(msg) {
@@ -277,25 +322,76 @@ async function fetchData() {
 }
 
 function showSettings() {
-    document.getElementById('account-popup').style.display = 'none';
-    document.getElementById('pip-header-label').innerText = "Réglages";
-    
-    const isEnabled = profileData?.notif_enabled || false;
+    document.getElementById('pip-header-label').innerText = "Réglages Profil";
     const body = document.getElementById('pip-body');
+    const isNotif = profileData?.notif_enabled || false;
     
+    // On affiche le code saisi lors de la connexion (ou une valeur démo)
+    const accountCode = sessionPassword || '123456789abc000';
+
     body.innerHTML = `
-        <div class="space-y-6">
-            <section>
-                <div class="flex justify-between items-center mb-4">
+        <div class="space-y-8">
+            <!-- Section Identité -->
+            <section class="space-y-4">
+                <h3 class="text-xs font-black text-slate-300 uppercase">Identité</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1 ml-1">Prénom</label>
+                        <input type="text" value="${profileData?.first_name || ''}" class="setting-input" onchange="updateProfile({first_name: this.value})">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1 ml-1">Nom</label>
+                        <input type="text" value="${profileData?.last_name || ''}" class="setting-input" onchange="updateProfile({last_name: this.value})">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 block mb-1 ml-1">Email</label>
+                    <input type="email" value="${user?.email || ''}" class="setting-input" onchange="showToast('Demande envoyée')">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 block mb-1 ml-1">Code Compte</label>
+                    <div class="relative">
+                        <input id="acc-code" type="password" value="${accountCode}" readonly class="setting-input pr-12 font-mono text-sm tracking-widest">
+                        <button onclick="toggleVisibility('acc-code')" class="eye-btn">
+                            <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <button onclick="openChangePassword()" class="w-full py-3 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-black transition">
+                    Changer le mot de passe
+                </button>
+            </section>
+
+            <!-- Section Notifications -->
+            <section class="space-y-4">
+                <div class="flex justify-between items-center">
                     <h3 class="text-xs font-black text-slate-300 uppercase">Notifications</h3>
                     <label class="switch">
-                        <input type="checkbox" id="notif-master" ${isEnabled ? 'checked' : ''} onchange="handleToggleNotif(this)">
+                        <input type="checkbox" id="notif-master" ${isNotif ? 'checked' : ''} onchange="handleToggleNotif(this)">
                         <span class="slider"></span>
                     </label>
                 </div>
-                <div id="notif-zone" class="${isEnabled ? '' : 'disabled-zone'} space-y-4">
-                    <button onclick="sendTest()" class="w-full py-2 bg-slate-100 text-[10px] font-bold rounded-lg uppercase">Tester la notification</button>
-                    <p class="text-[10px] text-slate-400 italic">En mode PWA, assurez-vous que les notifications sont autorisées dans les réglages de votre téléphone.</p>
+
+                <div id="notif-zone" class="${isNotif ? '' : 'disabled-zone'} space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <span class="text-xs font-bold text-slate-600">Rappel 1h avant</span>
+                        <input type="checkbox" checked class="accent-blue-500">
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <span class="text-xs font-bold text-slate-600">Rappel 1j avant</span>
+                        <input type="checkbox" checked class="accent-blue-500">
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <span class="text-xs font-bold text-slate-600">Rappel 1 semaine avant</span>
+                        <input type="checkbox" class="accent-blue-500">
+                    </div>
+                    
+                    <button onclick="openCustomReminders()" class="w-full py-3 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50">
+                        Autre (Personnalisé)
+                    </button>
                 </div>
             </section>
         </div>
@@ -303,51 +399,93 @@ function showSettings() {
     document.getElementById('pip-window').style.display = 'flex';
 }
 
+function toggleVisibility(id) {
+    const el = document.getElementById(id);
+    const icon = document.getElementById('eye-icon');
+    if (el.type === 'password') {
+        el.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+    } else {
+        el.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+    }
+}
+
+function openChangePassword() {
+    document.getElementById('sub-pip-label').innerText = "Sécurité";
+    document.getElementById('sub-pip-body').innerHTML = `
+        <div class="space-y-4">
+            <h3 class="font-black text-slate-900">Nouveau mot de passe</h3>
+            <p class="text-[10px] text-slate-400 font-bold uppercase">Saisissez deux fois votre nouveau mot de passe</p>
+            <input type="password" id="new-pw-1" placeholder="Mot de passe" class="setting-input">
+            <input type="password" id="new-pw-2" placeholder="Confirmer mot de passe" class="setting-input">
+            <button onclick="submitNewPassword()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl">Mettre à jour</button>
+        </div>
+    `;
+    document.getElementById('sub-pip-window').style.display = 'flex';
+}
+
+async function submitNewPassword() {
+    const p1 = document.getElementById('new-pw-1').value;
+    const p2 = document.getElementById('new-pw-2').value;
+    if (p1 !== p2 || p1.length < 6) {
+        showToast("Erreur de saisie (min 6 char)");
+        return;
+    }
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if (!error) {
+        sessionPassword = p1; // On met à jour le code affiché
+        showToast('Mot de passe mis à jour ✅');
+        closeSubPiP();
+    } else {
+        showToast(error.message);
+    }
+}
+
+function openCustomReminders() {
+    document.getElementById('sub-pip-label').innerText = "Rappels Custom";
+    let html = `<div class="space-y-6"><h3 class="font-black">Définir vos rappels</h3>`;
+    for(let i=1; i<=3; i++) {
+        html += `
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-3">Rappel #${i}</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="text-center"><input type="number" value="0" min="0" class="setting-input text-center p-2"><span class="text-[9px] font-bold">Jours</span></div>
+                    <div class="text-center"><input type="number" value="0" min="0" max="23" class="setting-input text-center p-2"><span class="text-[9px] font-bold">Heures</span></div>
+                    <div class="text-center"><input type="number" value="0" min="0" max="59" class="setting-input text-center p-2"><span class="text-[9px] font-bold">Min</span></div>
+                </div>
+            </div>
+        `;
+    }
+    html += `<button onclick="showToast('Rappels enregistrés'); closeSubPiP();" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl mt-4">Enregistrer</button></div>`;
+    document.getElementById('sub-pip-body').innerHTML = html;
+    document.getElementById('sub-pip-window').style.display = 'flex';
+}
+
 async function handleToggleNotif(checkbox) {
     const val = checkbox.checked;
-    checkbox.disabled = true;
-
-    try {
-        if (val) {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                await updateProfile({ notif_enabled: true });
-                showToast("Notifications synchronisées ✅");
-            } else {
-                checkbox.checked = false;
-                showToast("Permission refusée par le système");
-            }
+    if (val) {
+        const p = await Notification.requestPermission();
+        if (p === 'granted') {
+            await updateProfile({ notif_enabled: true });
+            showToast("Notifications activées");
         } else {
-            await updateProfile({ notif_enabled: false });
-            showToast("Désactivé");
+            checkbox.checked = false;
         }
-    } catch (e) {
-        console.error(e);
-        checkbox.checked = !val;
-        showToast("Erreur système");
-    } finally {
-        setTimeout(() => {
-            checkbox.disabled = false;
-            showSettings();
-        }, 300);
+    } else {
+        await updateProfile({ notif_enabled: false });
+        showToast("Désactivé");
     }
+    showSettings();
 }
 
 async function updateProfile(payload) {
     if (!user) return;
     const { error } = await sb.from('profiles').update(payload).eq('id', user.id);
-    if (!error) profileData = { ...profileData, ...payload };
-}
-
-function sendTest() {
-    if (Notification.permission === 'granted') {
-        try {
-            new Notification("Coach Sportif", { body: "Ceci est une notification test !" });
-        } catch(e) {
-            showToast("Test échoué sur ce navigateur");
-        }
-    } else {
-        showToast("Activez d'abord les notifications.");
+    if (!error) {
+        profileData = { ...profileData, ...payload };
+        showToast("Profil mis à jour");
+        syncUI(user);
     }
 }
 
@@ -380,23 +518,46 @@ function showDay(iso) {
     document.getElementById('pip-window').style.display = 'flex';
 }
 
-function closePiP() { document.getElementById('pip-window').style.display = 'none'; }
-function toggleAccountPopup() { const p = document.getElementById('account-popup'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; }
+function closePiP() { 
+    document.getElementById('pip-window').style.display = 'none'; 
+    closeSubPiP();
+}
+function closeSubPiP() { document.getElementById('sub-pip-window').style.display = 'none'; }
+function toggleAccountPopup() { 
+    const p = document.getElementById('account-popup'); 
+    p.style.display = p.style.display === 'block' ? 'none' : 'block'; 
+}
 function closeAuthOverlay() { document.getElementById('auth-overlay').classList.add('hidden'); }
+
 async function handleLogin() { 
     const e = document.getElementById('auth-email').value;
     const p = document.getElementById('auth-password').value;
     const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
-    if (error) document.getElementById('auth-error-overlay').innerText = error.message;
+    if (error) {
+        document.getElementById('auth-error-overlay').innerText = error.message;
+    } else {
+        sessionPassword = p; // On garde en mémoire le mot de passe pour l'afficher dans les réglages
+    }
 }
-function handleLogout() { sb.auth.signOut().then(() => location.reload()); }
 
-function initDraggable() {
-    const el = document.getElementById('pip-window');
-    const header = document.getElementById('pip-drag');
+function handleLogout() { sb.auth.signOut().then(() => { sessionPassword = ''; location.reload(); }); }
+
+function initDraggable(id, dragId) {
+    const el = document.getElementById(id);
+    const header = document.getElementById(dragId);
     let ox, oy, drag = false;
-    header.onmousedown = (e) => { drag = true; ox = e.clientX - el.offsetLeft; oy = e.clientY - el.offsetTop; };
-    window.onmousemove = (e) => { if (!drag) return; el.style.left = (e.clientX-ox)+'px'; el.style.top = (e.clientY-oy)+'px'; el.style.bottom='auto'; el.style.right='auto'; };
+    header.onmousedown = (e) => { 
+        drag = true; 
+        ox = e.clientX - el.offsetLeft; 
+        oy = e.clientY - el.offsetTop; 
+    };
+    window.onmousemove = (e) => { 
+        if (!drag) return; 
+        el.style.left = (e.clientX-ox)+'px'; 
+        el.style.top = (e.clientY-oy)+'px'; 
+        el.style.bottom='auto'; 
+        el.style.right='auto'; 
+    };
     window.onmouseup = () => { drag = false; };
 }
 
