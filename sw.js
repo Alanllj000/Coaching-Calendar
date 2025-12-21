@@ -1,24 +1,31 @@
-// Nom du cache pour la gestion hors-ligne
-const CACHE_NAME = 'sportif-v1';
+// Nom du cache
+const CACHE_NAME = 'sportif-v2';
 
-// Liste des ressources à mettre en cache pour un accès rapide
+// Liste des ressources essentielles
+// Note: Utiliser des chemins relatifs "./" est plus sûr pour GitHub Pages
 const ASSETS_TO_CACHE = [
-    '/Coaching-Calendar/',
-    '/Coaching-Calendar/index.html',
-    '/Coaching-Calendar/manifest.json',
-    '/Coaching-Calendar/appicon-128x128.png'
+    './',
+    './index.html',
+    './manifest.json',
+    './appicon-128x128.png'
 ];
 
-// Installation du Service Worker
+// Installation : Mise en cache des ressources
 self.addEventListener('install', (event) => {
+    // Force le SW à devenir actif immédiatement
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
+            // On utilise addAll mais on peut aussi ajouter un catch pour éviter que 
+            // l'échec d'un seul fichier (ex: icône manquante) ne bloque toute l'installation
+            return cache.addAll(ASSETS_TO_CACHE).catch(err => {
+                console.warn('Certains fichiers n\'ont pas pu être mis en cache', err);
+            });
         })
     );
 });
 
-// Activation et nettoyage des anciens caches
+// Activation : Nettoyage des anciens caches
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
@@ -31,27 +38,50 @@ self.addEventListener('activate', (event) => {
             );
         })
     );
+    // Prend le contrôle des pages immédiatement
+    return self.clients.claim();
 });
 
-// Stratégie de récupération : Réseau d'abord, sinon Cache
+// Stratégie : Network First (Réseau d'abord) avec fallback sur Cache
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        fetch(event.request).catch(() => {
-            return caches.match(event.request);
-        })
+        fetch(event.request)
+            .then((response) => {
+                // Si on a une réponse valide, on la clone dans le cache
+                if (response && response.status === 200 && response.type === 'basic') {
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                }
+                return response;
+            })
+            .catch(() => {
+                // Si le réseau échoue, on regarde dans le cache
+                return caches.match(event.request);
+            })
     );
 });
 
 // Gestion des notifications Push
 self.addEventListener('push', (event) => {
-    const data = event.data ? event.data.json() : {};
+    let data = {};
+    if (event.data) {
+        try {
+            data = event.data.json();
+        } catch (e) {
+            data = { title: 'Calendrier Sportif', body: event.data.text() };
+        }
+    }
+
     const title = data.title || 'Calendrier Sportif';
     const options = {
-        body: data.body || 'Vous avez une nouvelle mise à jour de votre programme !',
-        icon: '/Coaching-Calendar/appicon-128x128.png',
-        badge: '/Coaching-Calendar/appicon-128x128.png',
+        body: data.body || 'Nouvelle séance disponible !',
+        icon: './appicon-128x128.png',
+        badge: './appicon-128x128.png',
+        vibrate: [100, 50, 100],
         data: {
-            url: '/Coaching-Calendar/'
+            url: './'
         }
     };
 
@@ -64,6 +94,17 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     event.waitUntil(
-        clients.openWindow(event.notification.data.url)
+        clients.matchAll({ type: 'window' }).then((clientList) => {
+            // Si une fenêtre est déjà ouverte, on se focalise dessus
+            for (const client of clientList) {
+                if (client.url.includes('/Coaching-Calendar/') && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            // Sinon on ouvre une nouvelle fenêtre
+            if (clients.openWindow) {
+                return clients.openWindow('./');
+            }
+        })
     );
 });
