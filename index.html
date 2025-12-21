@@ -167,6 +167,7 @@
             transition: border-color 0.2s;
         }
         .setting-input:focus { border-color: #3b82f6; }
+        .setting-input.error { border-color: #ef4444; background-color: #fef2f2; }
 
         .disabled-zone { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
         
@@ -330,7 +331,7 @@ function updateUI() {
     document.getElementById('acc-name-top').innerText = profileData.first_name;
     document.getElementById('acc-name-menu').innerText = `${profileData.first_name} ${profileData.last_name}`;
     document.getElementById('acc-email-menu').innerText = user.email;
-    document.getElementById('acc-initials').innerText = profileData.first_name[0].toUpperCase();
+    document.getElementById('acc-initials').innerText = (profileData.first_name?.[0] || '?').toUpperCase();
 }
 
 async function fetchEvents() {
@@ -385,18 +386,18 @@ function showSettings() {
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 ml-1">Prénom</label>
-                            <input type="text" id="set-fname" value="${profileData?.first_name || ''}" class="setting-input">
+                            <input type="text" id="set-fname" value="${profileData?.first_name || ''}" class="setting-input" placeholder="Obligatoire">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 ml-1">Nom</label>
-                            <input type="text" id="set-lname" value="${profileData?.last_name || ''}" class="setting-input">
+                            <input type="text" id="set-lname" value="${profileData?.last_name || ''}" class="setting-input" placeholder="Obligatoire">
                         </div>
                     </div>
                     <div>
                         <label class="text-[10px] font-bold text-slate-400 ml-1">Email</label>
                         <div class="flex gap-2">
-                             <input type="email" value="${user?.email || ''}" class="setting-input bg-slate-100" readonly>
-                             <button onclick="showToast('Contactez votre coach pour changer d email')" class="bg-white border border-slate-200 px-3 rounded-xl text-xs font-bold whitespace-nowrap">Modif.</button>
+                             <input type="email" id="display-email" value="${user?.email || ''}" class="setting-input bg-slate-100" readonly>
+                             <button onclick="openEmailChange()" class="bg-white border border-slate-200 px-3 rounded-xl text-xs font-bold whitespace-nowrap active:scale-95 transition">Modif.</button>
                         </div>
                     </div>
                     
@@ -450,12 +451,73 @@ function showSettings() {
     document.getElementById('pip-window').style.display = 'flex';
 }
 
-async function saveProfileChanges() {
-    const fn = document.getElementById('set-fname').value.trim();
-    const ln = document.getElementById('set-lname').value.trim();
+function openEmailChange() {
+    const subBody = document.getElementById('sub-pip-body');
+    document.getElementById('sub-pip-label').innerText = "Identifiant";
+    subBody.innerHTML = `
+        <div class="space-y-5">
+            <h2 class="text-xl font-black text-slate-900">Nouvel Email</h2>
+            <div class="space-y-3">
+                <p class="text-xs text-slate-500 font-medium">Saisissez votre nouvelle adresse email. Un email de confirmation pourrait vous être envoyé.</p>
+                <input id="new-email-input" type="email" placeholder="votre@email.com" class="setting-input">
+            </div>
+            <button onclick="handleEmailUpdate()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-100 transition hover:bg-blue-700">Mettre à jour l'email</button>
+        </div>
+    `;
+    document.getElementById('sub-pip-window').style.display = 'flex';
+}
+
+async function handleEmailUpdate() {
+    const newEmail = document.getElementById('new-email-input').value.trim();
     
-    if (!fn || !ln) {
-        showToast("Le prénom et le nom sont requis");
+    // Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!newEmail) {
+        showToast("L'email ne peut pas être vide");
+        document.getElementById('new-email-input').classList.add('error');
+        return;
+    }
+    if (!emailRegex.test(newEmail)) {
+        showToast("Veuillez saisir un email valide");
+        document.getElementById('new-email-input').classList.add('error');
+        return;
+    }
+
+    const { error } = await sb.auth.updateUser({ email: newEmail });
+    if (!error) {
+        showToast("Email mis à jour !");
+        // Update local user object
+        user.email = newEmail;
+        closeSubPiP();
+        showSettings();
+        updateUI();
+    } else {
+        showToast("Erreur : " + error.message);
+    }
+}
+
+async function saveProfileChanges() {
+    const fnInput = document.getElementById('set-fname');
+    const lnInput = document.getElementById('set-lname');
+    const fn = fnInput.value.trim();
+    const ln = lnInput.value.trim();
+    
+    // Validation
+    let hasError = false;
+    fnInput.classList.remove('error');
+    lnInput.classList.remove('error');
+
+    if (!fn) {
+        fnInput.classList.add('error');
+        hasError = true;
+    }
+    if (!ln) {
+        lnInput.classList.add('error');
+        hasError = true;
+    }
+
+    if (hasError) {
+        showToast("Le prénom et le nom ne peuvent pas être vides");
         return;
     }
 
@@ -464,7 +526,7 @@ async function saveProfileChanges() {
         last_name: ln
     });
     
-    showToast("Profil mis à jour avec succès !");
+    showToast("Profil enregistré avec succès !");
 }
 
 function togglePasswordVisibility() {
