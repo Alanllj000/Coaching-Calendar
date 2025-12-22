@@ -16,7 +16,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Grille du calendrier */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
@@ -41,7 +40,6 @@
         .calendar-day:hover:not(.empty) { background-color: #f1f5f9; }
         .calendar-day.empty { cursor: default; background-color: #f8fafc; }
 
-        /* Fenêtres PiP (Picture-in-Picture) */
         .pip-window { 
             position: fixed; 
             bottom: 1.5rem; 
@@ -67,7 +65,6 @@
             bottom: auto; right: auto;
         }
 
-        /* Overlay Flou pour les actions critiques */
         #modal-overlay {
             position: fixed;
             inset: 0;
@@ -79,61 +76,90 @@
             justify-content: center;
         }
 
-        /* Bouton d'ajout rapide admin */
-        .add-event-btn-day {
-            font-size: 10px; 
-            width: 100%; 
-            text-align: center; 
-            color: #3b82f6; 
-            font-weight: 800;
-            opacity: 0; 
-            transition: opacity 0.2s; 
-            margin-top: auto;
-            padding: 4px;
-            background: #eff6ff;
-            border-radius: 8px;
-        }
-        .calendar-day:hover .add-event-btn-day { opacity: 1; }
-
-        .tag-day { 
-            padding: 6px 12px; 
-            border-radius: 10px; 
-            font-size: 11px; 
-            font-weight: 700; 
-            border: 1px solid #e2e8f0; 
-            background: white;
-            transition: all 0.2s;
-        }
-        .tag-day.active { 
-            background: #3b82f6; 
-            color: white; 
-            border-color: #3b82f6; 
-        }
-
         .input-field {
             width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.8rem 1rem;
             border-radius: 14px; font-size: 0.9rem; font-weight: 600; outline: none; transition: all 0.2s;
         }
         .input-field:focus { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .reminder-btn {
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .reminder-btn.active {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        #auth-screen {
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
+<!-- ECRAN AUTHENTIFICATION -->
+<div id="auth-screen" class="hidden">
+    <div class="w-full max-w-sm space-y-6">
+        <div class="text-center">
+            <h2 class="text-3xl font-black tracking-tighter">Bienvenue</h2>
+            <p class="text-slate-500 font-bold">Connectez-vous pour voir le planning</p>
+        </div>
+        <div id="auth-form" class="space-y-4">
+            <input id="auth-email" type="email" placeholder="Email" class="input-field">
+            <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
+            <div id="register-fields" class="hidden space-y-4">
+                <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
+                <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
+                <input id="auth-phone" type="tel" placeholder="Numéro de Téléphone" class="input-field">
+            </div>
+            <button onclick="handleAuth()" id="auth-btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition active:scale-95">Se connecter</button>
+            <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-xs font-bold text-slate-400 cursor-pointer hover:text-slate-600">Pas de compte ? Créer un profil</p>
+        </div>
+    </div>
+</div>
+
 <!-- OVERLAY POUR MODALES CRITIQUES -->
 <div id="modal-overlay">
-    <div class="bg-white w-[90%] max-w-md rounded-[2.5rem] p-8 shadow-2xl scale-100 transform transition">
+    <!-- Suppression Compte -->
+    <div id="delete-modal" class="hidden bg-white w-[90%] max-w-md rounded-[2.5rem] p-8 shadow-2xl">
         <div class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-3xl mb-6 mx-auto">⚠️</div>
         <h3 class="text-2xl font-black tracking-tight text-center text-slate-900 mb-2">Supprimer le compte ?</h3>
-        <p class="text-sm text-slate-500 text-center leading-relaxed mb-8">
-            Cette action est <b>irréversible</b>. Vous perdrez l'accès à vos réservations, votre historique de coaching et toutes vos données personnelles.
-        </p>
+        <p class="text-sm text-slate-500 text-center leading-relaxed mb-8">Cette action est irréversible. Vous perdrez toutes vos données.</p>
         <div class="flex flex-col gap-3">
-            <button onclick="confirmAccountDeletion()" class="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-100 hover:bg-red-700 transition active:scale-95">Supprimer définitivement</button>
-            <button onclick="closeDeleteModal()" class="w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition">Annuler</button>
+            <button onclick="confirmAccountDeletion()" class="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg hover:bg-red-700 transition">Supprimer définitivement</button>
+            <button onclick="closeModal()" class="w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+
+    <!-- Changement Password -->
+    <div id="pwd-modal" class="hidden bg-white w-[90%] max-w-md rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-2xl font-black tracking-tight mb-4">Nouveau mot de passe</h3>
+        <div class="space-y-4">
+            <input id="new-pwd-1" type="password" placeholder="Nouveau mot de passe" class="input-field">
+            <input id="new-pwd-2" type="password" placeholder="Confirmer le mot de passe" class="input-field">
+            <p class="text-[10px] font-bold text-slate-400">Minimum 8 caractères.</p>
+            <button onclick="submitNewPassword()" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg hover:bg-blue-700 transition">Confirmer</button>
+            <button onclick="closeModal()" class="w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl">Annuler</button>
         </div>
     </div>
 </div>
@@ -163,9 +189,7 @@
             </div>
             <button onclick="openSettings()" class="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-2xl font-bold text-sm text-slate-700 transition">⚙️ Réglages Profil</button>
             <button id="admin-menu-btn" onclick="openAdminPanel()" class="w-full hidden flex items-center gap-3 p-3 hover:bg-blue-50 rounded-2xl font-bold text-sm text-blue-600 transition">📊 Gestion des Events</button>
-            
             <div class="my-3 border-t border-slate-100"></div>
-            
             <div class="flex gap-2">
                 <button onclick="logout()" class="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl font-bold text-xs text-slate-600 transition">🚪 Déconnexion</button>
                 <button onclick="openDeleteModal()" class="flex-1 flex items-center justify-center gap-2 p-3 bg-red-50 hover:bg-red-100 rounded-2xl font-bold text-xs text-red-500 transition">🗑️ Supprimer</button>
@@ -182,93 +206,83 @@
     <div id="calendar-grid" class="calendar-grid shadow-2xl border-none"></div>
 </div>
 
-<!-- PIP: DETAILS JOURNEE -->
-<div id="day-pip" class="pip-window">
+<!-- PIP: REGLAGES PROFIL -->
+<div id="settings-pip" class="pip-window">
     <div class="p-5 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-        <span id="day-pip-date" class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Détails</span>
+        <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Réglages Profil</span>
         <button onclick="closeAllPips()" class="text-slate-300 hover:text-slate-600 text-2xl">&times;</button>
     </div>
-    <div id="day-events-container" class="p-6 overflow-y-auto max-h-[60vh] space-y-4"></div>
-</div>
-
-<!-- PIP: CONSOLE ADMIN FULLSCREEN -->
-<div id="admin-pip" class="pip-window fullscreen-pip">
-    <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-white">
-        <div>
-            <h2 class="text-2xl font-black tracking-tighter">Gestion des Événements</h2>
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Espace Organisateur</p>
+    <div class="p-6 overflow-y-auto max-h-[75vh] space-y-6">
+        <!-- Infos Perso -->
+        <div class="space-y-3">
+            <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Informations</label>
+            <input id="set-firstname" type="text" placeholder="Prénom" class="input-field">
+            <input id="set-lastname" type="text" placeholder="Nom" class="input-field">
+            <input id="set-email" type="email" placeholder="Email" class="input-field bg-slate-100 cursor-not-allowed" readonly>
+            <input id="set-phone" type="tel" placeholder="Numéro de téléphone" class="input-field">
+            <button onclick="updateProfile()" class="w-full py-3 bg-slate-900 text-white font-black rounded-xl text-xs transition active:scale-95">Enregistrer les modifs.</button>
         </div>
-        <button onclick="closeAllPips()" class="bg-slate-100 p-2 px-4 rounded-full font-bold text-slate-500 hover:bg-slate-200 transition">Fermer</button>
-    </div>
-    
-    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-        <!-- FORMULAIRE -->
-        <div class="w-full md:w-5/12 p-8 overflow-y-auto bg-slate-50/50 border-r border-slate-100">
-            <div class="space-y-6">
+
+        <!-- Password Section -->
+        <div class="pt-4 border-t border-slate-100 space-y-3">
+            <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sécurité</label>
+            <div class="relative">
+                <input id="set-password-preview" type="password" value="********" readonly class="input-field pr-12">
+                <button onclick="togglePasswordVisibility('set-password-preview')" class="absolute right-4 top-1/2 -translate-y-1/2 text-lg">👁️</button>
+            </div>
+            <button onclick="openChangePassword()" class="w-full py-3 bg-blue-50 text-blue-600 font-black rounded-xl text-xs transition">Modifier le mot de passe</button>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="pt-4 border-t border-slate-100 space-y-4">
+            <div class="flex justify-between items-center">
                 <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400 mb-2 block">Informations de base</label>
-                    <div class="space-y-3">
-                        <input id="ev-title" type="text" placeholder="Nom de la séance (ex: MMA Cardio)" class="input-field">
-                        <input id="ev-location" type="text" placeholder="Lieu (Salle, Parc, etc.)" class="input-field">
-                    </div>
+                    <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Notifications</label>
+                    <p class="text-[9px] font-bold text-slate-400 mt-1 max-w-[200px]">Les notifications sont seulement disponibles sur l'application mobile (PWA).</p>
                 </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[10px] font-black uppercase text-slate-400 mb-2 block">Horaire Début</label>
-                        <input id="ev-start" type="time" class="input-field">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-black uppercase text-slate-400 mb-2 block">Horaire Fin</label>
-                        <input id="ev-end" type="time" class="input-field">
-                    </div>
+                <div onclick="toggleNotifications()" id="notif-toggle" class="w-12 h-6 bg-slate-200 rounded-full relative cursor-pointer transition-colors">
+                    <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform"></div>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[10px] font-black uppercase text-slate-400 mb-2 block">Date (si unique)</label>
-                        <input id="ev-date" type="date" class="input-field">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-black uppercase text-slate-400 mb-2 block">Places Max (8 max)</label>
-                        <input id="ev-max" type="number" value="1" min="1" max="8" class="input-field">
-                    </div>
+            <div id="notif-reminders" class="space-y-4 opacity-50 pointer-events-none">
+                <label class="text-[9px] font-black uppercase text-slate-400">Rappels automatiques</label>
+                <div class="grid grid-cols-3 gap-2" id="base-reminders">
+                    <button onclick="toggleReminder('1week')" id="rem-1week" class="reminder-btn">1 sem</button>
+                    <button onclick="toggleReminder('1day')" id="rem-1day" class="reminder-btn">1 jour</button>
+                    <button onclick="toggleReminder('1hour')" id="rem-1hour" class="reminder-btn">1 heure</button>
                 </div>
-
-                <div class="p-5 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-xs font-black uppercase">Récurrence Hebdomadaire</span>
-                        <input type="checkbox" id="ev-recurring" class="w-5 h-5 accent-blue-600 cursor-pointer">
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="toggleRecurrenceDay('Monday', this)" class="tag-day">Lun</button>
-                        <button onclick="toggleRecurrenceDay('Tuesday', this)" class="tag-day">Mar</button>
-                        <button onclick="toggleRecurrenceDay('Wednesday', this)" class="tag-day">Mer</button>
-                        <button onclick="toggleRecurrenceDay('Thursday', this)" class="tag-day">Jeu</button>
-                        <button onclick="toggleRecurrenceDay('Friday', this)" class="tag-day">Ven</button>
-                        <button onclick="toggleRecurrenceDay('Saturday', this)" class="tag-day">Sam</button>
-                        <button onclick="toggleRecurrenceDay('Sunday', this)" class="tag-day">Dim</button>
-                    </div>
-                </div>
-
-                <textarea id="ev-desc" placeholder="Détails supplémentaires pour les clients..." class="input-field h-24 resize-none"></textarea>
                 
-                <button onclick="submitNewEvent()" class="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition transform active:scale-95">
-                    Publier l'événement
+                <div id="custom-reminders-list" class="grid grid-cols-2 gap-2"></div>
+                
+                <button onclick="openCustomNotif()" id="btn-custom-add" class="w-full py-3 border-2 border-dashed border-slate-200 text-slate-400 font-bold rounded-xl text-[10px] hover:border-blue-200 hover:text-blue-400 transition">
+                    + Ajouter un rappel (Max 3)
                 </button>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- LISTE -->
-        <div class="w-full md:w-7/12 p-8 overflow-y-auto bg-white">
-            <h3 class="text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Événements en cours</h3>
-            <div id="admin-events-list" class="space-y-3"></div>
+<!-- PIP: CUSTOM NOTIF -->
+<div id="custom-notif-pip" class="pip-window">
+    <div class="p-5 flex justify-between items-center bg-slate-50/50">
+        <span class="text-[10px] font-black uppercase text-slate-400">Nouveau Rappel</span>
+        <button onclick="document.getElementById('custom-notif-pip').style.display='none'" class="text-2xl">&times;</button>
+    </div>
+    <div class="p-6 space-y-4">
+        <div class="grid grid-cols-3 gap-2">
+            <input id="notif-val" type="number" placeholder="0" class="input-field col-span-1">
+            <select id="notif-unit" class="input-field col-span-2">
+                <option value="days">Jours</option>
+                <option value="hours">Heures</option>
+                <option value="minutes">Minutes</option>
+            </select>
         </div>
+        <button onclick="addCustomReminder()" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl">Ajouter</button>
     </div>
 </div>
 
 <script>
-// CONFIGURATION SUPABASE
 const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -277,17 +291,60 @@ let currentUser = null;
 let currentProfile = null;
 let allEvents = [];
 let calendarDate = new Date();
-let selectedDays = [];
+let authMode = 'login';
+let reminders = ['1day'];
+let customReminders = [];
 
-// INITIALISATION
+// INITIALISATION & AUTH PERSISTANCE
 window.onload = async () => {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) {
-        currentUser = session.user;
-        await loadProfile();
-        await refreshData();
-    }
+    // Ecouter les changements de session
+    sb.auth.onAuthStateChanged(async (event, session) => {
+        if (session) {
+            currentUser = session.user;
+            document.getElementById('auth-screen').classList.add('hidden');
+            await loadProfile();
+            await refreshData();
+        } else {
+            currentUser = null;
+            document.getElementById('auth-screen').classList.remove('hidden');
+        }
+    });
 };
+
+async function handleAuth() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    
+    if (authMode === 'login') {
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) alert("Identifiants incorrects");
+    } else {
+        const first = document.getElementById('auth-firstname').value;
+        const last = document.getElementById('auth-lastname').value;
+        const phone = document.getElementById('auth-phone').value;
+        if(!first || !last || !phone) return alert("Remplissez tous les champs");
+
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (error) return alert(error.message);
+        
+        await sb.from('profiles').insert([{
+            id: data.user.id,
+            first_name: first,
+            last_name: last,
+            phone: phone,
+            email: email,
+            role: 'user'
+        }]);
+        alert("Compte créé !");
+    }
+}
+
+function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'register' : 'login';
+    document.getElementById('register-fields').classList.toggle('hidden');
+    document.getElementById('auth-btn').innerText = authMode === 'login' ? 'Se connecter' : 'Créer un profil';
+    document.getElementById('auth-toggle').innerText = authMode === 'login' ? 'Pas de compte ? Créer un profil' : 'Déjà un compte ? Se connecter';
+}
 
 async function loadProfile() {
     const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
@@ -295,23 +352,129 @@ async function loadProfile() {
     if (currentProfile) {
         document.getElementById('user-display-name').innerText = `${currentProfile.first_name} ${currentProfile.last_name}`;
         document.getElementById('user-initials').innerText = (currentProfile.first_name[0] || '?').toUpperCase();
+        document.getElementById('admin-menu-btn').classList.toggle('hidden', currentProfile.role !== 'admin');
+        document.getElementById('user-display-role').innerText = currentProfile.role === 'admin' ? "Administrateur" : "Élève";
         
-        if (currentProfile.role === 'admin') {
-            document.getElementById('admin-menu-btn').classList.remove('hidden');
-            document.getElementById('user-display-role').innerText = "Administrateur";
-        } else {
-            document.getElementById('user-display-role').innerText = "Élève";
-        }
+        // Remplir réglages
+        document.getElementById('set-firstname').value = currentProfile.first_name;
+        document.getElementById('set-lastname').value = currentProfile.last_name;
+        document.getElementById('set-email').value = currentProfile.email;
+        document.getElementById('set-phone').value = currentProfile.phone || "";
     }
 }
 
+async function updateProfile() {
+    const first = document.getElementById('set-firstname').value;
+    const last = document.getElementById('set-lastname').value;
+    const phone = document.getElementById('set-phone').value;
+
+    if(!first || !last || !phone) return alert("Les champs ne peuvent pas être vides.");
+
+    const { error } = await sb.from('profiles').update({ 
+        first_name: first, last_name: last, phone: phone 
+    }).eq('id', currentUser.id);
+
+    if(!error) {
+        alert("Modifications enregistrées !");
+        loadProfile();
+    }
+}
+
+// LOGIQUE DES RAPPELS
+function toggleNotifications() {
+    const toggle = document.getElementById('notif-toggle');
+    const container = document.getElementById('notif-reminders');
+    const isActive = toggle.classList.toggle('bg-blue-600');
+    toggle.children[0].classList.toggle('translate-x-6');
+    container.style.opacity = isActive ? '1' : '0.5';
+    container.style.pointerEvents = isActive ? 'auto' : 'none';
+    updateRemindersUI();
+}
+
+function toggleReminder(id) {
+    if (reminders.includes(id)) reminders = reminders.filter(r => r !== id);
+    else reminders.push(id);
+    updateRemindersUI();
+}
+
+function updateRemindersUI() {
+    ['1week', '1day', '1hour'].forEach(id => {
+        const btn = document.getElementById(`rem-${id}`);
+        const active = reminders.includes(id);
+        btn.className = `reminder-btn ${active ? 'active' : ''}`;
+        btn.innerHTML = `${btn.innerText.split(' ')[0]} ${btn.innerText.split(' ')[1] || ''} ${active ? '✓' : ''}`;
+    });
+
+    const list = document.getElementById('custom-reminders-list');
+    list.innerHTML = customReminders.map((r, i) => `
+        <div class="reminder-btn active">
+            ${r.val} ${r.unit} ✓
+            <button onclick="removeCustom(${i})" class="absolute -top-1 -right-1 w-4 h-4 bg-slate-900 text-white rounded-full text-[8px] flex items-center justify-center">×</button>
+        </div>
+    `).join('');
+    document.getElementById('btn-custom-add').style.display = customReminders.length >= 3 ? 'none' : 'block';
+}
+
+function addCustomReminder() {
+    const val = document.getElementById('notif-val').value;
+    const unit = document.getElementById('notif-unit').value;
+    if(!val) return;
+    customReminders.push({ val, unit });
+    document.getElementById('custom-notif-pip').style.display = 'none';
+    updateRemindersUI();
+}
+
+function removeCustom(i) {
+    customReminders.splice(i, 1);
+    updateRemindersUI();
+}
+
+// SECRETS & MODALES
+function togglePasswordVisibility(id) {
+    const el = document.getElementById(id);
+    el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function openChangePassword() {
+    document.getElementById('modal-overlay').style.display = 'flex';
+    document.getElementById('pwd-modal').classList.remove('hidden');
+}
+
+async function submitNewPassword() {
+    const p1 = document.getElementById('new-pwd-1').value;
+    const p2 = document.getElementById('new-pwd-2').value;
+    if(p1.length < 8) return alert("Minimum 8 caractères.");
+    if(p1 !== p2) return alert("Les mots de passe ne correspondent pas.");
+
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if(!error) {
+        alert("Mot de passe mis à jour !");
+        closeModal();
+    }
+}
+
+// UI HELPER
+function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
+function openSettings() { toggleUserMenu(); document.getElementById('settings-pip').style.display = 'flex'; updateRemindersUI(); }
+function openAdminPanel() { toggleUserMenu(); document.getElementById('admin-pip').style.display = 'flex'; renderAdminList(); }
+function openDeleteModal() { toggleUserMenu(); document.getElementById('modal-overlay').style.display = 'flex'; document.getElementById('delete-modal').classList.remove('hidden'); }
+function closeModal() { 
+    document.getElementById('modal-overlay').style.display = 'none'; 
+    document.getElementById('delete-modal').classList.add('hidden'); 
+    document.getElementById('pwd-modal').classList.add('hidden'); 
+}
+function openCustomNotif() { document.getElementById('custom-notif-pip').style.display = 'flex'; }
+function closeAllPips() { document.querySelectorAll('.pip-window').forEach(p => p.style.display = 'none'); }
+function logout() { sb.auth.signOut(); }
+function changeMonth(step) { calendarDate.setMonth(calendarDate.getMonth() + step); renderCalendar(); }
+
+// CALENDRIER (Même logique mais rafraîchie)
 async function refreshData() {
     const { data } = await sb.from('events').select('*');
     allEvents = data || [];
     renderCalendar();
 }
 
-// CALENDRIER
 function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = '';
@@ -321,162 +484,18 @@ function renderCalendar() {
     const firstDay = (new Date(year, month, 1).getDay() || 7) - 1;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    for (let i = 0; i < firstDay; i++) {
-        grid.appendChild(Object.assign(document.createElement('div'), { className: 'calendar-day empty' }));
-    }
-
+    for (let i = 0; i < firstDay; i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'calendar-day empty' }));
     for (let d = 1; d <= daysInMonth; d++) {
         const isoDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const dayOfWeek = new Date(year, month, d).getDay();
-        const dailyEvents = getEventsForDay(isoDate, dayOfWeek);
+        const dailyEvents = allEvents.filter(e => e.is_recurring ? e.recurrence_days?.includes(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayOfWeek]) : e.date === isoDate);
         
         const dayEl = document.createElement('div');
         dayEl.className = 'calendar-day';
-        dayEl.innerHTML = `
-            <span class="text-xs font-bold text-slate-800">${d}</span>
-            <div class="flex flex-col gap-1 mt-1 overflow-hidden">
-                ${dailyEvents.slice(0, 2).map(ev => `
-                    <div class="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded-md truncate font-bold">${ev.start_time.slice(0,5)} ${ev.title}</div>
-                `).join('')}
-                ${dailyEvents.length > 2 ? `<div class="text-[8px] text-slate-400 font-black pl-1">+${dailyEvents.length - 2} SÉANCES</div>` : ''}
-            </div>
-            ${currentProfile?.role === 'admin' ? `<button onclick="event.stopPropagation(); quickAddAt('${isoDate}')" class="add-event-btn-day">+ AJOUTER</button>` : ''}
-        `;
-        dayEl.onclick = () => showDayDetails(isoDate, dailyEvents);
+        dayEl.innerHTML = `<span class="text-xs font-bold">${d}</span><div class="flex flex-col gap-1 mt-1">${dailyEvents.slice(0, 2).map(ev => `<div class="text-[7px] bg-blue-500 text-white px-1 py-0.5 rounded truncate font-bold">${ev.title}</div>`).join('')}</div>`;
         grid.appendChild(dayEl);
     }
 }
-
-function getEventsForDay(iso, dayNum) {
-    const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return allEvents.filter(e => e.is_recurring ? e.recurrence_days?.includes(daysMap[dayNum]) : e.date === iso);
-}
-
-// ADMIN
-function toggleRecurrenceDay(day, btn) {
-    if (selectedDays.includes(day)) {
-        selectedDays = selectedDays.filter(d => d !== day);
-        btn.classList.remove('active');
-    } else {
-        selectedDays.push(day);
-        btn.classList.add('active');
-    }
-}
-
-async function submitNewEvent() {
-    const title = document.getElementById('ev-title').value;
-    const location = document.getElementById('ev-location').value;
-    const start = document.getElementById('ev-start').value;
-    const end = document.getElementById('ev-end').value;
-    const isRecurring = document.getElementById('ev-recurring').checked;
-    
-    if (!title || !location || !start || !end) return alert("Veuillez remplir les champs obligatoires");
-
-    const { error } = await sb.from('events').insert([{
-        title, location, start_time: start, end_time: end,
-        date: isRecurring ? null : document.getElementById('ev-date').value,
-        is_recurring: isRecurring,
-        recurrence_days: isRecurring ? selectedDays : null,
-        max_participants: parseInt(document.getElementById('ev-max').value),
-        description: document.getElementById('ev-desc').value,
-        created_by: currentUser.id
-    }]);
-
-    if (!error) { alert("Événement publié !"); resetAdminForm(); refreshData(); }
-}
-
-async function deleteEvent(id) {
-    if (confirm("Supprimer cet événement ?")) {
-        await sb.from('events').delete().eq('id', id);
-        refreshData();
-    }
-}
-
-function resetAdminForm() {
-    document.getElementById('ev-title').value = '';
-    document.getElementById('ev-location').value = '';
-    document.getElementById('ev-date').value = '';
-    selectedDays = [];
-    document.querySelectorAll('.tag-day').forEach(b => b.classList.remove('active'));
-}
-
-// UI LOGIC
-function openAdminPanel() {
-    toggleUserMenu(); // Ferme le menu utilisateur automatiquement
-    document.getElementById('admin-pip').style.display = 'flex';
-    renderAdminList();
-}
-
-function openDeleteModal() {
-    toggleUserMenu(); // Ferme le menu
-    document.getElementById('modal-overlay').style.display = 'flex';
-}
-
-function closeDeleteModal() {
-    document.getElementById('modal-overlay').style.display = 'none';
-}
-
-async function confirmAccountDeletion() {
-    // Note: Pour supprimer un compte dans Supabase de manière sécurisée,
-    // il faut généralement appeler une fonction SQL ou utiliser l'API Admin de Supabase
-    // car un utilisateur ne peut pas se supprimer lui-même de la table 'auth.users' directement en JS Client.
-    alert("Procédure de suppression lancée. Dans un environnement de production, une Edge Function Supabase serait appelée ici pour nettoyer vos données et supprimer votre accès Auth.");
-    console.log("Suppression du profil pour l'ID:", currentUser.id);
-    
-    // Exemple d'action sur le profil avant déconnexion
-    const { error } = await sb.from('profiles').delete().eq('id', currentUser.id);
-    if (!error) {
-        logout();
-    }
-}
-
-function showDayDetails(iso, dayEvents) {
-    const container = document.getElementById('day-events-container');
-    document.getElementById('day-pip-date').innerText = new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-    if (dayEvents.length === 0) {
-        container.innerHTML = `<div class="py-10 text-center text-slate-400 font-bold italic">Aucune séance prévue.</div>`;
-    } else {
-        container.innerHTML = dayEvents.map(ev => `
-            <div class="p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100 group relative">
-                <div class="flex justify-between items-start mb-2">
-                    <h4 class="font-black text-slate-900 text-lg tracking-tight">${ev.title}</h4>
-                    <span class="text-[10px] font-black bg-white px-3 py-1.5 rounded-full border border-slate-200 text-blue-600 shadow-sm">${ev.start_time.slice(0,5)} - ${ev.end_time.slice(0,5)}</span>
-                </div>
-                <div class="text-xs font-bold text-slate-500 mb-4">📍 ${ev.location} • 👥 Max ${ev.max_participants}</div>
-                <div class="flex gap-2">
-                    <button onclick="register(false)" class="flex-1 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase hover:bg-slate-50 transition">Groupe</button>
-                    <button onclick="register(true)" class="flex-1 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase hover:bg-blue-700 transition">Privé 🔒</button>
-                </div>
-                ${currentProfile?.role === 'admin' ? `<button onclick="deleteEvent('${ev.id}')" class="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center font-bold shadow-lg opacity-0 group-hover:opacity-100 transition">×</button>` : ''}
-            </div>
-        `).join('');
-    }
-    document.getElementById('day-pip').style.display = 'flex';
-}
-
-function quickAddAt(date) { document.getElementById('ev-date').value = date; openAdminPanel(); }
-function changeMonth(step) { calendarDate.setMonth(calendarDate.getMonth() + step); renderCalendar(); }
-function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
-function closeAllPips() { 
-    document.getElementById('day-pip').style.display = 'none'; 
-    document.getElementById('admin-pip').style.display = 'none'; 
-}
-function logout() { sb.auth.signOut().then(() => window.location.reload()); }
-function openSettings() { alert("Réglages prochainement disponibles."); }
-function renderAdminList() {
-    const list = document.getElementById('admin-events-list');
-    list.innerHTML = allEvents.map(e => `
-        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
-            <div>
-                <p class="text-sm font-black text-slate-800">${e.title}</p>
-                <p class="text-[10px] text-slate-400 font-bold uppercase">${e.is_recurring ? 'Hebdomadaire' : e.date}</p>
-            </div>
-            <button onclick="deleteEvent('${e.id}')" class="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-600">Supprimer</button>
-        </div>
-    `).join('');
-}
 </script>
-
 </body>
 </html>
