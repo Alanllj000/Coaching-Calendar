@@ -51,7 +51,7 @@
         .event-dot { height: 5px; width: 5px; border-radius: 50%; display: inline-block; margin-right: 2px; }
         .dot-blue { background-color: #3b82f6; }
         .dot-red { background-color: #ef4444; }
-        .dot-recurring { border: 1px solid #3b82f6; background-color: transparent; }
+        .dot-exception { background-color: #8b5cf6; } /* Violet pour les exceptions */
 
         /* --- PIP --- */
         #mobile-pip-zone {
@@ -141,10 +141,11 @@
 
 <div id="mobile-pip-zone"></div>
 
+<!-- PANEL ADMIN / EDITION -->
 <div id="admin-panel" class="fullscreen-pip">
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
+            <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
             <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
         </div>
         <div class="space-y-5 pb-20">
@@ -153,7 +154,7 @@
             
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col">
-                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Date (Début récurrence)</label>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Date</label>
                     <input id="admin-date" type="date" class="input-field">
                 </div>
                 <div class="flex flex-col">
@@ -173,7 +174,7 @@
                 </div>
             </div>
 
-            <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+            <div id="recurrence-section" class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
                 <p class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-wider">Récurrence hebdomadaire</p>
                 <div class="flex flex-wrap gap-2">
                     <label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Lun</div></label>
@@ -186,7 +187,7 @@
                 </div>
             </div>
 
-            <button onclick="adminCreateEvent()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition">Créer</button>
+            <button id="admin-save-btn" onclick="adminCreateEvent()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition">Créer</button>
         </div>
     </div>
 </div>
@@ -247,17 +248,25 @@
             const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const dayOfWeekName = DAY_NAMES[loopDate.getDay()];
             
-            // LOGIQUE DE RÉCURRENCE : Filtrer les events qui correspondent à ce jour
-            const dayEvents = eventsCache.filter(e => {
-                // 1. Match direct de la date
-                if (e.date === dateStr) return true;
-                
-                // 2. Si récurrent : vérifier si la date de boucle est APRÈS la date de création
-                // et si le jour de la semaine est dans recurrence_days
-                if (e.is_recurring && e.recurrence_days && new Date(e.date) <= loopDate) {
-                    return e.recurrence_days.includes(dayOfWeekName);
+            // LOGIQUE DE RÉCURRENCE AVEC EXCEPTIONS
+            const dayEvents = [];
+
+            // 1. Chercher d'abord les événements réels (fixes ou exceptions) pour ce jour
+            const realEvents = eventsCache.filter(e => e.date === dateStr);
+            dayEvents.push(...realEvents);
+
+            // 2. Chercher les événements récurrents parents
+            const recurringParents = eventsCache.filter(e => e.is_recurring && e.recurrence_days && new Date(e.date) <= loopDate && !e.parent_event_id);
+            
+            recurringParents.forEach(parent => {
+                // Si le jour correspond à la récurrence
+                if (parent.recurrence_days.includes(dayOfWeekName)) {
+                    // VERIFIER SI UNE EXCEPTION EXISTE DEJA POUR CE PARENT A CETTE DATE
+                    const hasException = realEvents.some(re => re.parent_event_id === parent.id);
+                    if (!hasException) {
+                        dayEvents.push(parent);
+                    }
                 }
-                return false;
             });
             
             const cell = document.createElement('div');
@@ -265,10 +274,9 @@
             cell.onclick = (e) => openDayPip(dateStr, dayEvents, e);
             
             let dots = dayEvents.map(e => {
-                let isOriginal = e.date === dateStr;
                 let colorClass = e.registrations?.length >= e.max_participants ? 'dot-red' : 'dot-blue';
-                // Optionnel : style différent pour les récurrences (dot-recurring)
-                return `<span class="event-dot ${colorClass} ${!isOriginal ? 'opacity-60' : ''}"></span>`;
+                if (e.parent_event_id && e.date === dateStr) colorClass = 'dot-exception'; 
+                return `<span class="event-dot ${colorClass} ${e.is_recurring && e.date !== dateStr ? 'opacity-60' : ''}"></span>`;
             }).join('');
 
             cell.innerHTML = `
@@ -307,21 +315,96 @@
                             <div class="flex items-center gap-2">
                                 <h4 class="font-black text-slate-800">${e.title || "Titre"}</h4>
                                 ${isRecurringInstance ? '<i class="fas fa-redo text-[8px] text-slate-300"></i>' : ''}
+                                ${e.parent_event_id && e.date === dateStr ? '<span class="px-1.5 py-0.5 bg-violet-100 text-violet-600 text-[8px] font-bold rounded">MODIFIÉ</span>' : ''}
                             </div>
                             <div class="flex items-center gap-3 mt-1">
                                 <span class="text-blue-600 font-bold text-xs">${(e.start_time || "").substring(0, 5)}</span>
                                 <span class="text-slate-400 text-[10px]">${e.location || 'Lieu'}</span>
                             </div>
                         </div>
-                        <div class="text-right">
-                             <div class="text-[10px] font-black text-slate-400 uppercase mb-1">${e.registrations?.length || 0}/${e.max_participants}</div>
-                             <button class="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg active:scale-95">S'inscrire</button>
+                        <div class="flex items-center gap-3">
+                             <div class="text-right">
+                                <div class="text-[10px] font-black text-slate-400 uppercase mb-1">${e.registrations?.length || 0}/${e.max_participants}</div>
+                                <button class="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg active:scale-95">S'inscrire</button>
+                             </div>
+                             ${currentProfile?.role === 'admin' ? `
+                                <button onclick="editEventInstance('${e.id}', '${dateStr}')" class="p-2 text-slate-400 hover:text-blue-600">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                             ` : ''}
                         </div>
                     </div>`;
             });
         }
         content += `</div></div>`;
         zone.innerHTML = content;
+    }
+
+    // FONCTION DE MODIFICATION
+    async function editEventInstance(eventId, dateStr) {
+        const event = eventsCache.find(e => e.id === eventId);
+        if(!event) return;
+
+        closeMobilePip();
+        openAdminPanel();
+
+        // On change le titre du panel
+        document.getElementById('admin-panel-title').textContent = "Modifier l'instance";
+        document.getElementById('admin-title').value = event.title;
+        document.getElementById('admin-loc').value = event.location;
+        document.getElementById('admin-date').value = dateStr;
+        document.getElementById('admin-max').value = event.max_participants;
+        document.getElementById('admin-start').value = (event.start_time || "").substring(0, 5);
+        document.getElementById('admin-end').value = (event.end_time || "").substring(0, 5);
+
+        // On cache la récurrence car on modifie une occurrence précise
+        document.getElementById('recurrence-section').style.display = 'none';
+
+        // On change l'action du bouton
+        const btn = document.getElementById('admin-save-btn');
+        btn.textContent = "Enregistrer la modification";
+        btn.onclick = () => saveEventModification(event, dateStr);
+    }
+
+    async function saveEventModification(originalEvent, targetDate) {
+        const title = document.getElementById('admin-title').value;
+        const loc = document.getElementById('admin-loc').value;
+        const start = document.getElementById('admin-start').value;
+        const end = document.getElementById('admin-end').value;
+        const max = parseInt(document.getElementById('admin-max').value);
+
+        // Si c'est un event récurrent et qu'on modifie une date qui n'est pas la date d'origine
+        // on crée une "Exception" (nouvelle ligne avec parent_event_id)
+        const isException = originalEvent.is_recurring && originalEvent.date !== targetDate;
+
+        const payload = {
+            owner_id: currentUser.id,
+            title: title,
+            location: loc,
+            date: targetDate,
+            start_time: `${start}:00`,
+            end_time: `${end}:00`,
+            max_participants: max,
+            is_recurring: false, // L'exception elle-même n'est pas récurrente
+            parent_event_id: originalEvent.is_recurring ? originalEvent.id : null,
+            is_public: true
+        };
+
+        let result;
+        if (originalEvent.date === targetDate && !originalEvent.is_recurring) {
+            // Modification simple d'un event fixe
+            result = await sb.from('events').update(payload).eq('id', originalEvent.id);
+        } else {
+            // Création d'une exception
+            result = await sb.from('events').insert([payload]);
+        }
+
+        if(!result.error) {
+            closeAdminPanel();
+            await fetchEvents();
+        } else {
+            alert(result.error.message);
+        }
     }
 
     async function adminCreateEvent() {
@@ -356,19 +439,43 @@
             closeAdminPanel();
             await fetchEvents();
         } else {
-            console.error("DB Error:", error);
             alert(`Erreur : ${error.message}`);
         }
     }
 
-    function openAdminFromPip(date) { closeMobilePip(); document.getElementById('admin-date').value = date; openAdminPanel(); }
-    function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
-    function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
-    function closeMobilePip() { document.getElementById('mobile-pip-zone').style.pointerEvents = 'none'; document.getElementById('mobile-pip-zone').innerHTML = ''; }
+    function openAdminFromPip(date) { 
+        closeMobilePip(); 
+        resetAdminForm();
+        document.getElementById('admin-date').value = date; 
+        openAdminPanel(); 
+    }
+
+    function openAdminPanel() { 
+        document.getElementById('admin-panel').style.display = 'flex'; 
+    }
+
+    function closeAdminPanel() { 
+        document.getElementById('admin-panel').style.display = 'none'; 
+        resetAdminForm();
+    }
+
+    function closeMobilePip() { 
+        document.getElementById('mobile-pip-zone').style.pointerEvents = 'none'; 
+        document.getElementById('mobile-pip-zone').innerHTML = ''; 
+    }
+
     function resetAdminForm() {
+        document.getElementById('admin-panel-title').textContent = "Nouvel Événement";
+        document.getElementById('recurrence-section').style.display = 'block';
+        const btn = document.getElementById('admin-save-btn');
+        btn.textContent = "Créer";
+        btn.onclick = adminCreateEvent;
+
         ['admin-title','admin-loc','admin-date','admin-start','admin-end'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('admin-max').value = 5;
         document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
     }
+
     async function handleAuth() {
         const e = document.getElementById('auth-email').value, p = document.getElementById('auth-password').value;
         const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
