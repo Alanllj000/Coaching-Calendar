@@ -14,6 +14,45 @@
     <link rel="manifest" href="./manifest.json">
     
     <style>
+
+        /* === VIEWPORT UTILE === */
+        :root {
+            --vh: 1vh; /* fallback */
+        }
+        
+        
+        .calendar-container {
+            height: calc((var(--vh) * 100) - 80px);
+        }
+        
+        
+        /* === PIP MOBILE (SOUS CALENDRIER) === */
+        @media (max-width: 768px) {
+            #pip-container {
+                position: static;
+                margin-top: 1rem;
+        }
+        
+        
+            .day-pip {
+                position: static !important;
+                width: 100% !important;
+                min-height: 220px;
+                max-height: 60vh;
+                border-radius: 1.5rem;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+                margin-bottom: 1rem;
+            }
+        }
+        
+        
+        /* === PIP DESKTOP (MIN SIZE) === */
+        @media (min-width: 769px) {
+        .day-pip {
+        min-width: 300px;
+        min-height: 320px;
+        }
+        }
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
         body { 
@@ -942,3 +981,4 @@
 </script>
 </body>
 </html>
+
