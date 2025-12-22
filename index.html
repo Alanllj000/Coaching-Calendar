@@ -26,10 +26,10 @@
         }
 
         /* --- AUTH SCREEN --- */
-        /* Correction 1 : Pleine largeur mobile */
+        /* Correction : Force la largeur à 100% sans restriction */
         #auth-container-inner {
             width: 100%;
-            padding: 0 1rem;
+            padding: 0 1.5rem; /* Padding horizontal léger */
         }
         @media (min-width: 768px) {
             #auth-container-inner { max-width: 450px; }
@@ -37,17 +37,17 @@
 
         .input-field {
             width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; 
-            padding: 1.2rem; /* Plus d'espace interne */
+            padding: 1.2rem; 
             border-radius: 1rem; 
-            font-size: 1.1rem; /* Texte plus gros */
+            font-size: 1.1rem; 
             font-weight: 600; outline: none; transition: all 0.2s;
         }
         .input-field:focus { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
 
         /* --- CALENDRIER --- */
         .calendar-container {
-            /* Laisser 50% de la hauteur libre en bas pour la PiP sur mobile */
-            height: 50vh; 
+            /* On laisse de la place en bas pour la PiP mobile */
+            height: 55vh; 
             overflow-y: auto;
             scroll-behavior: smooth;
         }
@@ -82,48 +82,40 @@
         .calendar-day.empty { background-color: #f8fafc; cursor: default; }
 
         .event-dot {
-            height: 8px; width: 8px; /* Points plus gros */
+            height: 8px; width: 8px; 
             background-color: #3b82f6; border-radius: 50%; display: inline-block; margin-right: 3px;
         }
         .event-dot.full { background-color: #ef4444; }
         .event-dot.private { background-color: #a855f7; }
 
-        /* --- PIP WINDOWS (Jours) --- */
-        .day-pip {
+        /* --- PIP WINDOWS (DESKTOP SEULEMENT ICI) --- */
+        .day-pip-desktop {
+            position: fixed;
+            width: 350px;
+            height: 450px;
             background: white;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 1.5rem;
+            border: 1px solid #e2e8f0;
             display: flex;
             flex-direction: column;
             z-index: 2000;
             overflow: hidden;
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* CONFIG MOBILE (CORRIGÉE : Fixé en bas, 50% hauteur) */
-        @media (max-width: 768px) {
-            .day-pip {
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 50vh !important; /* Prend exactement la moitié basse */
-                border-radius: 2rem 2rem 0 0;
-                border: 1px solid #e2e8f0;
-                border-bottom: none;
-                animation: slideUp 0.3s ease-out;
-                box-shadow: 0 -10px 50px rgba(0,0,0,0.2);
-            }
-        }
-
-        /* CONFIG DESKTOP */
-        @media (min-width: 769px) {
-            .day-pip {
-                position: fixed;
-                width: 350px;
-                height: 450px;
-                border-radius: 1.5rem;
-                border: 1px solid #e2e8f0;
-            }
+        /* --- MOBILE PIP ZONE STYLE --- */
+        /* Cette classe est appliquée à la PiP injectée dans la zone mobile */
+        .mobile-pip-card {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-top-left-radius: 2rem;
+            border-top-right-radius: 2rem;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
         }
 
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -134,31 +126,29 @@
             display: none; flex-direction: column; overflow-y: auto;
         }
         
-        /* Correction Menus : Texte plus gros */
-        .menu-text-xl { font-size: 1.15rem; } 
         .input-xl { font-size: 1.2rem; padding: 1.2rem; }
     </style>
 </head>
 <body onclick="handleBodyClick(event)">
 
 <!-- AUTH SCREEN -->
-<div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999]">
-    <!-- Correction 1: Prend tout l'espace horizontal sur mobile -->
-    <div id="auth-container-inner" class="flex flex-col justify-center h-full">
-        <h2 class="text-5xl font-black tracking-tighter text-slate-900 mb-10 text-center">Coach Pro</h2>
+<div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
+    <!-- FULL WIDTH CONTAINER MOBILE -->
+    <div id="auth-container-inner" class="flex flex-col justify-center h-full w-full max-w-none md:max-w-md">
+        <h2 class="text-5xl font-black tracking-tighter text-slate-900 mb-12 text-center">Coach Pro</h2>
         
         <div id="auth-form" class="space-y-6 w-full">
-            <input id="auth-email" type="email" placeholder="Email" class="input-field text-lg">
-            <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field text-lg">
+            <input id="auth-email" type="email" placeholder="Email" class="input-field text-lg w-full">
+            <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field text-lg w-full">
             
             <div id="register-fields" class="hidden space-y-6">
-                <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field text-lg">
-                <input id="auth-lastname" type="text" placeholder="Nom" class="input-field text-lg">
-                <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field text-lg">
+                <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field text-lg w-full">
+                <input id="auth-lastname" type="text" placeholder="Nom" class="input-field text-lg w-full">
+                <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field text-lg w-full">
             </div>
 
-            <button onclick="handleAuth()" id="auth-btn" class="w-full py-6 bg-slate-900 text-white text-xl font-black rounded-2xl hover:scale-[1.01] active:scale-[0.98] transition shadow-xl mt-4">Se connecter</button>
-            <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-base font-bold text-slate-400 cursor-pointer mt-6 py-4">Créer un compte</p>
+            <button onclick="handleAuth()" id="auth-btn" class="w-full py-6 bg-slate-900 text-white text-xl font-black rounded-2xl shadow-xl mt-6 active:scale-95 transition-transform">Se connecter</button>
+            <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-base font-bold text-slate-400 cursor-pointer mt-8 py-4">Créer un compte</p>
         </div>
     </div>
 </div>
@@ -168,11 +158,8 @@
     <!-- Header -->
     <div class="px-4 py-4 md:px-8 md:py-6 flex justify-between items-center bg-white/95 backdrop-blur-md z-30 sticky top-0 shadow-sm border-b border-slate-100 min-h-[110px]">
         <div class="flex flex-col justify-center">
-            <!-- Correction 6 : Mois/Année GIGANTESQUE -->
             <h1 id="month-label" class="text-5xl md:text-6xl font-black tracking-tighter capitalize text-slate-900 leading-none mb-3">...</h1>
-            
             <div class="flex gap-3">
-                <!-- Correction 4 : Flèches bien visibles -->
                 <button onclick="changeMonth(-1)" class="w-14 h-14 flex items-center justify-center bg-white border-2 border-slate-200 rounded-2xl text-slate-700 hover:bg-slate-100 active:scale-95 shadow-sm">
                     <i class="fas fa-chevron-left text-2xl font-black"></i>
                 </button>
@@ -184,14 +171,12 @@
         
         <div class="relative group-menu">
             <button onclick="toggleUserMenu(event)" class="flex items-center gap-3 bg-white p-2 pr-2 md:pr-4 rounded-full shadow-md border border-slate-200 hover:border-slate-300 transition active:scale-95">
-                <!-- Correction 5 : Rond utilisateur plus grand -->
                 <div id="user-initials" class="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner">?</div>
                 <div class="hidden md:block text-left">
                     <p id="user-display-name" class="text-xs font-black uppercase text-slate-900">Chargement</p>
                 </div>
             </button>
             
-            <!-- Correction 5 : Menu Dropdown plus grand et textes lisibles -->
             <div id="user-menu" class="absolute right-0 mt-4 w-80 md:w-96 bg-white rounded-3xl shadow-2xl border border-slate-100 p-3 z-[3500] hidden">
                 <button onclick="openSettings()" class="w-full text-left p-5 hover:bg-slate-50 rounded-2xl font-bold text-lg text-slate-700 flex items-center gap-4 mb-2">
                     <i class="fas fa-cog text-xl"></i> Réglages Profil
@@ -218,9 +203,14 @@
     </div>
 </div>
 
-<!-- CONTAINER PIP (Jours) -->
-<!-- La PiP Mobile sera injectée ici et fixée en bas -->
-<div id="pip-container"></div>
+<!-- CONTAINER PIP DESKTOP (Classique) -->
+<div id="pip-container-desktop" class="hidden md:block"></div>
+
+<!-- ZONE PIP MOBILE (Dédiée, cachée sur desktop) -->
+<!-- C'est ici que les PiP mobile vont s'afficher, en bas de l'écran -->
+<div id="mobile-pip-zone" class="fixed bottom-0 left-0 w-full h-[45vh] z-[3000] md:hidden pointer-events-none">
+    <!-- Le contenu sera injecté ici par JS -->
+</div>
 
 <!-- REGLAGES (Fullscreen) -->
 <div id="settings-pip" class="fullscreen-pip">
@@ -231,7 +221,6 @@
         </div>
 
         <div class="space-y-8 pb-32">
-            <!-- Correction : Textes et inputs plus gros -->
             <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
                 <h3 class="text-sm font-black uppercase text-slate-400 mb-6 tracking-wider">Mes informations</h3>
                 <div class="grid md:grid-cols-2 gap-6 mb-6">
@@ -256,7 +245,6 @@
                 <button onclick="openPasswordModal()" class="w-full py-5 bg-white border-2 border-slate-200 text-slate-700 font-black rounded-2xl text-lg hover:bg-slate-50 transition">Modifier mot de passe</button>
             </div>
             
-            <!-- Notifications (avec bouton retour) -->
              <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
                 <h3 class="text-sm font-black uppercase text-slate-400 mb-6 tracking-wider">Notifications</h3>
                 <div class="flex items-center gap-4 mb-6">
@@ -265,7 +253,6 @@
                     </div>
                     <span class="font-bold text-lg">Activer les rappels</span>
                 </div>
-                <!-- ... reste des notifs ... -->
              </div>
         </div>
     </div>
@@ -301,7 +288,6 @@
                     </div>
                 </div>
 
-                <!-- Récurrence -->
                 <div class="bg-white p-6 rounded-3xl border border-slate-200 mt-6">
                     <div class="flex items-center gap-4 mb-6">
                         <input type="checkbox" id="admin-is-recurring" class="w-6 h-6 accent-slate-900" onchange="toggleRecurrenceUI()">
@@ -376,7 +362,6 @@
 </div>
 
 <script>
-    // --- SUPABASE & INIT ---
     const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -404,20 +389,56 @@
         await loadProfile(); await fetchEvents();
     }
 
-    // --- LOGIQUE PIP (CORRECTION POINT 2 & 3) ---
+    // --- NOUVELLE LOGIQUE PIP (ZONE DEDIEE MOBILE) ---
     function openDayPip(dateStr, events, evt) {
         evt.stopPropagation();
         const isMobile = window.innerWidth <= 768;
-        const pipContainer = document.getElementById('pip-container');
 
-        // FORCE RESET SUR MOBILE (1 seule fenêtre, remplace la précédente)
+        /* --- CAS MOBILE : ZONE DEDIEE --- */
         if (isMobile) {
-            pipContainer.innerHTML = '';
-            openPips = [];
+            const mobileZone = document.getElementById('mobile-pip-zone');
+            
+            // 1. On vide la zone = RESET complet
+            mobileZone.innerHTML = '';
+            // On active les pointer-events pour que la carte soit cliquable (la zone parente est 'none' par défaut pour laisser passer les clics quand vide)
+            mobileZone.style.pointerEvents = 'auto';
+
+            // 2. On crée le contenu
+            const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+            let content = `
+                <div class="mobile-pip-card bg-white h-full flex flex-col">
+                    <div class="flex items-center justify-between p-6 border-b border-slate-100">
+                        <span class="uppercase font-black text-xl text-slate-800">${dateLabel}</span>
+                        <button onclick="closeMobilePip()" class="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-full text-slate-600 font-bold text-2xl">&times;</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 pb-20">`;
+            
+            if (!events || events.length === 0) {
+                content += `<div class="h-full flex items-center justify-center text-slate-400 font-bold text-xl">Rien de prévu 😴</div>`;
+            } else {
+                events.forEach(e => {
+                    const start = e.start_time ? new Date(e.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                    content += `
+                        <div onclick="openBooking('${e.id}')" class="p-5 border-2 border-slate-100 rounded-3xl bg-white hover:border-blue-200 shadow-sm active:scale-95 transition-transform">
+                            <h4 class="text-2xl font-black text-slate-800 mb-2">${e.title || e.location}</h4>
+                            <div class="flex items-center gap-3">
+                                <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg font-bold text-sm">${start}</span>
+                                <span class="text-slate-400 text-sm font-bold">${e.registrations.length} / ${e.max_participants} pers.</span>
+                            </div>
+                        </div>`;
+                });
+            }
+            content += `</div></div>`;
+            
+            mobileZone.innerHTML = content;
+            return; // STOP pour mobile
         }
 
-        // DESKTOP LIMIT
-        if (!isMobile && openPips.length >= 5) {
+        /* --- CAS DESKTOP : COMPORTEMENT FLOTTANT --- */
+        const deskContainer = document.getElementById('pip-container-desktop');
+        
+        // Gestion Max 5
+        if (openPips.length >= 5) {
             const old = document.getElementById(openPips.shift());
             if(old) old.remove();
         }
@@ -427,53 +448,50 @@
 
         const pip = document.createElement('div');
         pip.id = pipId;
-        pip.className = 'day-pip shadow-2xl'; // Les styles CSS gèrent la position bottom-0 en mobile
+        pip.className = 'day-pip-desktop';
 
         const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
         let html = `
-            <div class="pip-header flex items-center justify-between p-5 border-b border-slate-100 bg-white">
-                <span class="uppercase font-black text-lg tracking-wider text-slate-800">${dateLabel}</span>
-                <button onclick="closePip('${pipId}')" class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full text-slate-600 font-bold hover:bg-slate-200 text-xl">×</button>
+            <div class="pip-header flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50 cursor-move">
+                <span class="font-bold text-slate-700">${dateLabel}</span>
+                <button onclick="closePip('${pipId}')" class="hover:text-red-500 font-bold px-2">×</button>
             </div>
-            <div class="p-4 space-y-4 flex-1 overflow-y-auto pb-20">`; // Padding bottom extra pour scroll
-
+            <div class="p-3 space-y-3 flex-1 overflow-y-auto">`;
+            
         if (!events || events.length === 0) {
-            html += `<p class="text-center text-lg text-slate-400 mt-10 font-bold">Rien de prévu 😴</p>`;
+             html += `<p class="text-center text-sm text-slate-400 mt-4">Aucun événement</p>`;
         } else {
             events.forEach(e => {
-                const start = e.start_time ? new Date(e.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
-                const count = e.registrations ? e.registrations.length : 0;
+                const start = new Date(e.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
                 html += `
-                    <div onclick="openBooking('${e.id}')" class="cursor-pointer border-2 border-slate-100 rounded-2xl p-5 bg-white hover:border-blue-200 transition shadow-sm">
-                        <div class="flex justify-between items-start mb-2">
-                            <h4 class="text-xl font-black text-slate-800">${e.title || e.location}</h4>
-                            <span class="text-sm font-bold bg-slate-100 px-3 py-1 rounded-lg text-slate-600">${start}</span>
-                        </div>
-                        <p class="text-base text-slate-500 font-medium flex items-center gap-2">
-                            <i class="fas fa-user-friends text-sm"></i> ${count} / ${e.max_participants}
-                        </p>
-                    </div>
-                `;
+                    <div onclick="openBooking('${e.id}')" class="cursor-pointer border border-slate-200 rounded-xl p-3 hover:bg-blue-50 transition">
+                        <div class="font-bold text-slate-800 text-sm">${e.title}</div>
+                        <div class="text-xs text-slate-500">${start} • ${e.registrations.length}/${e.max_participants}</div>
+                    </div>`;
             });
         }
         html += `</div>`;
         pip.innerHTML = html;
-
-        pipContainer.appendChild(pip);
+        
+        deskContainer.appendChild(pip);
         openPips.push(pipId);
-
-        // Positionnement Desktop seulement (Mobile géré par CSS fixed bottom-0)
-        if (!isMobile) {
-            dragElement(pip);
-            const cal = document.getElementById('calendar-grid');
-            if (cal) {
-                const rect = cal.getBoundingClientRect();
-                const offset = (openPips.length - 1) * 30;
-                pip.style.top = `${rect.top + 50 + offset}px`;
-                pip.style.left = `${rect.left + 50 + offset}px`;
-            }
+        
+        // Positionnement auto (cascade)
+        dragElement(pip);
+        const cal = document.getElementById('calendar-grid');
+        if (cal) {
+            const rect = cal.getBoundingClientRect();
+            const offset = (openPips.length - 1) * 30;
+            pip.style.top = `${rect.top + 50 + offset}px`;
+            pip.style.left = `${rect.left + 50 + offset}px`;
         }
+    }
+
+    // Nouvelle fonction de fermeture pour Mobile
+    function closeMobilePip() {
+        const zone = document.getElementById('mobile-pip-zone');
+        zone.innerHTML = '';
+        zone.style.pointerEvents = 'none';
     }
 
     function closePip(id) {
@@ -482,7 +500,6 @@
         openPips = openPips.filter(p => p !== id);
     }
 
-    // --- DRAG (Desktop) ---
     function dragElement(elmnt) {
         let pos1=0,pos2=0,pos3=0,pos4=0;
         const header = elmnt.querySelector('.pip-header');
@@ -573,7 +590,6 @@
     async function adminCreateEvent() {
         const t=document.getElementById('admin-title').value, loc=document.getElementById('admin-loc').value, ds=document.getElementById('admin-date').value, s=document.getElementById('admin-start').value, e=document.getElementById('admin-end').value;
         if(!t || !loc || !ds) return alert("Champs manquants");
-        // Simplified creation logic for brevity - assuming previous logic works
         const { error } = await sb.from('events').insert([{title:t, location:loc, start_time:`${ds}T${s}:00`, end_time:`${ds}T${e}:00`, max_participants: document.getElementById('admin-max').value}]);
         if(!error) { alert("Créé"); document.getElementById('admin-panel').style.display='none'; fetchEvents(); }
     }
