@@ -600,123 +600,163 @@
         renderCalendar();
     }
 
-    // --- PIP LOGIC ---
-    function openDayPip(dateStr, events, eventObj) {
-        eventObj.stopPropagation();
+/* ==========================================================
+   VIEWPORT UTILE (MOBILE SAFE)
+   ========================================================== */
+function updateViewportHeight() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+updateViewportHeight();
+window.addEventListener('resize', updateViewportHeight);
 
-        // Mobile: fermer les autres pips
-        if(window.innerWidth <= 768) {
-            document.getElementById('pip-container').innerHTML = '';
-            openPips = [];
-        } else if (openPips.length >= 5) {
-            const oldId = openPips.shift();
-            const oldEl = document.getElementById(oldId);
-            if (oldEl) oldEl.remove();
-        }
+/* ==========================================================
+   VARIABLES GLOBALES
+   ========================================================== */
+let openPips = [];
+const MAX_DESKTOP_PIPS = 5;
 
-        const pipId = `pip-${dateStr}`;
-        if (document.getElementById(pipId)) return;
+/* ==========================================================
+   OUVERTURE PiP (RESPONSIVE)
+   ========================================================== */
+function openDayPip(dateStr, events, evt) {
+    evt.stopPropagation();
 
-        const pip = document.createElement('div');
-        pip.id = pipId;
-        pip.className = 'day-pip';
-        
-        const dateDisplay = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const isMobile = window.innerWidth <= 768;
+    const pipContainer = document.getElementById('pip-container');
 
-        let contentHtml = `<div class="space-y-3 p-4 overflow-y-auto flex-1 pb-10">`;
-        if (events.length === 0) contentHtml += `<p class="text-slate-400 text-center text-xs mt-10">Aucun événement</p>`;
-        
-        events.sort((a,b) => a.start_time.localeCompare(b.start_time)).forEach(evt => {
-            const start = new Date(evt.start_time).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-            const end = new Date(evt.end_time).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-            const count = evt.registrations.length;
-            const isPrivate = evt.is_private_booked;
-            
-            const myReg = evt.registrations.find(r => r.user_id === currentUser.id);
-            const statusBtn = myReg ? 
-                `<span class="text-green-600 font-bold text-[10px] bg-green-50 px-2 py-1 rounded">Inscrit</span>` :
-                (count >= evt.max_participants || isPrivate) ? 
-                `<span class="text-red-400 font-bold text-[10px]">Complet</span>` :
-                `<button onclick="openBooking('${evt.id}')" class="bg-slate-900 text-white text-[10px] font-bold px-3 py-1 rounded-lg">Réserver</button>`;
+    /* ---------- MOBILE : UNE SEULE PiP ---------- */
+    if (isMobile) {
+        pipContainer.innerHTML = '';
+        openPips = [];
+    }
 
-            contentHtml += `
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm">
-                    <div class="flex justify-between items-start mb-1">
-                        <div>
-                            <h4 class="font-bold text-sm text-slate-800">${evt.title || evt.location}</h4>
-                            <p class="text-[10px] text-slate-500">${evt.location}</p>
-                        </div>
-                        ${statusBtn}
-                    </div>
-                    <div class="flex justify-between text-[11px] text-slate-500 font-medium mt-2 pt-2 border-t border-slate-100">
-                        <span>${start} - ${end}</span>
-                        <span>${isPrivate ? 'Privé' : count + '/' + evt.max_participants}</span>
-                    </div>
+    /* ---------- DESKTOP : MAX 5 PiP ---------- */
+    if (!isMobile && openPips.length >= MAX_DESKTOP_PIPS) {
+        const oldId = openPips.shift();
+        const oldEl = document.getElementById(oldId);
+        if (oldEl) oldEl.remove();
+    }
+
+    const pipId = `pip-${dateStr}`;
+    if (document.getElementById(pipId)) return;
+
+    const pip = document.createElement('div');
+    pip.id = pipId;
+    pip.className = 'day-pip bg-white flex flex-col overflow-hidden';
+
+    const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+    });
+
+    /* ---------- CONTENU ---------- */
+    let content = `<div class="p-4 space-y-3 overflow-y-auto flex-1">`;
+
+    if (!events || events.length === 0) {
+        content += `<p class="text-center text-xs text-slate-400 mt-6">
+            Aucun événement
+        </p>`;
+    } else {
+        events.forEach(e => {
+            const start = e.start_time
+                ? new Date(e.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                : '--:--';
+
+            const end = e.end_time
+                ? new Date(e.end_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                : '--:--';
+
+            const count = Array.isArray(e.registrations) ? e.registrations.length : 0;
+
+            content += `
+                <div class="border rounded-xl p-3 bg-slate-50">
+                    <h4 class="text-sm font-bold">
+                        ${e.title || e.location || 'Événement'}
+                    </h4>
+                    <p class="text-[11px] text-slate-500">
+                        ${start} – ${end} • ${count}/${e.max_participants ?? '∞'}
+                    </p>
                 </div>
             `;
         });
-
-        if(currentProfile.role === 'admin') {
-            contentHtml += `<button onclick="openAdminPanel('${dateStr}')" class="w-full mt-4 py-3 border border-dashed border-slate-300 text-slate-400 text-xs font-bold rounded-xl hover:bg-slate-50">+ Ajouter Event (Admin)</button>`;
-        }
-        contentHtml += `</div>`;
-
-        pip.innerHTML = `
-            <div class="pip-header bg-white p-4 flex justify-between items-center border-b border-slate-100 cursor-move rounded-t-[1.5rem]">
-                <span class="text-xs font-black uppercase text-slate-600">${dateDisplay}</span>
-                <button onclick="closePip('${pipId}')" class="text-slate-300 hover:text-red-500 font-bold text-lg px-2">×</button>
-            </div>
-            ${contentHtml}
-        `;
-
-        document.getElementById('pip-container').appendChild(pip);
-        openPips.push(pipId);
-        
-        // Drag Logic pour Desktop
-        if (window.innerWidth >= 769) {
-            dragElement(pip);
-            const offset = (openPips.length - 1) * 30;
-            // Position initiale absolue
-            const rect = document.getElementById('calendar-grid').getBoundingClientRect();
-            pip.style.top = `${rect.top + 50 + offset}px`;
-            pip.style.left = `${rect.left + 50 + offset}px`;
-        }
     }
 
-    function closePip(id) {
-        document.getElementById(id).remove();
-        openPips = openPips.filter(p => p !== id);
-    }
+    content += `</div>`;
 
-    function dragElement(elmnt) {
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-        const header = elmnt.querySelector('.pip-header');
-        if (header) header.onmousedown = dragMouseDown;
+    /* ---------- STRUCTURE PiP ---------- */
+    pip.innerHTML = `
+        <div class="pip-header flex items-center justify-between p-4 border-b font-bold text-xs">
+            <span class="uppercase">${dateLabel}</span>
+            <button onclick="closePip('${pipId}')" class="text-lg leading-none">×</button>
+        </div>
+        ${content}
+    `;
 
-        function dragMouseDown(e) {
-            e.preventDefault();
-            elmnt.style.zIndex = parseInt(elmnt.style.zIndex || 2000) + 1;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            document.onmousemove = elementDrag;
-        }
+    pipContainer.appendChild(pip);
+    openPips.push(pipId);
 
-        function elementDrag(e) {
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-        }
+    /* ---------- DESKTOP : DRAG + POSITION ---------- */
+    if (!isMobile) {
+        dragElement(pip);
 
-        function closeDragElement() {
-            document.onmouseup = null;
-            document.onmousemove = null;
+        const cal = document.getElementById('calendar-grid');
+        if (cal) {
+            const rect = cal.getBoundingClientRect();
+            const offset = (openPips.length - 1) * 25;
+            pip.style.position = 'fixed';
+            pip.style.top = `${rect.top + 40 + offset}px`;
+            pip.style.left = `${rect.left + 40 + offset}px`;
         }
     }
+}
+
+/* ==========================================================
+   FERMETURE PiP
+   ========================================================== */
+function closePip(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.remove();
+    openPips = openPips.filter(p => p !== id);
+}
+
+/* ==========================================================
+   DRAG DESKTOP
+   ========================================================== */
+function dragElement(elmnt) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const header = elmnt.querySelector('.pip-header');
+
+    if (!header) return;
+
+    header.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDrag;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+    }
+
+    function closeDrag() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
 
     // --- ADMIN LOGIC (Updated) ---
     function toggleRecurrenceUI() {
@@ -942,3 +982,4 @@
 </script>
 </body>
 </html>
+
