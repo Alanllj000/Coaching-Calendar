@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Coach Pro - App</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -25,530 +22,295 @@
             touch-action: pan-x pan-y;
         }
 
-        /* --- AUTH SCREEN --- */
-        /* Correction : Force la largeur à 100% sans restriction */
-        #auth-container-inner {
-            width: 100%;
-            padding: 0 1.5rem; /* Padding horizontal léger */
-        }
-        @media (min-width: 768px) {
-            #auth-container-inner { max-width: 450px; }
-        }
+        /* --- AUTH --- */
+        #auth-container-inner { width: 100%; padding: 0 1.5rem; }
+        @media (min-width: 768px) { #auth-container-inner { max-width: 400px; } }
 
         .input-field {
             width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; 
-            padding: 1.2rem; 
-            border-radius: 1rem; 
-            font-size: 1.1rem; 
-            font-weight: 600; outline: none; transition: all 0.2s;
+            padding: 1rem; border-radius: 1rem; font-weight: 600; outline: none; transition: all 0.2s;
         }
-        .input-field:focus { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .input-field:focus { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.05); }
 
         /* --- CALENDRIER --- */
-        .calendar-container {
-            /* On laisse de la place en bas pour la PiP mobile */
-            height: 55vh; 
-            overflow-y: auto;
-            scroll-behavior: smooth;
-        }
-        @media (min-width: 769px) {
-            .calendar-container { height: calc(100vh - 120px); padding-bottom: 100px; }
-        }
+        .calendar-container { height: 60vh; overflow-y: auto; scroll-behavior: smooth; }
+        @media (min-width: 769px) { .calendar-container { height: calc(100vh - 110px); padding-bottom: 80px; } }
 
         .calendar-grid { 
-            display: grid; 
-            grid-template-columns: repeat(7, 1fr); 
-            gap: 1px; 
-            background-color: #e2e8f0; 
-            border-radius: 1.5rem; 
-            overflow: hidden; 
-            border: 1px solid #e2e8f0;
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; 
+            background-color: #e2e8f0; border-radius: 1.5rem; overflow: hidden; border: 1px solid #e2e8f0;
         }
 
         .calendar-day { 
-            min-height: 80px;
-            background-color: white; 
-            padding: 0.25rem; 
-            display: flex; 
-            flex-direction: column; 
-            cursor: pointer;
-            transition: background 0.2s;
-            position: relative;
+            min-height: 90px; background-color: white; padding: 0.5rem; 
+            display: flex; flex-direction: column; cursor: pointer; transition: background 0.2s; position: relative;
         }
-        @media (min-width: 768px) {
-            .calendar-day { min-height: 120px; padding: 0.5rem; }
-        }
-        .calendar-day:hover:not(.empty) { background-color: #f1f5f9; }
-        .calendar-day.empty { background-color: #f8fafc; cursor: default; }
+        .calendar-day:hover:not(.empty) { background-color: #f8fafc; }
+        .calendar-day.empty { background-color: #f1f5f9; cursor: default; }
 
-        .event-dot {
-            height: 8px; width: 8px; 
-            background-color: #3b82f6; border-radius: 50%; display: inline-block; margin-right: 3px;
-        }
-        .event-dot.full { background-color: #ef4444; }
-        .event-dot.private { background-color: #a855f7; }
+        .event-dot { height: 6px; width: 6px; border-radius: 50%; display: inline-block; margin-right: 2px; }
+        .dot-blue { background-color: #3b82f6; }
+        .dot-red { background-color: #ef4444; }
+        .dot-purple { background-color: #a855f7; }
 
-        /* --- PIP WINDOWS (DESKTOP SEULEMENT ICI) --- */
-        .day-pip-desktop {
-            position: fixed;
-            width: 350px;
-            height: 450px;
-            background: white;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            border-radius: 1.5rem;
-            border: 1px solid #e2e8f0;
-            display: flex;
-            flex-direction: column;
-            z-index: 2000;
-            overflow: hidden;
-        }
-
-        /* --- MOBILE PIP ZONE STYLE --- */
-        /* Cette classe est appliquée à la PiP injectée dans la zone mobile */
+        /* --- PIP ANIMATIONS --- */
         .mobile-pip-card {
-            width: 100%;
-            height: 100%;
-            background: white;
-            border-top-left-radius: 2rem;
-            border-top-right-radius: 2rem;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
-            display: flex;
-            flex-direction: column;
-            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 100%; height: 100%; background: white;
+            border-top-left-radius: 2rem; border-top-right-radius: 2rem;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+            display: flex; flex-direction: column;
+            animation: slideUp 0.45s cubic-bezier(0.32, 0.72, 0, 1); /* Plus doux */
             overflow: hidden;
         }
-
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        /* --- FULLSCREEN LAYERS --- */
+        /* Day Checkboxes Styling */
+        .day-checkbox:checked + .day-label {
+            background-color: #0f172a;
+            color: white;
+            border-color: #0f172a;
+        }
+
         .fullscreen-pip {
             position: fixed; inset: 0; background: white; z-index: 4000;
             display: none; flex-direction: column; overflow-y: auto;
         }
-        
-        .input-xl { font-size: 1.2rem; padding: 1.2rem; }
     </style>
 </head>
 <body onclick="handleBodyClick(event)">
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
-    <!-- FULL WIDTH CONTAINER MOBILE -->
-    <div id="auth-container-inner" class="flex flex-col justify-center h-full w-full max-w-none md:max-w-md">
-        <h2 class="text-5xl font-black tracking-tighter text-slate-900 mb-12 text-center">Coach Pro</h2>
-        
-        <div id="auth-form" class="space-y-6 w-full">
-            <input id="auth-email" type="email" placeholder="Email" class="input-field text-lg w-full">
-            <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field text-lg w-full">
-            
-            <div id="register-fields" class="hidden space-y-6">
-                <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field text-lg w-full">
-                <input id="auth-lastname" type="text" placeholder="Nom" class="input-field text-lg w-full">
-                <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field text-lg w-full">
+    <div id="auth-container-inner" class="flex flex-col justify-center h-full">
+        <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Coach Pro</h2>
+        <div id="auth-form" class="space-y-4">
+            <input id="auth-email" type="email" placeholder="Email" class="input-field">
+            <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
+            <div id="register-fields" class="hidden space-y-4">
+                <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
+                <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
+                <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
             </div>
-
-            <button onclick="handleAuth()" id="auth-btn" class="w-full py-6 bg-slate-900 text-white text-xl font-black rounded-2xl shadow-xl mt-6 active:scale-95 transition-transform">Se connecter</button>
-            <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-base font-bold text-slate-400 cursor-pointer mt-8 py-4">Créer un compte</p>
+            <button onclick="handleAuth()" id="auth-btn" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Se connecter</button>
+            <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">Créer un compte</p>
         </div>
     </div>
 </div>
 
 <!-- MAIN APP -->
 <div id="main-content" class="hidden h-full flex flex-col">
-    <!-- Header -->
-    <div class="px-4 py-4 md:px-8 md:py-6 flex justify-between items-center bg-white/95 backdrop-blur-md z-30 sticky top-0 shadow-sm border-b border-slate-100 min-h-[110px]">
+    <!-- Header: Tailles ajustées pour PWA -->
+    <div class="px-4 py-4 md:px-8 md:py-6 flex justify-between items-center bg-white z-30 sticky top-0 border-b border-slate-100 min-h-[90px]">
         <div class="flex flex-col justify-center">
-            <h1 id="month-label" class="text-5xl md:text-6xl font-black tracking-tighter capitalize text-slate-900 leading-none mb-3">...</h1>
-            <div class="flex gap-3">
-                <button onclick="changeMonth(-1)" class="w-14 h-14 flex items-center justify-center bg-white border-2 border-slate-200 rounded-2xl text-slate-700 hover:bg-slate-100 active:scale-95 shadow-sm">
-                    <i class="fas fa-chevron-left text-2xl font-black"></i>
+            <h1 id="month-label" class="text-3xl md:text-5xl font-black tracking-tighter capitalize text-slate-900 leading-none mb-2">...</h1>
+            <div class="flex gap-2">
+                <button onclick="changeMonth(-1)" class="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-700 active:scale-90 shadow-sm transition">
+                    <i class="fas fa-chevron-left text-lg font-black"></i>
                 </button>
-                <button onclick="changeMonth(1)" class="w-14 h-14 flex items-center justify-center bg-white border-2 border-slate-200 rounded-2xl text-slate-700 hover:bg-slate-100 active:scale-95 shadow-sm">
-                    <i class="fas fa-chevron-right text-2xl font-black"></i>
+                <button onclick="changeMonth(1)" class="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-700 active:scale-90 shadow-sm transition">
+                    <i class="fas fa-chevron-right text-lg font-black"></i>
                 </button>
             </div>
         </div>
         
         <div class="relative group-menu">
-            <button onclick="toggleUserMenu(event)" class="flex items-center gap-3 bg-white p-2 pr-2 md:pr-4 rounded-full shadow-md border border-slate-200 hover:border-slate-300 transition active:scale-95">
-                <div id="user-initials" class="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner">?</div>
-                <div class="hidden md:block text-left">
-                    <p id="user-display-name" class="text-xs font-black uppercase text-slate-900">Chargement</p>
-                </div>
+            <button onclick="toggleUserMenu(event)" class="flex items-center gap-2 bg-slate-50 p-1.5 pr-1.5 md:pr-3 rounded-full border border-slate-200 active:scale-90 transition">
+                <div id="user-initials" class="w-10 h-10 md:w-12 md:h-12 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-lg">?</div>
             </button>
             
-            <div id="user-menu" class="absolute right-0 mt-4 w-80 md:w-96 bg-white rounded-3xl shadow-2xl border border-slate-100 p-3 z-[3500] hidden">
-                <button onclick="openSettings()" class="w-full text-left p-5 hover:bg-slate-50 rounded-2xl font-bold text-lg text-slate-700 flex items-center gap-4 mb-2">
-                    <i class="fas fa-cog text-xl"></i> Réglages Profil
+            <div id="user-menu" class="absolute right-0 mt-3 w-72 bg-white rounded-3xl shadow-2xl border border-slate-100 p-2 z-[3500] hidden">
+                <button onclick="openSettings()" class="w-full text-left p-4 hover:bg-slate-50 rounded-2xl font-bold text-slate-700 flex items-center gap-3 mb-1">
+                    <i class="fas fa-cog text-lg"></i> Réglages
                 </button>
-                <button id="btn-admin-panel" onclick="openAdminPanel()" class="hidden w-full text-left p-5 hover:bg-slate-50 rounded-2xl font-bold text-lg text-blue-600 flex items-center gap-4 mb-2">
-                    <i class="fas fa-calendar-plus text-xl"></i> Gestion Events
+                <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-4 hover:bg-blue-50 rounded-2xl font-bold text-blue-600 flex items-center gap-3 mb-1">
+                    <i class="fas fa-plus-circle text-lg"></i> Créer Event
                 </button>
-                <div class="border-t border-slate-100 my-2"></div>
-                <button onclick="logout()" class="w-full text-left p-5 hover:bg-red-50 rounded-2xl font-bold text-lg text-red-500 flex items-center gap-4">
-                    <i class="fas fa-sign-out-alt text-xl"></i> Déconnexion
+                <div class="border-t border-slate-100 my-1"></div>
+                <button onclick="logout()" class="w-full text-left p-4 hover:bg-red-50 rounded-2xl font-bold text-red-500 flex items-center gap-3">
+                    <i class="fas fa-sign-out-alt text-lg"></i> Déconnexion
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Calendar Area -->
-    <div class="calendar-container px-2 md:px-8 pt-4">
+    <div class="calendar-container px-3 md:px-8 pt-4">
         <div class="max-w-6xl mx-auto">
-            <div class="grid grid-cols-7 gap-px mb-2 text-xs md:text-sm font-black uppercase text-slate-400 tracking-widest text-center">
+            <div class="grid grid-cols-7 gap-px mb-2 text-[10px] md:text-xs font-black uppercase text-slate-400 tracking-widest text-center">
                 <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
             </div>
-            <div id="calendar-grid" class="calendar-grid shadow-lg"></div>
+            <div id="calendar-grid" class="calendar-grid shadow-xl"></div>
         </div>
     </div>
 </div>
 
-<!-- CONTAINER PIP DESKTOP (Classique) -->
-<div id="pip-container-desktop" class="hidden md:block"></div>
-
-<!-- ZONE PIP MOBILE (Dédiée, cachée sur desktop) -->
-<!-- C'est ici que les PiP mobile vont s'afficher, en bas de l'écran -->
-<div id="mobile-pip-zone" class="fixed bottom-0 left-0 w-full h-[45vh] z-[3000] md:hidden pointer-events-none">
-    <!-- Le contenu sera injecté ici par JS -->
-</div>
-
-<!-- REGLAGES (Fullscreen) -->
-<div id="settings-pip" class="fullscreen-pip">
-    <div class="max-w-3xl mx-auto w-full p-6 pt-12">
-        <div class="flex justify-between items-center mb-10">
-            <h2 class="text-4xl font-black">Réglages</h2>
-            <button onclick="closeSettings()" class="w-14 h-14 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-2xl">&times;</button>
-        </div>
-
-        <div class="space-y-8 pb-32">
-            <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
-                <h3 class="text-sm font-black uppercase text-slate-400 mb-6 tracking-wider">Mes informations</h3>
-                <div class="grid md:grid-cols-2 gap-6 mb-6">
-                    <input id="set-firstname" type="text" placeholder="Prénom" class="input-field input-xl">
-                    <input id="set-lastname" type="text" placeholder="Nom" class="input-field input-xl">
-                </div>
-                <div class="space-y-6">
-                    <input id="set-email" type="email" readonly class="input-field input-xl bg-slate-100 text-slate-400">
-                    <input id="set-phone" type="tel" placeholder="Téléphone" class="input-field input-xl">
-                    <button onclick="updateProfile()" class="w-full py-5 bg-slate-900 text-white font-black rounded-2xl text-lg hover:bg-black transition">Enregistrer</button>
-                </div>
-            </div>
-
-            <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
-                <h3 class="text-sm font-black uppercase text-slate-400 mb-6 tracking-wider">Sécurité</h3>
-                <div class="relative mb-6">
-                    <input id="session-pwd-display" type="password" value="********" readonly class="input-field input-xl pr-16 bg-white text-slate-500">
-                    <button onclick="toggleSessionPwdVisibility()" class="absolute right-0 top-0 h-full px-6 text-slate-400 hover:text-slate-800">
-                        <i id="eye-icon" class="fas fa-eye text-xl"></i>
-                    </button>
-                </div>
-                <button onclick="openPasswordModal()" class="w-full py-5 bg-white border-2 border-slate-200 text-slate-700 font-black rounded-2xl text-lg hover:bg-slate-50 transition">Modifier mot de passe</button>
-            </div>
-            
-             <div class="bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
-                <h3 class="text-sm font-black uppercase text-slate-400 mb-6 tracking-wider">Notifications</h3>
-                <div class="flex items-center gap-4 mb-6">
-                    <div onclick="toggleNotifMaster()" id="notif-master-switch" class="w-16 h-8 bg-slate-200 rounded-full relative cursor-pointer transition-colors duration-300">
-                        <div id="notif-master-dot" class="w-6 h-6 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 shadow-sm"></div>
-                    </div>
-                    <span class="font-bold text-lg">Activer les rappels</span>
-                </div>
-             </div>
-        </div>
-    </div>
-</div>
+<!-- PIP MOBILE ZONE -->
+<div id="mobile-pip-zone" class="fixed bottom-0 left-0 w-full h-[48vh] z-[3000] md:hidden pointer-events-none"></div>
 
 <!-- ADMIN PANEL (Fullscreen) -->
 <div id="admin-panel" class="fullscreen-pip">
-    <div class="max-w-4xl mx-auto w-full p-4 md:p-8 pt-10">
-        <div class="flex justify-between items-center mb-10">
-            <h2 class="text-4xl font-black">Admin Events</h2>
-            <button onclick="document.getElementById('admin-panel').style.display='none'" class="w-14 h-14 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-2xl">&times;</button>
+    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
+            <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
         </div>
         
-        <div class="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-200 shadow-sm mb-20 pb-32 overflow-y-auto">
-            <div class="space-y-6">
-                <div class="grid md:grid-cols-2 gap-6">
-                    <input id="admin-title" placeholder="Titre" class="input-field input-xl">
-                    <input id="admin-loc" placeholder="Lieu" class="input-field input-xl">
-                </div>
-                <textarea id="admin-desc" placeholder="Description" class="input-field input-xl h-32 resize-none"></textarea>
-                <div class="grid grid-cols-2 gap-6">
-                    <input id="admin-date" type="date" class="input-field input-xl">
-                    <input id="admin-max" type="number" placeholder="Max" value="5" class="input-field input-xl">
-                </div>
-                <div class="grid grid-cols-2 gap-6">
-                    <div>
-                        <label class="text-xs font-bold text-slate-400 pl-2 uppercase">Début</label>
-                        <input id="admin-start" type="time" class="input-field input-xl">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-400 pl-2 uppercase">Fin</label>
-                        <input id="admin-end" type="time" class="input-field input-xl">
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-3xl border border-slate-200 mt-6">
-                    <div class="flex items-center gap-4 mb-6">
-                        <input type="checkbox" id="admin-is-recurring" class="w-6 h-6 accent-slate-900" onchange="toggleRecurrenceUI()">
-                        <label for="admin-is-recurring" class="font-bold text-lg">Récurrent ?</label>
-                    </div>
-                    <div id="recurrence-opts" class="hidden space-y-6">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 mb-3 uppercase">Jours</p>
-                            <div class="flex flex-wrap gap-3">
-                                <label class="cursor-pointer"><input type="checkbox" value="Monday" class="day-checkbox hidden"><div class="px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold transition">Lun</div></label>
-                                <label class="cursor-pointer"><input type="checkbox" value="Tuesday" class="day-checkbox hidden"><div class="px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold transition">Mar</div></label>
-                                <label class="cursor-pointer"><input type="checkbox" value="Wednesday" class="day-checkbox hidden"><div class="px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold transition">Mer</div></label>
-                                <label class="cursor-pointer"><input type="checkbox" value="Thursday" class="day-checkbox hidden"><div class="px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold transition">Jeu</div></label>
-                                <label class="cursor-pointer"><input type="checkbox" value="Friday" class="day-checkbox hidden"><div class="px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold transition">Ven</div></label>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 mb-2 uppercase">Jusqu'au</p>
-                            <input id="admin-until" type="date" class="input-field input-xl">
-                        </div>
-                    </div>
-                </div>
-                <button onclick="adminCreateEvent()" class="w-full py-6 bg-blue-600 text-white text-xl font-bold rounded-3xl hover:bg-blue-700 transition shadow-lg mt-6">Créer</button>
+        <div class="space-y-5 pb-20">
+            <div class="grid grid-cols-1 gap-4">
+                <input id="admin-title" placeholder="Titre (ex: Boxe Anglaise)" class="input-field">
+                <input id="admin-loc" placeholder="Lieu (ex: Salle A)" class="input-field">
             </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col">
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Date</label>
+                    <input id="admin-date" type="date" class="input-field">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Max Participants</label>
+                    <input id="admin-max" type="number" value="5" class="input-field">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col">
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Début</label>
+                    <input id="admin-start" type="time" class="input-field">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Fin</label>
+                    <input id="admin-end" type="time" class="input-field">
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-wider">Récurrence hebdomadaire</p>
+                <div class="flex flex-wrap gap-2">
+                    <label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Lun</div></label>
+                    <label class="flex-1"><input type="checkbox" value="tuesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Mar</div></label>
+                    <label class="flex-1"><input type="checkbox" value="wednesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Mer</div></label>
+                    <label class="flex-1"><input type="checkbox" value="thursday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Jeu</div></label>
+                    <label class="flex-1"><input type="checkbox" value="friday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Ven</div></label>
+                    <label class="flex-1"><input type="checkbox" value="saturday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer text-blue-600">Sam</div></label>
+                    <label class="flex-1"><input type="checkbox" value="sunday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer text-red-500">Dim</div></label>
+                </div>
+                
+                <div class="mt-5 flex flex-col">
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Jusqu'au (Optionnel)</label>
+                    <input id="admin-until" type="date" class="input-field bg-white">
+                </div>
+            </div>
+
+            <button onclick="adminCreateEvent()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition">Créer l'événement</button>
         </div>
     </div>
 </div>
 
-<!-- MODALS OVERLAY (Booking etc) -->
-<div id="modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[5000] hidden items-center justify-center p-4">
-    <!-- Pwd Modal -->
-    <div id="pwd-modal" class="hidden bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl">
-        <h3 class="text-2xl font-black mb-6">Mot de passe</h3>
-        <div class="space-y-4">
-            <input id="new-pwd-1" type="password" placeholder="Nouveau" class="input-field input-xl">
-            <input id="new-pwd-2" type="password" placeholder="Confirmer" class="input-field input-xl">
-            <div class="flex gap-3 pt-4">
-                <button onclick="closeModal()" class="flex-1 py-4 bg-slate-100 font-bold rounded-2xl text-lg">Annuler</button>
-                <button onclick="submitNewPassword()" class="flex-1 py-4 bg-slate-900 text-white font-bold rounded-2xl text-lg">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Booking Modal -->
-    <div id="booking-modal" class="hidden bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl">
-        <h3 id="book-title" class="text-3xl font-black mb-2">...</h3>
-        <p id="book-info" class="text-base font-bold text-slate-400 mb-8">...</p>
-        <p id="book-desc" class="text-base text-slate-600 mb-8 italic hidden bg-slate-50 p-4 rounded-2xl border border-slate-100">...</p>
-        
-        <div class="space-y-4 mb-8">
-            <label id="opt-std" class="flex items-center gap-4 p-5 border-2 border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50 transition">
-                <input type="radio" name="book-type" value="standard" checked class="accent-blue-600 w-6 h-6">
-                <div>
-                    <div class="font-bold text-lg">Cours Standard</div>
-                    <div class="text-sm text-slate-400">Partagé</div>
-                </div>
-            </label>
-
-            <label id="opt-priv" class="flex items-center gap-4 p-5 border-2 border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50 transition">
-                <input type="radio" name="book-type" value="private" class="accent-purple-600 w-6 h-6">
-                <div>
-                    <div class="font-bold text-lg text-purple-600">Cours Privé / Solo</div>
-                    <div class="text-sm text-slate-400">Bloque le créneau</div>
-                </div>
-            </label>
-            <p id="priv-disabled-msg" class="hidden text-sm text-red-500 font-bold text-center bg-red-50 p-3 rounded-xl">Non dispo : créneau entamé.</p>
-        </div>
-
-        <button onclick="confirmBooking()" class="w-full py-5 bg-slate-900 text-white text-xl font-black rounded-2xl shadow-lg hover:scale-[1.02] transition">S'inscrire</button>
-        <button onclick="closeModal()" class="w-full mt-3 py-3 text-slate-400 font-bold text-sm">Fermer</button>
-    </div>
-</div>
 <script>
-    // ------------------------------------------------------------------
-    // CONFIGURATION SUPABASE
-    // ------------------------------------------------------------------
     const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    // VARIABLES GLOBALES
-    let currentUser = null;
-    let currentProfile = null;
-    let currentDate = new Date();
-    let eventsCache = [];
+    let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
 
-    // ------------------------------------------------------------------
-    // INITIALISATION
-    // ------------------------------------------------------------------
     window.onload = async () => {
-        // Vérifier la session active
         const { data: { session } } = await sb.auth.getSession();
+        if (session) initApp(session.user);
+        else document.getElementById('auth-screen').style.display = 'flex';
         
-        if (session) {
-            initApp(session.user);
-        } else {
-            document.getElementById('auth-screen').style.display = 'flex';
-        }
-        
-        // Écouter les changements d'auth (Connexion/Déconnexion)
         sb.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                initApp(session.user);
-            } else if (event === 'SIGNED_OUT') {
-                location.reload(); // Recharger pour nettoyer l'état
-            }
+            if (event === 'SIGNED_IN' && session) initApp(session.user);
+            if (event === 'SIGNED_OUT') location.reload();
         });
     };
 
     async function initApp(user) {
         currentUser = user;
         document.getElementById('auth-screen').style.display = 'none';
-        
-        const main = document.getElementById('main-content');
-        main.classList.remove('hidden');
-        main.classList.add('flex');
-        
+        document.getElementById('main-content').classList.remove('hidden');
+        document.getElementById('main-content').classList.add('flex');
         await loadProfile(); 
         await fetchEvents();
     }
 
     async function loadProfile() {
-        // Récupérer le profil pour savoir si c'est un admin
-        const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-        
-        if (data) {
-            currentProfile = data;
-            // Initiales
-            const initial = (data.first_name && data.first_name[0]) ? data.first_name[0].toUpperCase() : '?';
-            document.getElementById('user-initials').textContent = initial;
-            
-            // Afficher bouton menu admin si admin
-            if (data.role === 'admin') {
-                document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
-            }
-        }
+        const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+        currentProfile = data;
+        document.getElementById('user-initials').textContent = data.first_name[0].toUpperCase();
+        if (data.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
     }
 
-    // ------------------------------------------------------------------
-    // GESTION DES ÉVÉNEMENTS (DATABASE & CALENDRIER)
-    // ------------------------------------------------------------------
     async function fetchEvents() {
-        // On récupère tout pour simplifier, on pourrait optimiser par date range plus tard
-        const { data, error } = await sb
-            .from('events')
-            .select('*, registrations(id)');
-            
-        if (error) {
-            console.error("Erreur fetch:", error);
-            return;
-        }
-
-        if (data) { 
-            eventsCache = data; 
-            renderCalendar(); 
-        }
+        const { data } = await sb.from('events').select('*, registrations(id)');
+        if(data) { eventsCache = data; renderCalendar(); }
     }
 
     function renderCalendar() {
         const grid = document.getElementById('calendar-grid');
         grid.innerHTML = '';
-        
-        const y = currentDate.getFullYear();
-        const m = currentDate.getMonth();
-        
-        // Mise à jour du titre du mois
+        const y = currentDate.getFullYear(), m = currentDate.getMonth();
         document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
         
-        const firstDayIndex = (new Date(y, m, 1).getDay() || 7) - 1; // Lundi = 0
+        const firstDay = (new Date(y, m, 1).getDay() || 7) - 1;
         const lastDate = new Date(y, m + 1, 0).getDate();
 
-        // Cases vides avant le 1er du mois
-        for (let i = 0; i < firstDayIndex; i++) {
-            grid.innerHTML += `<div class="calendar-day empty"></div>`;
-        }
+        for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
         
-        // Jours du mois
         for (let d = 1; d <= lastDate; d++) {
-            // Format YYYY-MM-DD local pour comparaison stricte avec la DB
             const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            
-            // CORRECTION: Filtrer sur la colonne 'date' et non 'start_time'
-            const dayEvents = eventsCache.filter(e => e.date === dateStr);
+            const dayEvents = eventsCache.filter(e => e.start_time.startsWith(dateStr));
             
             const cell = document.createElement('div');
             cell.className = 'calendar-day';
             cell.onclick = (e) => openDayPip(dateStr, dayEvents, e);
             
-            // Création des points (dots)
             let dots = dayEvents.map(e => {
                 let color = 'dot-blue';
-                // Logique couleur
-                const isFull = (e.registrations && e.max_participants) ? (e.registrations.length >= e.max_participants) : false;
-                
-                if(e.is_private_request) color = 'dot-purple'; // Note: vérifiez si le champ est is_private_request ou is_private_booked
-                else if(isFull) color = 'dot-red';
-                
+                if(e.is_private_booked) color = 'dot-purple';
+                else if(e.registrations.length >= e.max_participants) color = 'dot-red';
                 return `<span class="event-dot ${color}"></span>`;
             }).join('');
 
-            // MODIFICATION: Le bouton Admin (+) a été retiré d'ici pour être mis dans la PIP
+            // Bouton Admin +
+            let adminAdd = (currentProfile?.role === 'admin') ? 
+                `<button onclick="openAdminPanelDirect('${dateStr}', event)" class="absolute top-1 right-1 w-6 h-6 bg-blue-50 text-blue-600 rounded-md flex items-center justify-center text-xs shadow-sm"><i class="fas fa-plus"></i></button>` : '';
+
             cell.innerHTML = `
                 <span class="text-xs font-black text-slate-400">${d}</span>
+                ${adminAdd}
                 <div class="mt-auto flex flex-wrap gap-1">${dots}</div>
             `;
             grid.appendChild(cell);
         }
     }
 
-    // ------------------------------------------------------------------
-    // INTERFACE PIP (DETAILS DU JOUR)
-    // ------------------------------------------------------------------
     function openDayPip(dateStr, events, evt) {
-        if(evt) evt.stopPropagation();
-        
+        evt.stopPropagation();
         const zone = document.getElementById('mobile-pip-zone');
         zone.innerHTML = '';
         zone.style.pointerEvents = 'auto';
 
-        const dateObj = new Date(dateStr);
-        const dateLabel = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
         
-        // Bouton Admin AJOUTER (+) déplacé ici
-        let adminAddBtn = '';
-        if (currentProfile?.role === 'admin') {
-            adminAddBtn = `
-            <button onclick="openAdminPanelDirect('${dateStr}')" class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg active:scale-90 transition mr-2">
-                <i class="fas fa-plus"></i>
-            </button>`;
-        }
-
         let content = `
             <div class="mobile-pip-card">
                 <div class="flex items-center justify-between p-5 border-b border-slate-50">
-                    <span class="font-black text-slate-800 uppercase text-lg leading-tight">${dateLabel}</span>
-                    <div class="flex items-center">
-                        ${adminAddBtn}
-                        <button onclick="closeMobilePip()" class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full font-bold hover:bg-slate-200 transition">&times;</button>
-                    </div>
+                    <span class="font-black text-slate-800 uppercase text-lg">${dateLabel}</span>
+                    <button onclick="closeMobilePip()" class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full font-bold">&times;</button>
                 </div>
                 <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-20">`;
         
         if (events.length === 0) {
-            content += `<div class="h-32 flex items-center justify-center text-slate-300 font-bold italic">Rien de prévu</div>`;
+            content += `<div class="h-full flex items-center justify-center text-slate-300 font-bold italic">Rien de prévu</div>`;
         } else {
-            // Trier les événements par heure
-            events.sort((a, b) => a.start_time.localeCompare(b.start_time));
-            
             events.forEach(e => {
-                // e.start_time est format HH:MM:SS dans la DB
-                const timeParts = e.start_time.split(':');
-                const startDisplay = `${timeParts[0]}:${timeParts[1]}`; // HH:MM
-                
-                const count = e.registrations ? e.registrations.length : 0;
-                
+                const start = new Date(e.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
                 content += `
-                    <div onclick="openBooking('${e.id}')" class="p-4 border border-slate-100 rounded-2xl bg-white shadow-sm active:scale-[0.98] transition cursor-pointer">
+                    <div onclick="openBooking('${e.id}')" class="p-4 border border-slate-100 rounded-2xl bg-white shadow-sm active:scale-[0.98] transition">
                         <h4 class="font-black text-slate-800 text-lg">${e.title || e.location}</h4>
                         <div class="flex justify-between items-center mt-1">
-                            <span class="text-blue-600 font-bold text-sm"><i class="far fa-clock mr-1"></i> ${startDisplay}</span>
-                            <span class="text-slate-400 text-xs font-bold uppercase bg-slate-50 px-2 py-1 rounded-md border border-slate-100">${count} / ${e.max_participants}</span>
+                            <span class="text-blue-600 font-bold text-sm">${start}</span>
+                            <span class="text-slate-400 text-xs font-bold uppercase">${e.registrations.length} / ${e.max_participants} PLACES</span>
                         </div>
                     </div>`;
             });
@@ -559,81 +321,58 @@
 
     function closeMobilePip() {
         const zone = document.getElementById('mobile-pip-zone');
-        zone.innerHTML = ''; 
-        zone.style.pointerEvents = 'none';
+        zone.innerHTML = ''; zone.style.pointerEvents = 'none';
     }
 
-    // ------------------------------------------------------------------
-    // LOGIQUE ADMIN (CREATION)
-    // ------------------------------------------------------------------
-    function openAdminPanel() { 
-        document.getElementById('admin-panel').style.display = 'flex'; 
-    }
+    // --- ADMIN LOGIC ---
+    function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
+    function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
     
-    function closeAdminPanel() { 
-        document.getElementById('admin-panel').style.display = 'none'; 
-    }
-    
-    function openAdminPanelDirect(dateStr) {
-        // Appelé depuis la PIP
-        document.getElementById('admin-date').value = dateStr;
+    function openAdminPanelDirect(date, e) {
+        e.stopPropagation();
+        document.getElementById('admin-date').value = date;
         openAdminPanel();
     }
 
     async function adminCreateEvent() {
-        // Récupération des valeurs
         const title = document.getElementById('admin-title').value;
         const loc = document.getElementById('admin-loc').value;
-        const dateVal = document.getElementById('admin-date').value; // Format YYYY-MM-DD
-        const startVal = document.getElementById('admin-start').value; // Format HH:MM
-        const endVal = document.getElementById('admin-end').value;     // Format HH:MM
-        const maxVal = document.getElementById('admin-max').value;
-        const untilVal = document.getElementById('admin-until').value;
+        const date = document.getElementById('admin-date').value;
+        const start = document.getElementById('admin-start').value;
+        const end = document.getElementById('admin-end').value;
+        const max = document.getElementById('admin-max').value;
+        const until = document.getElementById('admin-until').value;
 
-        // Validation basique
-        if(!title || !dateVal || !startVal) return alert("Titre, Date et Heure de début sont requis !");
-
-        // Collecter les jours (array de strings)
+        // Collecter les jours cochés
         const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
 
-        // CORRECTION MAJEURE : On mappe les champs correctement pour Supabase
-        // Supabase attend : date (date), start_time (time), end_time (time)
-        
+        if(!title || !date || !start) return alert("Champs obligatoires manquants !");
+
+        // Construction objet data
         const eventData = {
-            owner_id: currentUser.id, // Important pour la sécurité
-            title: title,
-            location: loc,
-            date: dateVal,         // On envoie YYYY-MM-DD directement
-            start_time: startVal,  // On envoie HH:MM directement (Supabase gère la conversion en Time)
-            end_time: endVal ? endVal : startVal, 
-            max_participants: parseInt(maxVal),
-            is_recurring: days.length > 0,
-            recurrence_days: days.length > 0 ? days : null
-            // Note: recurrence_until n'est pas dans votre schéma CREATE TABLE initial, 
-            // je ne l'envoie pas pour éviter l'erreur, sauf si vous avez ajouté la colonne.
+            title, location: loc,
+            start_time: `${date}T${start}:00`,
+            end_time: `${date}T${end || start}:00`,
+            max_participants: max,
+            recurrence_days: days.length > 0 ? days : null,
+            recurrence_until: until || null
         };
 
-        console.log("Envoi à Supabase:", eventData);
-
-        const { data, error } = await sb.from('events').insert([eventData]);
+        const { error } = await sb.from('events').insert([eventData]);
         
         if(!error) {
-            alert("Événement créé avec succès !");
             resetAdminForm();
             closeAdminPanel();
-            closeMobilePip(); // Fermer la PIP pour forcer le rafraichissement visuel propre
-            fetchEvents();    // Recharger les données
+            fetchEvents();
         } else {
-            console.error(error);
-            alert("Erreur lors de la création: " + error.message);
+            alert("Erreur: " + error.message);
         }
     }
 
     function resetAdminForm() {
         document.getElementById('admin-title').value = '';
         document.getElementById('admin-loc').value = '';
-        // On garde la date si on veut en créer plusieurs à la suite ? Sinon :
-        // document.getElementById('admin-date').value = '';
+        document.getElementById('admin-date').value = '';
         document.getElementById('admin-start').value = '';
         document.getElementById('admin-end').value = '';
         document.getElementById('admin-max').value = '5';
@@ -641,94 +380,19 @@
         document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
     }
 
-    // ------------------------------------------------------------------
-    // AUTHENTIFICATION & UTILITAIRES
-    // ------------------------------------------------------------------
+    // --- AUTH / UTILS ---
     async function handleAuth() {
         const email = document.getElementById('auth-email').value;
         const pwd = document.getElementById('auth-password').value;
-        
-        // Vérifier si on est en mode Inscription (champs visibles) ou Connexion
-        const isRegistering = !document.getElementById('register-fields').classList.contains('hidden');
-
-        if (isRegistering) {
-            // Mode INSCRIPTION
-            const fname = document.getElementById('auth-firstname').value;
-            const lname = document.getElementById('auth-lastname').value;
-            const phone = document.getElementById('auth-phone').value;
-
-            if(!fname || !lname) return alert("Nom et prénom requis.");
-
-            const { data, error } = await sb.auth.signUp({
-                email: email,
-                password: pwd,
-                options: {
-                    data: {
-                        first_name: fname,
-                        last_name: lname,
-                        phone: phone
-                    }
-                }
-            });
-            
-            if (error) alert(error.message);
-            else {
-                // Création du profil manuelle si besoin, mais souvent géré par Trigger Supabase.
-                // Ici on suppose qu'il faut attendre ou que le trigger le fait.
-                alert("Compte créé ! Vérifiez vos emails ou connectez-vous.");
-                toggleAuthMode(); // Revenir au login
-            }
-
-        } else {
-            // Mode CONNEXION
-            const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
-            if(error) alert(error.message);
-        }
+        const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
+        if(error) alert(error.message);
     }
     
-    function toggleAuthMode() { 
-        const regFields = document.getElementById('register-fields');
-        const btn = document.getElementById('auth-btn');
-        const toggleText = document.getElementById('auth-toggle');
-        
-        regFields.classList.toggle('hidden');
-        
-        if (regFields.classList.contains('hidden')) {
-            btn.textContent = "Se connecter";
-            toggleText.textContent = "Créer un compte";
-        } else {
-            btn.textContent = "S'inscrire";
-            toggleText.textContent = "J'ai déjà un compte";
-        }
-    }
-
-    function logout() { 
-        sb.auth.signOut(); 
-    }
-
-    // Navigation Calendrier
-    function changeMonth(dir) { 
-        currentDate.setMonth(currentDate.getMonth() + dir); 
-        renderCalendar(); 
-    }
-
-    // Menu Utilisateur
-    function toggleUserMenu(e) { 
-        e.stopPropagation(); 
-        document.getElementById('user-menu').classList.toggle('hidden'); 
-    }
-    
-    function handleBodyClick(e) { 
-        // Ferme le menu utilisateur si on clique ailleurs
-        if(!e.target.closest('.group-menu')) {
-            document.getElementById('user-menu').classList.add('hidden');
-        }
-    }
-
-    // Placeholders pour les fonctions non encore codées
-    function openSettings() { alert("Page réglages à venir"); }
-    function openBooking(eventId) { alert("Page de réservation pour l'event: " + eventId); }
-
+    function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); }
+    function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
+    function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
+    function logout() { sb.auth.signOut(); }
+    function toggleAuthMode() { document.getElementById('register-fields').classList.toggle('hidden'); }
 </script>
 </body>
 </html>
