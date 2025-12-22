@@ -33,7 +33,7 @@
         .input-field:focus { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.05); }
 
         /* --- CALENDRIER --- */
-        .calendar-container { height: 60vh; overflow-y: auto; scroll-behavior: smooth; }
+        .calendar-container { height: 62vh; overflow-y: auto; scroll-behavior: smooth; }
         @media (min-width: 769px) { .calendar-container { height: calc(100vh - 110px); padding-bottom: 80px; } }
 
         .calendar-grid { 
@@ -42,37 +42,39 @@
         }
 
         .calendar-day { 
-            min-height: 90px; background-color: white; padding: 0.5rem; 
+            min-height: 85px; background-color: white; padding: 0.5rem; 
             display: flex; flex-direction: column; cursor: pointer; transition: background 0.2s; position: relative;
         }
         .calendar-day:hover:not(.empty) { background-color: #f8fafc; }
         .calendar-day.empty { background-color: #f1f5f9; cursor: default; }
 
-        .event-dot { height: 6px; width: 6px; border-radius: 50%; display: inline-block; margin-right: 2px; }
+        .event-dot { height: 5px; width: 5px; border-radius: 50%; display: inline-block; margin-right: 2px; }
         .dot-blue { background-color: #3b82f6; }
         .dot-red { background-color: #ef4444; }
-        .dot-purple { background-color: #a855f7; }
+        .dot-recurring { border: 1px solid #3b82f6; background-color: transparent; }
 
-        /* --- PIP ANIMATIONS --- */
+        /* --- PIP --- */
+        #mobile-pip-zone {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 50vh; 
+            z-index: 5000; pointer-events: none;
+        }
         .mobile-pip-card {
+            pointer-events: auto;
             width: 100%; height: 100%; background: white;
             border-top-left-radius: 2rem; border-top-right-radius: 2rem;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
             display: flex; flex-direction: column;
-            animation: slideUp 0.45s cubic-bezier(0.32, 0.72, 0, 1); /* Plus doux */
+            animation: slideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1);
             overflow: hidden;
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        /* Day Checkboxes Styling */
         .day-checkbox:checked + .day-label {
-            background-color: #0f172a;
-            color: white;
-            border-color: #0f172a;
+            background-color: #0f172a; color: white; border-color: #0f172a;
         }
 
         .fullscreen-pip {
-            position: fixed; inset: 0; background: white; z-index: 4000;
+            position: fixed; inset: 0; background: white; z-index: 6000;
             display: none; flex-direction: column; overflow-y: auto;
         }
     </style>
@@ -99,44 +101,37 @@
 
 <!-- MAIN APP -->
 <div id="main-content" class="hidden h-full flex flex-col">
-    <!-- Header: Tailles ajustées pour PWA -->
-    <div class="px-4 py-4 md:px-8 md:py-6 flex justify-between items-center bg-white z-30 sticky top-0 border-b border-slate-100 min-h-[90px]">
+    <div class="px-4 py-3 md:px-8 md:py-4 flex justify-between items-center bg-white z-30 sticky top-0 border-b border-slate-100 min-h-[85px]">
         <div class="flex flex-col justify-center">
-            <h1 id="month-label" class="text-3xl md:text-5xl font-black tracking-tighter capitalize text-slate-900 leading-none mb-2">...</h1>
+            <h1 id="month-label" class="text-2xl md:text-4xl font-black tracking-tighter capitalize text-slate-900 leading-tight mb-1">...</h1>
             <div class="flex gap-2">
-                <button onclick="changeMonth(-1)" class="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-700 active:scale-90 shadow-sm transition">
-                    <i class="fas fa-chevron-left text-lg font-black"></i>
+                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition">
+                    <i class="fas fa-chevron-left text-sm font-black"></i>
                 </button>
-                <button onclick="changeMonth(1)" class="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-700 active:scale-90 shadow-sm transition">
-                    <i class="fas fa-chevron-right text-lg font-black"></i>
+                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition">
+                    <i class="fas fa-chevron-right text-sm font-black"></i>
                 </button>
             </div>
         </div>
-        
         <div class="relative group-menu">
-            <button onclick="toggleUserMenu(event)" class="flex items-center gap-2 bg-slate-50 p-1.5 pr-1.5 md:pr-3 rounded-full border border-slate-200 active:scale-90 transition">
-                <div id="user-initials" class="w-10 h-10 md:w-12 md:h-12 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-lg">?</div>
+            <button onclick="toggleUserMenu(event)" class="flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-slate-200 active:scale-90 transition">
+                <div id="user-initials" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm">?</div>
             </button>
-            
-            <div id="user-menu" class="absolute right-0 mt-3 w-72 bg-white rounded-3xl shadow-2xl border border-slate-100 p-2 z-[3500] hidden">
-                <button onclick="openSettings()" class="w-full text-left p-4 hover:bg-slate-50 rounded-2xl font-bold text-slate-700 flex items-center gap-3 mb-1">
-                    <i class="fas fa-cog text-lg"></i> Réglages
-                </button>
-                <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-4 hover:bg-blue-50 rounded-2xl font-bold text-blue-600 flex items-center gap-3 mb-1">
-                    <i class="fas fa-plus-circle text-lg"></i> Créer Event
+            <div id="user-menu" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-[3500] hidden">
+                <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3">
+                    <i class="fas fa-plus-circle"></i> Créer Event
                 </button>
                 <div class="border-t border-slate-100 my-1"></div>
-                <button onclick="logout()" class="w-full text-left p-4 hover:bg-red-50 rounded-2xl font-bold text-red-500 flex items-center gap-3">
-                    <i class="fas fa-sign-out-alt text-lg"></i> Déconnexion
+                <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Calendar Area -->
     <div class="calendar-container px-3 md:px-8 pt-4">
         <div class="max-w-6xl mx-auto">
-            <div class="grid grid-cols-7 gap-px mb-2 text-[10px] md:text-xs font-black uppercase text-slate-400 tracking-widest text-center">
+            <div class="grid grid-cols-7 gap-px mb-2 text-[9px] md:text-xs font-black uppercase text-slate-400 tracking-widest text-center">
                 <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
             </div>
             <div id="calendar-grid" class="calendar-grid shadow-xl"></div>
@@ -144,30 +139,25 @@
     </div>
 </div>
 
-<!-- PIP MOBILE ZONE -->
-<div id="mobile-pip-zone" class="fixed bottom-0 left-0 w-full h-[48vh] z-[3000] md:hidden pointer-events-none"></div>
+<div id="mobile-pip-zone"></div>
 
-<!-- ADMIN PANEL (Fullscreen) -->
 <div id="admin-panel" class="fullscreen-pip">
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
             <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
         </div>
-        
         <div class="space-y-5 pb-20">
-            <div class="grid grid-cols-1 gap-4">
-                <input id="admin-title" placeholder="Titre (ex: Boxe Anglaise)" class="input-field">
-                <input id="admin-loc" placeholder="Lieu (ex: Salle A)" class="input-field">
-            </div>
+            <input id="admin-title" placeholder="Titre" class="input-field">
+            <input id="admin-loc" placeholder="Lieu" class="input-field">
             
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col">
-                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Date</label>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Date (Début récurrence)</label>
                     <input id="admin-date" type="date" class="input-field">
                 </div>
                 <div class="flex flex-col">
-                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Max Participants</label>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Places Max</label>
                     <input id="admin-max" type="number" value="5" class="input-field">
                 </div>
             </div>
@@ -186,22 +176,17 @@
             <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
                 <p class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-wider">Récurrence hebdomadaire</p>
                 <div class="flex flex-wrap gap-2">
-                    <label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Lun</div></label>
-                    <label class="flex-1"><input type="checkbox" value="tuesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Mar</div></label>
-                    <label class="flex-1"><input type="checkbox" value="wednesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Mer</div></label>
-                    <label class="flex-1"><input type="checkbox" value="thursday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Jeu</div></label>
-                    <label class="flex-1"><input type="checkbox" value="friday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer">Ven</div></label>
-                    <label class="flex-1"><input type="checkbox" value="saturday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer text-blue-600">Sam</div></label>
-                    <label class="flex-1"><input type="checkbox" value="sunday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-xs transition cursor-pointer text-red-500">Dim</div></label>
-                </div>
-                
-                <div class="mt-5 flex flex-col">
-                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Jusqu'au (Optionnel)</label>
-                    <input id="admin-until" type="date" class="input-field bg-white">
+                    <label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Lun</div></label>
+                    <label class="flex-1"><input type="checkbox" value="tuesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Mar</div></label>
+                    <label class="flex-1"><input type="checkbox" value="wednesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Mer</div></label>
+                    <label class="flex-1"><input type="checkbox" value="thursday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Jeu</div></label>
+                    <label class="flex-1"><input type="checkbox" value="friday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Ven</div></label>
+                    <label class="flex-1"><input type="checkbox" value="saturday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Sam</div></label>
+                    <label class="flex-1"><input type="checkbox" value="sunday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Dim</div></label>
                 </div>
             </div>
 
-            <button onclick="adminCreateEvent()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition">Créer l'événement</button>
+            <button onclick="adminCreateEvent()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition">Créer</button>
         </div>
     </div>
 </div>
@@ -212,6 +197,7 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
+    const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
     window.onload = async () => {
         const { data: { session } } = await sb.auth.getSession();
@@ -236,8 +222,8 @@
     async function loadProfile() {
         const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
         currentProfile = data;
-        document.getElementById('user-initials').textContent = data.first_name[0].toUpperCase();
-        if (data.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+        document.getElementById('user-initials').textContent = (data?.first_name || "?")[0].toUpperCase();
+        if (data?.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
     }
 
     async function fetchEvents() {
@@ -257,27 +243,36 @@
         for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
         
         for (let d = 1; d <= lastDate; d++) {
+            const loopDate = new Date(y, m, d);
             const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const dayEvents = eventsCache.filter(e => e.start_time.startsWith(dateStr));
+            const dayOfWeekName = DAY_NAMES[loopDate.getDay()];
+            
+            // LOGIQUE DE RÉCURRENCE : Filtrer les events qui correspondent à ce jour
+            const dayEvents = eventsCache.filter(e => {
+                // 1. Match direct de la date
+                if (e.date === dateStr) return true;
+                
+                // 2. Si récurrent : vérifier si la date de boucle est APRÈS la date de création
+                // et si le jour de la semaine est dans recurrence_days
+                if (e.is_recurring && e.recurrence_days && new Date(e.date) <= loopDate) {
+                    return e.recurrence_days.includes(dayOfWeekName);
+                }
+                return false;
+            });
             
             const cell = document.createElement('div');
             cell.className = 'calendar-day';
             cell.onclick = (e) => openDayPip(dateStr, dayEvents, e);
             
             let dots = dayEvents.map(e => {
-                let color = 'dot-blue';
-                if(e.is_private_booked) color = 'dot-purple';
-                else if(e.registrations.length >= e.max_participants) color = 'dot-red';
-                return `<span class="event-dot ${color}"></span>`;
+                let isOriginal = e.date === dateStr;
+                let colorClass = e.registrations?.length >= e.max_participants ? 'dot-red' : 'dot-blue';
+                // Optionnel : style différent pour les récurrences (dot-recurring)
+                return `<span class="event-dot ${colorClass} ${!isOriginal ? 'opacity-60' : ''}"></span>`;
             }).join('');
 
-            // Bouton Admin +
-            let adminAdd = (currentProfile?.role === 'admin') ? 
-                `<button onclick="openAdminPanelDirect('${dateStr}', event)" class="absolute top-1 right-1 w-6 h-6 bg-blue-50 text-blue-600 rounded-md flex items-center justify-center text-xs shadow-sm"><i class="fas fa-plus"></i></button>` : '';
-
             cell.innerHTML = `
-                <span class="text-xs font-black text-slate-400">${d}</span>
-                ${adminAdd}
+                <span class="text-[10px] font-black ${new Date().toDateString() === loopDate.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span>
                 <div class="mt-auto flex flex-wrap gap-1">${dots}</div>
             `;
             grid.appendChild(cell);
@@ -287,30 +282,40 @@
     function openDayPip(dateStr, events, evt) {
         evt.stopPropagation();
         const zone = document.getElementById('mobile-pip-zone');
-        zone.innerHTML = '';
         zone.style.pointerEvents = 'auto';
-
+        
         const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
         
         let content = `
             <div class="mobile-pip-card">
                 <div class="flex items-center justify-between p-5 border-b border-slate-50">
-                    <span class="font-black text-slate-800 uppercase text-lg">${dateLabel}</span>
-                    <button onclick="closeMobilePip()" class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full font-bold">&times;</button>
+                    <div class="flex flex-col">
+                        <span class="font-black text-slate-800 uppercase text-xs">${dateLabel}</span>
+                        ${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] mt-1 flex items-center gap-1">AJOUTER</button>` : ''}
+                    </div>
+                    <button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full">&times;</button>
                 </div>
                 <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-20">`;
         
-        if (events.length === 0) {
-            content += `<div class="h-full flex items-center justify-center text-slate-300 font-bold italic">Rien de prévu</div>`;
-        } else {
+        if (events.length === 0) content += `<div class="py-10 text-center text-slate-300 italic text-sm">Aucun cours prévu</div>`;
+        else {
             events.forEach(e => {
-                const start = new Date(e.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                const isRecurringInstance = e.date !== dateStr;
                 content += `
-                    <div onclick="openBooking('${e.id}')" class="p-4 border border-slate-100 rounded-2xl bg-white shadow-sm active:scale-[0.98] transition">
-                        <h4 class="font-black text-slate-800 text-lg">${e.title || e.location}</h4>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-blue-600 font-bold text-sm">${start}</span>
-                            <span class="text-slate-400 text-xs font-bold uppercase">${e.registrations.length} / ${e.max_participants} PLACES</span>
+                    <div class="p-4 border border-slate-100 rounded-2xl bg-white shadow-sm flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-black text-slate-800">${e.title || "Titre"}</h4>
+                                ${isRecurringInstance ? '<i class="fas fa-redo text-[8px] text-slate-300"></i>' : ''}
+                            </div>
+                            <div class="flex items-center gap-3 mt-1">
+                                <span class="text-blue-600 font-bold text-xs">${(e.start_time || "").substring(0, 5)}</span>
+                                <span class="text-slate-400 text-[10px]">${e.location || 'Lieu'}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <div class="text-[10px] font-black text-slate-400 uppercase mb-1">${e.registrations?.length || 0}/${e.max_participants}</div>
+                             <button class="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg active:scale-95">S'inscrire</button>
                         </div>
                     </div>`;
             });
@@ -319,75 +324,56 @@
         zone.innerHTML = content;
     }
 
-    function closeMobilePip() {
-        const zone = document.getElementById('mobile-pip-zone');
-        zone.innerHTML = ''; zone.style.pointerEvents = 'none';
-    }
-
-    // --- ADMIN LOGIC ---
-    function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
-    function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
-    
-    function openAdminPanelDirect(date, e) {
-        e.stopPropagation();
-        document.getElementById('admin-date').value = date;
-        openAdminPanel();
-    }
-
     async function adminCreateEvent() {
         const title = document.getElementById('admin-title').value;
-        const loc = document.getElementById('admin-loc').value;
-        const date = document.getElementById('admin-date').value;
+        const dateVal = document.getElementById('admin-date').value;
         const start = document.getElementById('admin-start').value;
         const end = document.getElementById('admin-end').value;
-        const max = document.getElementById('admin-max').value;
-        const until = document.getElementById('admin-until').value;
+        const max = parseInt(document.getElementById('admin-max').value);
+        
+        const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked'))
+                                  .map(cb => cb.value.toLowerCase());
 
-        // Collecter les jours cochés
-        const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
+        if(!title || !dateVal || !start || !end) return alert("Champs obligatoires manquants.");
 
-        if(!title || !date || !start) return alert("Champs obligatoires manquants !");
-
-        // Construction objet data
-        const eventData = {
-            title, location: loc,
-            start_time: `${date}T${start}:00`,
-            end_time: `${date}T${end || start}:00`,
+        const payload = {
+            owner_id: currentUser.id,
+            title: title,
+            location: document.getElementById('admin-loc').value || "Lieu",
+            date: dateVal,
+            start_time: `${start}:00`,
+            end_time: `${end}:00`,
             max_participants: max,
-            recurrence_days: days.length > 0 ? days : null,
-            recurrence_until: until || null
+            is_recurring: selectedDays.length > 0,
+            recurrence_days: selectedDays.length > 0 ? selectedDays : null,
+            is_public: true
         };
 
-        const { error } = await sb.from('events').insert([eventData]);
+        const { error } = await sb.from('events').insert([payload]);
         
         if(!error) {
             resetAdminForm();
             closeAdminPanel();
-            fetchEvents();
+            await fetchEvents();
         } else {
-            alert("Erreur: " + error.message);
+            console.error("DB Error:", error);
+            alert(`Erreur : ${error.message}`);
         }
     }
 
+    function openAdminFromPip(date) { closeMobilePip(); document.getElementById('admin-date').value = date; openAdminPanel(); }
+    function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
+    function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
+    function closeMobilePip() { document.getElementById('mobile-pip-zone').style.pointerEvents = 'none'; document.getElementById('mobile-pip-zone').innerHTML = ''; }
     function resetAdminForm() {
-        document.getElementById('admin-title').value = '';
-        document.getElementById('admin-loc').value = '';
-        document.getElementById('admin-date').value = '';
-        document.getElementById('admin-start').value = '';
-        document.getElementById('admin-end').value = '';
-        document.getElementById('admin-max').value = '5';
-        document.getElementById('admin-until').value = '';
+        ['admin-title','admin-loc','admin-date','admin-start','admin-end'].forEach(id => document.getElementById(id).value = '');
         document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
     }
-
-    // --- AUTH / UTILS ---
     async function handleAuth() {
-        const email = document.getElementById('auth-email').value;
-        const pwd = document.getElementById('auth-password').value;
-        const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
+        const e = document.getElementById('auth-email').value, p = document.getElementById('auth-password').value;
+        const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
         if(error) alert(error.message);
     }
-    
     function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); }
     function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
     function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
