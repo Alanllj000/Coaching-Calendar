@@ -56,15 +56,6 @@
             overflow: hidden;
         }
 
-        .fullscreen-pip {
-            width: 95%;
-            max-width: 1100px;
-            height: 90vh;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            bottom: auto; right: auto;
-        }
-
         #modal-overlay {
             position: fixed;
             inset: 0;
@@ -107,7 +98,7 @@
             inset: 0;
             background: white;
             z-index: 9999;
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -117,12 +108,12 @@
 </head>
 <body class="p-4 md:p-8">
 
-<!-- ECRAN AUTHENTIFICATION -->
-<div id="auth-screen" class="hidden">
+<!-- ÉCRAN D'AUTHENTIFICATION -->
+<div id="auth-screen">
     <div class="w-full max-w-sm space-y-6">
         <div class="text-center">
             <h2 class="text-3xl font-black tracking-tighter">Bienvenue</h2>
-            <p class="text-slate-500 font-bold">Connectez-vous pour voir le planning</p>
+            <p id="auth-subtitle" class="text-slate-500 font-bold">Connectez-vous pour voir le planning</p>
         </div>
         <div id="auth-form" class="space-y-4">
             <input id="auth-email" type="email" placeholder="Email" class="input-field">
@@ -130,7 +121,7 @@
             <div id="register-fields" class="hidden space-y-4">
                 <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
                 <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
-                <input id="auth-phone" type="tel" placeholder="Numéro de Téléphone" class="input-field">
+                <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
             </div>
             <button onclick="handleAuth()" id="auth-btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition active:scale-95">Se connecter</button>
             <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-xs font-bold text-slate-400 cursor-pointer hover:text-slate-600">Pas de compte ? Créer un profil</p>
@@ -138,20 +129,8 @@
     </div>
 </div>
 
-<!-- OVERLAY POUR MODALES CRITIQUES -->
+<!-- OVERLAY MODALES -->
 <div id="modal-overlay">
-    <!-- Suppression Compte -->
-    <div id="delete-modal" class="hidden bg-white w-[90%] max-w-md rounded-[2.5rem] p-8 shadow-2xl">
-        <div class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-3xl mb-6 mx-auto">⚠️</div>
-        <h3 class="text-2xl font-black tracking-tight text-center text-slate-900 mb-2">Supprimer le compte ?</h3>
-        <p class="text-sm text-slate-500 text-center leading-relaxed mb-8">Cette action est irréversible. Vous perdrez toutes vos données.</p>
-        <div class="flex flex-col gap-3">
-            <button onclick="confirmAccountDeletion()" class="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg hover:bg-red-700 transition">Supprimer définitivement</button>
-            <button onclick="closeModal()" class="w-full py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl">Annuler</button>
-        </div>
-    </div>
-
-    <!-- Changement Password -->
     <div id="pwd-modal" class="hidden bg-white w-[90%] max-w-md rounded-[2.5rem] p-8 shadow-2xl">
         <h3 class="text-2xl font-black tracking-tight mb-4">Nouveau mot de passe</h3>
         <div class="space-y-4">
@@ -164,121 +143,103 @@
     </div>
 </div>
 
-<!-- NAVIGATION TOP -->
-<div class="max-w-6xl mx-auto flex justify-between items-center mb-10">
-    <div>
-        <h1 id="month-label" class="text-4xl font-black tracking-tighter capitalize">...</h1>
-        <div class="flex gap-2 mt-2">
-            <button onclick="changeMonth(-1)" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition">←</button>
-            <button onclick="changeMonth(1)" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition">→</button>
+<!-- CONTENU PRINCIPAL -->
+<div id="main-content" class="hidden">
+    <div class="max-w-6xl mx-auto flex justify-between items-center mb-10">
+        <div>
+            <h1 id="month-label" class="text-4xl font-black tracking-tighter capitalize">...</h1>
+            <div class="flex gap-2 mt-2">
+                <button onclick="changeMonth(-1)" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition">←</button>
+                <button onclick="changeMonth(1)" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition">→</button>
+            </div>
+        </div>
+
+        <div class="relative">
+            <button onclick="toggleUserMenu()" class="flex items-center gap-3 bg-white p-1.5 pr-4 rounded-full shadow-lg border border-slate-100 hover:scale-105 transition">
+                <div id="user-initials" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xs">?</div>
+                <div class="text-left hidden md:block">
+                    <p id="user-display-name" class="text-[11px] font-black uppercase tracking-wider text-slate-900">Chargement...</p>
+                    <p id="user-display-role" class="text-[9px] font-bold text-blue-500 uppercase">Élève</p>
+                </div>
+            </button>
+
+            <div id="user-menu" class="absolute right-0 mt-4 w-64 bg-white rounded-3xl shadow-2xl border border-slate-100 p-2 z-[4000] hidden">
+                <button onclick="openSettings()" class="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-2xl font-bold text-sm text-slate-700 transition">⚙️ Réglages Profil</button>
+                <div class="my-2 border-t border-slate-50"></div>
+                <button onclick="logout()" class="w-full flex items-center gap-3 p-3 hover:bg-red-50 rounded-2xl font-bold text-sm text-red-500 transition">🚪 Déconnexion</button>
+            </div>
         </div>
     </div>
 
-    <div class="relative">
-        <button onclick="toggleUserMenu()" class="flex items-center gap-3 bg-white p-1.5 pr-4 rounded-full shadow-lg border border-slate-100 hover:scale-105 transition">
-            <div id="user-initials" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xs">?</div>
-            <div class="text-left hidden md:block">
-                <p id="user-display-name" class="text-[11px] font-black uppercase tracking-wider text-slate-900">Chargement...</p>
-                <p id="user-display-role" class="text-[9px] font-bold text-blue-500 uppercase">Patientez</p>
-            </div>
-        </button>
-
-        <div id="user-menu" class="absolute right-0 mt-4 w-72 bg-white rounded-3xl shadow-2xl border border-slate-100 p-3 z-[4000] hidden">
-            <div class="px-2 py-2 mb-2">
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Options du compte</p>
-            </div>
-            <button onclick="openSettings()" class="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-2xl font-bold text-sm text-slate-700 transition">⚙️ Réglages Profil</button>
-            <button id="admin-menu-btn" onclick="openAdminPanel()" class="w-full hidden flex items-center gap-3 p-3 hover:bg-blue-50 rounded-2xl font-bold text-sm text-blue-600 transition">📊 Gestion des Events</button>
-            <div class="my-3 border-t border-slate-100"></div>
-            <div class="flex gap-2">
-                <button onclick="logout()" class="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl font-bold text-xs text-slate-600 transition">🚪 Déconnexion</button>
-                <button onclick="openDeleteModal()" class="flex-1 flex items-center justify-center gap-2 p-3 bg-red-50 hover:bg-red-100 rounded-2xl font-bold text-xs text-red-500 transition">🗑️ Supprimer</button>
-            </div>
+    <div class="max-w-6xl mx-auto">
+        <div class="grid grid-cols-7 gap-px mb-2 text-[10px] font-black uppercase text-slate-400 tracking-widest px-4">
+            <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
         </div>
+        <div id="calendar-grid" class="calendar-grid shadow-2xl"></div>
     </div>
 </div>
 
-<!-- CALENDRIER -->
-<div class="max-w-6xl mx-auto">
-    <div class="grid grid-cols-7 gap-px mb-2 text-[10px] font-black uppercase text-slate-400 tracking-widest px-4">
-        <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
-    </div>
-    <div id="calendar-grid" class="calendar-grid shadow-2xl border-none"></div>
-</div>
-
-<!-- PIP: REGLAGES PROFIL -->
+<!-- PIP: RÉGLAGES -->
 <div id="settings-pip" class="pip-window">
     <div class="p-5 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
         <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Réglages Profil</span>
         <button onclick="closeAllPips()" class="text-slate-300 hover:text-slate-600 text-2xl">&times;</button>
     </div>
     <div class="p-6 overflow-y-auto max-h-[75vh] space-y-6">
-        <!-- Infos Perso -->
         <div class="space-y-3">
             <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Informations</label>
             <input id="set-firstname" type="text" placeholder="Prénom" class="input-field">
             <input id="set-lastname" type="text" placeholder="Nom" class="input-field">
-            <input id="set-email" type="email" placeholder="Email" class="input-field bg-slate-100 cursor-not-allowed" readonly>
+            <input id="set-email" type="email" readonly class="input-field bg-slate-100 text-slate-400">
             <input id="set-phone" type="tel" placeholder="Numéro de téléphone" class="input-field">
-            <button onclick="updateProfile()" class="w-full py-3 bg-slate-900 text-white font-black rounded-xl text-xs transition active:scale-95">Enregistrer les modifs.</button>
+            <button onclick="updateProfile()" class="w-full py-3 bg-slate-900 text-white font-black rounded-xl text-xs">Enregistrer les modifs.</button>
         </div>
 
-        <!-- Password Section -->
         <div class="pt-4 border-t border-slate-100 space-y-3">
             <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sécurité</label>
             <div class="relative">
                 <input id="set-password-preview" type="password" value="********" readonly class="input-field pr-12">
-                <button onclick="togglePasswordVisibility('set-password-preview')" class="absolute right-4 top-1/2 -translate-y-1/2 text-lg">👁️</button>
+                <button onclick="togglePasswordVisibility('set-password-preview')" class="absolute right-4 top-1/2 -translate-y-1/2">👁️</button>
             </div>
-            <button onclick="openChangePassword()" class="w-full py-3 bg-blue-50 text-blue-600 font-black rounded-xl text-xs transition">Modifier le mot de passe</button>
+            <button onclick="openChangePassword()" class="w-full py-3 bg-blue-50 text-blue-600 font-black rounded-xl text-xs">Modifier le mot de passe</button>
         </div>
 
-        <!-- Notifications Section -->
         <div class="pt-4 border-t border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
                 <div>
                     <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Notifications</label>
-                    <p class="text-[9px] font-bold text-slate-400 mt-1 max-w-[200px]">Les notifications sont seulement disponibles sur l'application mobile (PWA).</p>
+                    <p class="text-[9px] font-bold text-slate-400 mt-1">Disponibles seulement sur PWA mobile.</p>
                 </div>
-                <div onclick="toggleNotifications()" id="notif-toggle" class="w-12 h-6 bg-slate-200 rounded-full relative cursor-pointer transition-colors">
-                    <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform"></div>
+                <div onclick="toggleNotifications()" id="notif-toggle" class="w-12 h-6 bg-slate-200 rounded-full relative cursor-pointer transition-all">
+                    <div id="notif-dot" class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
                 </div>
             </div>
-
-            <div id="notif-reminders" class="space-y-4 opacity-50 pointer-events-none">
-                <label class="text-[9px] font-black uppercase text-slate-400">Rappels automatiques</label>
-                <div class="grid grid-cols-3 gap-2" id="base-reminders">
-                    <button onclick="toggleReminder('1week')" id="rem-1week" class="reminder-btn">1 sem</button>
-                    <button onclick="toggleReminder('1day')" id="rem-1day" class="reminder-btn">1 jour</button>
-                    <button onclick="toggleReminder('1hour')" id="rem-1hour" class="reminder-btn">1 heure</button>
+            <div id="notif-reminders" class="space-y-4 opacity-40 pointer-events-none">
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="rem-1week" onclick="toggleRem('1week')" class="reminder-btn">1 sem</button>
+                    <button id="rem-1day" onclick="toggleRem('1day')" class="reminder-btn">1 jour</button>
+                    <button id="rem-1hour" onclick="toggleRem('1hour')" class="reminder-btn">1 h</button>
                 </div>
-                
                 <div id="custom-reminders-list" class="grid grid-cols-2 gap-2"></div>
-                
-                <button onclick="openCustomNotif()" id="btn-custom-add" class="w-full py-3 border-2 border-dashed border-slate-200 text-slate-400 font-bold rounded-xl text-[10px] hover:border-blue-200 hover:text-blue-400 transition">
-                    + Ajouter un rappel (Max 3)
-                </button>
+                <button onclick="document.getElementById('custom-notif-pip').style.display='flex'" class="w-full py-3 border-2 border-dashed border-slate-200 text-slate-400 font-bold rounded-xl text-[10px]">+ Ajouter</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- PIP: CUSTOM NOTIF -->
-<div id="custom-notif-pip" class="pip-window">
-    <div class="p-5 flex justify-between items-center bg-slate-50/50">
-        <span class="text-[10px] font-black uppercase text-slate-400">Nouveau Rappel</span>
-        <button onclick="document.getElementById('custom-notif-pip').style.display='none'" class="text-2xl">&times;</button>
-    </div>
+<!-- PIP: AJOUT RAPPEL CUSTOM -->
+<div id="custom-notif-pip" class="pip-window !z-[3500]">
     <div class="p-6 space-y-4">
-        <div class="grid grid-cols-3 gap-2">
-            <input id="notif-val" type="number" placeholder="0" class="input-field col-span-1">
-            <select id="notif-unit" class="input-field col-span-2">
-                <option value="days">Jours</option>
-                <option value="hours">Heures</option>
-                <option value="minutes">Minutes</option>
+        <h3 class="text-sm font-black">Nouveau rappel personnalisé</h3>
+        <div class="flex gap-2">
+            <input id="custom-val" type="number" placeholder="30" class="input-field w-20">
+            <select id="custom-unit" class="input-field flex-1">
+                <option value="min">Minutes</option>
+                <option value="heures">Heures</option>
+                <option value="jours">Jours</option>
             </select>
         </div>
-        <button onclick="addCustomReminder()" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl">Ajouter</button>
+        <button onclick="addCustomRem()" class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl">Confirmer</button>
     </div>
 </div>
 
@@ -287,79 +248,101 @@ const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null;
 let currentProfile = null;
-let allEvents = [];
-let calendarDate = new Date();
 let authMode = 'login';
-let reminders = ['1day'];
+let calendarDate = new Date();
+let selectedReminders = [];
 let customReminders = [];
+let notificationsEnabled = false;
+let allEvents = [];
 
-// INITIALISATION & AUTH PERSISTANCE
+// INITIALISATION CORRIGÉE
 window.onload = async () => {
-    // Ecouter les changements de session
-    sb.auth.onAuthStateChanged(async (event, session) => {
-        if (session) {
-            currentUser = session.user;
-            document.getElementById('auth-screen').classList.add('hidden');
-            await loadProfile();
-            await refreshData();
-        } else {
-            currentUser = null;
-            document.getElementById('auth-screen').classList.remove('hidden');
+    // Vérification initiale de session
+    const { data: { session } } = await sb.auth.getSession();
+    
+    if (session) {
+        setupApp(session.user);
+    } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+    }
+
+    // LISTENER SUPABASE V2 : onAuthStateChange (SANS "D")
+    sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            setupApp(session.user);
+        } else if (event === 'SIGNED_OUT') {
+            document.getElementById('auth-screen').style.display = 'flex';
+            document.getElementById('main-content').classList.add('hidden');
+            closeAllPips();
         }
     });
 };
 
+async function setupApp(user) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('main-content').classList.remove('hidden');
+    await loadProfile(user.id);
+    await refreshData();
+}
+
 async function handleAuth() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-password').value;
-    
-    if (authMode === 'login') {
-        const { error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) alert("Identifiants incorrects");
-    } else {
-        const first = document.getElementById('auth-firstname').value;
-        const last = document.getElementById('auth-lastname').value;
-        const phone = document.getElementById('auth-phone').value;
-        if(!first || !last || !phone) return alert("Remplissez tous les champs");
+    const btn = document.getElementById('auth-btn');
 
-        const { data, error } = await sb.auth.signUp({ email, password });
-        if (error) return alert(error.message);
-        
-        await sb.from('profiles').insert([{
-            id: data.user.id,
-            first_name: first,
-            last_name: last,
-            phone: phone,
-            email: email,
-            role: 'user'
-        }]);
-        alert("Compte créé !");
+    if (!email || !password) {
+        alert("Veuillez remplir les champs.");
+        return;
+    }
+
+    btn.innerText = "Chargement...";
+    btn.disabled = true;
+
+    try {
+        if (authMode === 'login') {
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+        } else {
+            const first = document.getElementById('auth-firstname').value;
+            const last = document.getElementById('auth-lastname').value;
+            const phone = document.getElementById('auth-phone').value;
+
+            if (!first || !last || !phone) throw new Error("Tous les champs sont requis.");
+
+            const { data, error } = await sb.auth.signUp({ email, password });
+            if (error) throw error;
+
+            if (data.user) {
+                await sb.from('profiles').insert([{
+                    id: data.user.id,
+                    first_name: first,
+                    last_name: last,
+                    phone: phone,
+                    email: email,
+                    role: 'user'
+                }]);
+            }
+        }
+    } catch (err) {
+        alert("Erreur : " + err.message);
+    } finally {
+        btn.innerText = authMode === 'login' ? "Se connecter" : "Créer un profil";
+        btn.disabled = false;
     }
 }
 
-function toggleAuthMode() {
-    authMode = authMode === 'login' ? 'register' : 'login';
-    document.getElementById('register-fields').classList.toggle('hidden');
-    document.getElementById('auth-btn').innerText = authMode === 'login' ? 'Se connecter' : 'Créer un profil';
-    document.getElementById('auth-toggle').innerText = authMode === 'login' ? 'Pas de compte ? Créer un profil' : 'Déjà un compte ? Se connecter';
-}
-
-async function loadProfile() {
-    const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-    currentProfile = data;
-    if (currentProfile) {
-        document.getElementById('user-display-name').innerText = `${currentProfile.first_name} ${currentProfile.last_name}`;
-        document.getElementById('user-initials').innerText = (currentProfile.first_name[0] || '?').toUpperCase();
-        document.getElementById('admin-menu-btn').classList.toggle('hidden', currentProfile.role !== 'admin');
-        document.getElementById('user-display-role').innerText = currentProfile.role === 'admin' ? "Administrateur" : "Élève";
+async function loadProfile(uid) {
+    const { data } = await sb.from('profiles').select('*').eq('id', uid).single();
+    if (data) {
+        currentProfile = data;
+        document.getElementById('user-display-name').innerText = `${data.first_name} ${data.last_name}`;
+        document.getElementById('user-initials').innerText = (data.first_name[0] || '?').toUpperCase();
         
-        // Remplir réglages
-        document.getElementById('set-firstname').value = currentProfile.first_name;
-        document.getElementById('set-lastname').value = currentProfile.last_name;
-        document.getElementById('set-email').value = currentProfile.email;
-        document.getElementById('set-phone').value = currentProfile.phone || "";
+        document.getElementById('set-firstname').value = data.first_name;
+        document.getElementById('set-lastname').value = data.last_name;
+        document.getElementById('set-email').value = data.email;
+        document.getElementById('set-phone').value = data.phone || '';
     }
 }
 
@@ -368,68 +351,113 @@ async function updateProfile() {
     const last = document.getElementById('set-lastname').value;
     const phone = document.getElementById('set-phone').value;
 
-    if(!first || !last || !phone) return alert("Les champs ne peuvent pas être vides.");
+    if (!first || !last || !phone) return alert("Champs vides interdits !");
 
-    const { error } = await sb.from('profiles').update({ 
-        first_name: first, last_name: last, phone: phone 
-    }).eq('id', currentUser.id);
+    const { error } = await sb.from('profiles').update({
+        first_name: first, last_name: last, phone: phone
+    }).eq('id', currentProfile.id);
 
-    if(!error) {
+    if (error) alert(error.message);
+    else {
         alert("Modifications enregistrées !");
-        loadProfile();
+        loadProfile(currentProfile.id);
     }
 }
 
-// LOGIQUE DES RAPPELS
+async function refreshData() {
+    const { data, error } = await sb.from('events').select('*');
+    if(!error) {
+        allEvents = data || [];
+        renderCalendar();
+    }
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    const y = calendarDate.getFullYear();
+    const m = calendarDate.getMonth();
+    document.getElementById('month-label').innerText = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(calendarDate);
+
+    const first = (new Date(y, m, 1).getDay() || 7) - 1;
+    const days = new Date(y, m + 1, 0).getDate();
+
+    for (let i = 0; i < first; i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'calendar-day empty' }));
+    for (let d = 1; d <= days; d++) {
+        const el = document.createElement('div');
+        el.className = 'calendar-day';
+        el.innerHTML = `<span class="text-xs font-bold">${d}</span>`;
+        grid.appendChild(el);
+    }
+}
+
+function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'register' : 'login';
+    document.getElementById('register-fields').classList.toggle('hidden');
+    document.getElementById('auth-btn').innerText = authMode === 'login' ? 'Se connecter' : 'Créer un profil';
+    document.getElementById('auth-toggle').innerText = authMode === 'login' ? 'Pas de compte ? Créer un profil' : 'Déjà un compte ? Se connecter';
+    document.getElementById('auth-subtitle').innerText = authMode === 'login' ? 'Connectez-vous pour voir le planning' : 'Créez votre profil élève';
+}
+
 function toggleNotifications() {
+    notificationsEnabled = !notificationsEnabled;
+    const dot = document.getElementById('notif-dot');
     const toggle = document.getElementById('notif-toggle');
     const container = document.getElementById('notif-reminders');
-    const isActive = toggle.classList.toggle('bg-blue-600');
-    toggle.children[0].classList.toggle('translate-x-6');
-    container.style.opacity = isActive ? '1' : '0.5';
-    container.style.pointerEvents = isActive ? 'auto' : 'none';
-    updateRemindersUI();
+
+    if (notificationsEnabled) {
+        toggle.classList.add('bg-blue-600');
+        dot.classList.add('translate-x-6');
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto';
+    } else {
+        toggle.classList.remove('bg-blue-600');
+        dot.classList.remove('translate-x-6');
+        container.style.opacity = '0.4';
+        container.style.pointerEvents = 'none';
+    }
 }
 
-function toggleReminder(id) {
-    if (reminders.includes(id)) reminders = reminders.filter(r => r !== id);
-    else reminders.push(id);
-    updateRemindersUI();
+function toggleRem(id) {
+    const idx = selectedReminders.indexOf(id);
+    if (idx > -1) selectedReminders.splice(idx, 1);
+    else selectedReminders.push(id);
+    updateRemUI();
 }
 
-function updateRemindersUI() {
+function updateRemUI() {
     ['1week', '1day', '1hour'].forEach(id => {
         const btn = document.getElementById(`rem-${id}`);
-        const active = reminders.includes(id);
+        const active = selectedReminders.includes(id);
         btn.className = `reminder-btn ${active ? 'active' : ''}`;
-        btn.innerHTML = `${btn.innerText.split(' ')[0]} ${btn.innerText.split(' ')[1] || ''} ${active ? '✓' : ''}`;
+        btn.innerHTML = `${btn.innerText.replace(' ✓', '')} ${active ? '✓' : ''}`;
     });
 
     const list = document.getElementById('custom-reminders-list');
     list.innerHTML = customReminders.map((r, i) => `
-        <div class="reminder-btn active">
+        <div class="reminder-btn active relative">
             ${r.val} ${r.unit} ✓
-            <button onclick="removeCustom(${i})" class="absolute -top-1 -right-1 w-4 h-4 bg-slate-900 text-white rounded-full text-[8px] flex items-center justify-center">×</button>
+            <button onclick="removeCustom(${i})" class="absolute -top-1 -right-1 bg-slate-900 text-white w-4 h-4 rounded-full text-[8px]">×</button>
         </div>
     `).join('');
-    document.getElementById('btn-custom-add').style.display = customReminders.length >= 3 ? 'none' : 'block';
 }
 
-function addCustomReminder() {
-    const val = document.getElementById('notif-val').value;
-    const unit = document.getElementById('notif-unit').value;
-    if(!val) return;
+function addCustomRem() {
+    if (customReminders.length >= 3) return alert("Max 3 rappels.");
+    const val = document.getElementById('custom-val').value;
+    const unit = document.getElementById('custom-unit').value;
+    if (!val) return;
     customReminders.push({ val, unit });
+    updateRemUI();
     document.getElementById('custom-notif-pip').style.display = 'none';
-    updateRemindersUI();
 }
 
 function removeCustom(i) {
     customReminders.splice(i, 1);
-    updateRemindersUI();
+    updateRemUI();
 }
 
-// SECRETS & MODALES
 function togglePasswordVisibility(id) {
     const el = document.getElementById(id);
     el.type = el.type === 'password' ? 'text' : 'password';
@@ -443,59 +471,23 @@ function openChangePassword() {
 async function submitNewPassword() {
     const p1 = document.getElementById('new-pwd-1').value;
     const p2 = document.getElementById('new-pwd-2').value;
-    if(p1.length < 8) return alert("Minimum 8 caractères.");
-    if(p1 !== p2) return alert("Les mots de passe ne correspondent pas.");
+    if (p1.length < 8) return alert("Minimum 8 caractères.");
+    if (p1 !== p2) return alert("Mots de passe différents.");
 
     const { error } = await sb.auth.updateUser({ password: p1 });
-    if(!error) {
-        alert("Mot de passe mis à jour !");
+    if (error) alert(error.message);
+    else {
+        alert("Mot de passe modifié !");
         closeModal();
     }
 }
 
-// UI HELPER
-function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
-function openSettings() { toggleUserMenu(); document.getElementById('settings-pip').style.display = 'flex'; updateRemindersUI(); }
-function openAdminPanel() { toggleUserMenu(); document.getElementById('admin-pip').style.display = 'flex'; renderAdminList(); }
-function openDeleteModal() { toggleUserMenu(); document.getElementById('modal-overlay').style.display = 'flex'; document.getElementById('delete-modal').classList.remove('hidden'); }
-function closeModal() { 
-    document.getElementById('modal-overlay').style.display = 'none'; 
-    document.getElementById('delete-modal').classList.add('hidden'); 
-    document.getElementById('pwd-modal').classList.add('hidden'); 
-}
-function openCustomNotif() { document.getElementById('custom-notif-pip').style.display = 'flex'; }
-function closeAllPips() { document.querySelectorAll('.pip-window').forEach(p => p.style.display = 'none'); }
 function logout() { sb.auth.signOut(); }
-function changeMonth(step) { calendarDate.setMonth(calendarDate.getMonth() + step); renderCalendar(); }
-
-// CALENDRIER (Même logique mais rafraîchie)
-async function refreshData() {
-    const { data } = await sb.from('events').select('*');
-    allEvents = data || [];
-    renderCalendar();
-}
-
-function renderCalendar() {
-    const grid = document.getElementById('calendar-grid');
-    grid.innerHTML = '';
-    const year = calendarDate.getFullYear();
-    const month = calendarDate.getMonth();
-    document.getElementById('month-label').innerText = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(calendarDate);
-    const firstDay = (new Date(year, month, 1).getDay() || 7) - 1;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    for (let i = 0; i < firstDay; i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'calendar-day empty' }));
-    for (let d = 1; d <= daysInMonth; d++) {
-        const isoDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const dayOfWeek = new Date(year, month, d).getDay();
-        const dailyEvents = allEvents.filter(e => e.is_recurring ? e.recurrence_days?.includes(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayOfWeek]) : e.date === isoDate);
-        
-        const dayEl = document.createElement('div');
-        dayEl.className = 'calendar-day';
-        dayEl.innerHTML = `<span class="text-xs font-bold">${d}</span><div class="flex flex-col gap-1 mt-1">${dailyEvents.slice(0, 2).map(ev => `<div class="text-[7px] bg-blue-500 text-white px-1 py-0.5 rounded truncate font-bold">${ev.title}</div>`).join('')}</div>`;
-        grid.appendChild(dayEl);
-    }
-}
+function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
+function openSettings() { toggleUserMenu(); document.getElementById('settings-pip').style.display = 'flex'; }
+function closeAllPips() { document.querySelectorAll('.pip-window').forEach(p => p.style.display = 'none'); }
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+function changeMonth(s) { calendarDate.setMonth(calendarDate.getMonth() + s); renderCalendar(); }
 </script>
 </body>
 </html>
