@@ -621,6 +621,12 @@
             }
         } else await sb.auth.signInWithPassword({ email: e, password: p });
     }
+    document.querySelector('form').onsubmit = function() {
+    var input = document.getElementById('admin-max');
+    if (input.value === "") {
+      input.value = "99"; // On remplit par 99 juste avant l'envoi
+    }
+  };
 </script>
 
 <style>
@@ -629,3 +635,4 @@
 </style>
 </body>
 </html>
+
