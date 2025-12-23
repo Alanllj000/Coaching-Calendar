@@ -370,17 +370,36 @@
     let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [], archiveCache = [];
     const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-    window.onload = async () => {
-        if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-            navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW Error:', err));
+    document.addEventListener('DOMContentLoaded', async () => {
+
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW Error:', err));
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+
+    if (!session) {
+        showAuthScreen();
+        return;
+    }
+
+    initApp(session.user);
+
+    sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
+            showAuthScreen();
+            document.getElementById('main-content').classList.add('hidden');
         }
-        const { data: { session } } = await sb.auth.getSession();
-        if (session) initApp(session.user);
-        else document.getElementById('auth-screen').style.display = 'flex';
-        sb.auth.onAuthStateChange((event, session) => { if (event === 'SIGNED_IN' && session) initApp(session.user); if (event === 'SIGNED_OUT') location.reload(); });
-    };
+        if (event === 'SIGNED_IN' && session) {
+            initApp(session.user);
+        }
+    });
+});
+
 
     async function initApp(user) {
+        if (!user) return;
+        
         currentUser = user; 
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('main-content').classList.remove('hidden');
@@ -935,6 +954,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
