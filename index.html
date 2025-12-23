@@ -184,34 +184,51 @@
 
   // --- CONFIRMATION PROFIL ---
   async function confirmProfile(passwordConfirmation) {
-    const pendingProfile = JSON.parse(sessionStorage.getItem('pendingProfile'));
-    const pendingEmail = sessionStorage.getItem('pendingEmail');
+  const pendingProfile = JSON.parse(sessionStorage.getItem('pendingProfile'));
+  const pendingEmail = sessionStorage.getItem('pendingEmail'));
 
-    if (!pendingProfile || !pendingEmail) return alert("Informations de profil manquantes");
-
-    const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({
-      email: pendingEmail,
-      password: passwordConfirmation
-    });
-    if (signInError) return alert("Mot de passe incorrect");
-
-    const user = signInData.user;
-    if (!user) return alert("Utilisateur non trouvé");
-
-    const { error: pErr } = await sb.from('profiles').insert([{
-      id: user.id,
-      email: pendingEmail,
-      ...pendingProfile,
-      role: 'user'
-    }]);
-    if (pErr) return alert("Erreur création profil : " + pErr.message);
-
-    console.log("Profil créé avec succès !");
-    sessionStorage.removeItem('pendingProfile');
-    sessionStorage.removeItem('pendingEmail');
-
-    initApp(user);
+  if (!pendingProfile || !pendingEmail) {
+    alert("Informations de profil manquantes");
+    return;
   }
+
+  // Vérification du mot de passe
+  const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({
+    email: pendingEmail,
+    password: passwordConfirmation
+  });
+
+  if (signInError) {
+    alert("Mot de passe incorrect");
+    return;
+  }
+
+  const user = signInData.user;
+  if (!user) {
+    alert("Utilisateur non trouvé");
+    return;
+  }
+
+  // ✅ Upsert pour créer ou mettre à jour le profil
+  const { error: upsertErr } = await sb.from('profiles').upsert([{
+    id: user.id,
+    email: pendingEmail,
+    ...pendingProfile,
+    role: 'user'
+  }], { onConflict: 'id' }); // <-- "id" est la clé unique (UUID)
+  
+  if (upsertErr) {
+    alert("Erreur création / mise à jour profil : " + upsertErr.message);
+    return;
+  }
+
+  console.log("Profil créé ou mis à jour avec succès !");
+  sessionStorage.removeItem('pendingProfile');
+  sessionStorage.removeItem('pendingEmail');
+
+  initApp(user);
+}
+
         async function logout() { await sb.auth.signOut(); location.reload(); }
 
         // --- 3. LOGIQUE APP ---
@@ -421,6 +438,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
