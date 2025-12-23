@@ -924,9 +924,17 @@ async function handleAuth() {
     // Connexion automatique
     await sb.auth.signInWithPassword({ email, password });
 }
+    document.addEventListener('DOMContentLoaded', async () => {
+    const ok = await requireAuth();
+    if (!ok) return;
+
+    await loadProfile();
+    renderCalendar();
+  });
 
 </script>
 </body>
 </html>
+
 
 
