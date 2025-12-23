@@ -369,39 +369,71 @@
         }
 
         async function handleAuth() {
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-            const errDiv = document.getElementById('error-message');
-            const loader = document.getElementById('btn-loader');
-            
-            errDiv.classList.add('hidden');
-            if (!email || !password) { errDiv.innerText = "Email/Pass requis"; errDiv.classList.remove('hidden'); return; }
-            loader.classList.remove('hidden');
+        // On récupère les valeurs au moment du clic
+        const emailVal = document.getElementById('auth-email').value.trim();
+        const passwordVal = document.getElementById('auth-password').value;
+        const errDiv = document.getElementById('error-message');
+        const loader = document.getElementById('btn-loader');
+        
+        errDiv.classList.add('hidden');
+        if (!emailVal || !passwordVal) { 
+            errDiv.innerText = "Email et mot de passe requis"; 
+            errDiv.classList.remove('hidden'); 
+            return; 
+        }
+        loader.classList.remove('hidden');
 
-            try {
-                if (isRegisterMode) {
-                    const fn = document.getElementById('auth-firstname').value.trim();
-                    const ln = document.getElementById('auth-lastname').value.trim();
-                    if(!fn || !ln) throw new Error("Nom et Prénom requis");
+        try {
+            if (isRegisterMode) {
+                const fn = document.getElementById('auth-firstname').value.trim();
+                const ln = document.getElementById('auth-lastname').value.trim();
+                const ph = document.getElementById('auth-phone').value.trim();
+                
+                if(!fn || !ln) throw new Error("Nom et Prénom requis");
+                
+                // 1. Création du compte Auth
+                const { data, error } = await sb.auth.signUp({ 
+                    email: emailVal, 
+                    password: passwordVal 
+                });
+                
+                if (error) throw error;
+                
+                if (data.user) {
+                    console.log("Utilisateur créé, insertion profil pour:", emailVal);
+                    // 2. Création du profil avec sécurité sur les noms de colonnes
+                    const { error: pErr } = await sb.from('profiles').insert([{ 
+                        id: data.user.id, 
+                        first_name: fn, 
+                        last_name: ln, 
+                        email: emailVal, // On s'assure d'utiliser la variable récupérée au début
+                        Phone: ph, 
+                        role: 'user' 
+                    }]);
                     
-                    const { data, error } = await sb.auth.signUp({ email, password });
-                    if (error) throw error;
-                    if (data.user) {
-                        await sb.from('profiles').insert([{ id: data.user.id, first_name: fn, last_name: ln, Phone: document.getElementById('auth-phone').value, role: 'user' }]);
-                        initApp(data.user);
+                    if (pErr) {
+                        console.error("Erreur d'insertion profil détaillée:", pErr);
+                        throw new Error("Erreur base de données (Profil): " + pErr.message);
                     }
-                } else {
-                    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
+                    
                     initApp(data.user);
                 }
-            } catch (err) {
-                errDiv.innerText = err.message;
-                errDiv.classList.remove('hidden');
-            } finally {
-                loader.classList.add('hidden');
+            } else {
+                const { data, error } = await sb.auth.signInWithPassword({ 
+                    email: emailVal, 
+                    password: passwordVal 
+                });
+                if (error) throw error;
+                initApp(data.user);
             }
+        } catch (err) {
+            console.error("Auth Error:", err);
+            errDiv.innerText = err.message;
+            errDiv.classList.remove('hidden');
+        } finally {
+            loader.classList.add('hidden');
         }
+    }
 
         async function logout() { await sb.auth.signOut(); location.reload(); }
 
@@ -612,6 +644,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
