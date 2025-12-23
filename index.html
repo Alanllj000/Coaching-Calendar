@@ -73,6 +73,7 @@
             z-index: 8000; display: none; align-items: center; justify-content: center; padding: 1.5rem;
         }
 
+        /* Switch Toggle Styling */
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; inset: 0; background-color: #e2e8f0; transition: .4s; border-radius: 24px; }
@@ -97,7 +98,7 @@
                 <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
                 <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
             </div>
-            <button type="button" onclick="handleAuth()" id="auth-btn" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Se connecter</button>
+            <button onclick="handleAuth()" id="auth-btn" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Se connecter</button>
             <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">Créer un compte</p>
         </div>
     </div>
@@ -109,27 +110,28 @@
         <div class="flex flex-col justify-center">
             <h1 id="month-label" class="text-2xl md:text-4xl font-black tracking-tighter capitalize text-slate-900 leading-tight mb-1">...</h1>
             <div class="flex gap-2">
-                <button type="button" onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition">
+                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition">
                     <i class="fas fa-chevron-left text-sm font-black"></i>
                 </button>
-                <button type="button" onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition">
+                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition">
                     <i class="fas fa-chevron-right text-sm font-black"></i>
                 </button>
             </div>
         </div>
         <div class="relative group-menu">
-            <button type="button" onclick="toggleUserMenu(event)" class="flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-slate-200 active:scale-90 transition">
+            <button onclick="toggleUserMenu(event)" class="flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-slate-200 active:scale-90 transition">
                 <div id="user-initials" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm">?</div>
             </button>
             <div id="user-menu" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-[3500] hidden">
-                <button type="button" onclick="openSettingsPanel()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center gap-3">
+                <!-- Réglages en haut -->
+                <button onclick="openSettingsPanel()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center gap-3">
                     <i class="fas fa-cog"></i> Réglages
                 </button>
-                <button type="button" id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3">
+                <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3">
                     <i class="fas fa-plus-circle"></i> Créer Event
                 </button>
                 <div class="border-t border-slate-100 my-1"></div>
-                <button type="button" onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3">
+                <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3">
                     <i class="fas fa-sign-out-alt"></i> Déconnexion
                 </button>
             </div>
@@ -148,12 +150,12 @@
 
 <div id="mobile-pip-zone"></div>
 
-<!-- PANEL ADMIN (Création / Edition) -->
+<!-- PANEL ADMIN -->
 <div id="admin-panel" class="fullscreen-pip">
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         <div class="flex justify-between items-center mb-8">
             <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
-            <button type="button" onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
+            <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
         </div>
         <div class="space-y-5 pb-20">
             <input id="admin-event-id" type="hidden">
@@ -195,9 +197,8 @@
                 </div>
             </div>
 
-            <button type="button" id="admin-save-btn" onclick="handleAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition">Créer</button>
-            <!-- BOUTON SUPPRIMER CORRIGÉ -->
-            <button type="button" id="admin-delete-btn" onclick="deleteEvent()" class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition-colors mt-2">Supprimer l'événement complet</button>
+            <button id="admin-save-btn" onclick="handleAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition">Créer</button>
+            <button id="admin-delete-btn" onclick="triggerDeleteProcess()" class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition mt-2">Supprimer l'événement</button>
         </div>
     </div>
 </div>
@@ -207,61 +208,116 @@
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-3xl font-black tracking-tight">Réglages</h2>
-            <button type="button" onclick="closeSettingsPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
+            <button onclick="closeSettingsPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
         </div>
         
         <div class="space-y-6 pb-20">
             <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Informations Personnelles</p>
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
                 <div class="grid grid-cols-2 gap-4">
                     <input id="set-firstname" placeholder="Prénom" class="input-field">
                     <input id="set-lastname" placeholder="Nom" class="input-field">
                 </div>
                 <input id="set-phone" placeholder="Téléphone" class="input-field">
-                <input id="set-email" type="email" placeholder="Email" class="input-field" disabled>
             </div>
 
-            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sécurité</p>
-                <button type="button" onclick="openPasswordPip()" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl active:scale-95 transition flex items-center justify-center gap-3">
-                    <i class="fas fa-key text-xs"></i> Modifier le mot de passe
-                </button>
+            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Notifications Push</p>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-slate-800">Alertes Mobile</p>
+                        <p class="text-[10px] text-slate-400">Recevoir des rappels de séances</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="notif-master" onchange="togglePushSubscription()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- SOUS-OPTIONS NOTIFICATIONS (Cachées si Off) -->
+                <div id="notif-options" class="hidden border-t border-slate-50 pt-6 space-y-5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-slate-600">Rappel 1h avant</span>
+                        <label class="switch scale-75">
+                            <input type="checkbox" id="notif-1h" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-slate-600">Rappel 1 jour avant</span>
+                        <label class="switch scale-75">
+                            <input type="checkbox" id="notif-1j" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-slate-600">Rappel 1 semaine avant</span>
+                        <label class="switch scale-75">
+                            <input type="checkbox" id="notif-1s" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <button onclick="openCustomReminders()" class="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition">
+                        Rappels personnalisés
+                    </button>
+                </div>
             </div>
 
-            <div class="space-y-3">
-                <button type="button" onclick="saveProfileSettings()" id="settings-save-btn" class="w-full py-5 bg-slate-100 text-slate-900 text-xl font-black rounded-2xl active:scale-95 transition">Enregistrer</button>
-                <button type="button" onclick="openDeleteAccountPip()" class="w-full py-4 text-red-500 font-bold text-sm">Supprimer le compte</button>
-            </div>
+            <button onclick="saveProfileSettings()" id="settings-save-btn" class="w-full py-5 bg-slate-900 text-white text-xl font-black rounded-2xl active:scale-95 transition shadow-xl">Enregistrer</button>
         </div>
     </div>
 </div>
 
-<div id="password-pip" class="fullscreen-pip" style="z-index: 7000;">
-    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-black tracking-tight">Mot de passe</h2>
-            <button type="button" onclick="closePasswordPip()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
-        </div>
-        <div class="space-y-6">
-            <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-5">
-                <input id="new-password" type="password" placeholder="Nouveau code" class="input-field">
-                <input id="confirm-password" type="password" placeholder="Confirmer" class="input-field">
+<!-- PiP RAPPELS PERSONNALISÉS -->
+<div id="custom-reminders-pip" class="delete-overlay">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-slate-900 mb-6 text-center">Rappel Personnalisé</h3>
+        
+        <p class="text-[10px] font-black uppercase text-slate-400 mb-4 text-center">Prévenir avant l'événement :</p>
+        
+        <div class="grid grid-cols-3 gap-3 mb-8">
+            <div class="flex flex-col items-center">
+                <input id="custom-days" type="number" value="0" min="0" class="input-field text-center p-3 text-lg">
+                <span class="text-[9px] font-bold text-slate-400 mt-2 uppercase">Jours</span>
             </div>
-            <button type="button" onclick="updatePassword()" class="w-full py-5 bg-slate-900 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition">Confirmer</button>
+            <div class="flex flex-col items-center">
+                <input id="custom-hours" type="number" value="0" min="0" max="23" class="input-field text-center p-3 text-lg">
+                <span class="text-[9px] font-bold text-slate-400 mt-2 uppercase">Heures</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <input id="custom-minutes" type="number" value="30" min="0" max="59" class="input-field text-center p-3 text-lg">
+                <span class="text-[9px] font-bold text-slate-400 mt-2 uppercase">Mins</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <button onclick="closeCustomReminders()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Appliquer</button>
+            <button onclick="closeCustomReminders()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
         </div>
     </div>
 </div>
 
-<div id="delete-account-pip" class="delete-overlay">
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
-        <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <i class="fas fa-exclamation-triangle text-3xl"></i>
+<!-- PiP DE CONFIRMATION SÉRIE -->
+<div id="delete-confirmation-pip" class="delete-overlay">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-trash-alt text-2xl"></i>
         </div>
-        <h3 class="text-2xl font-black text-slate-900 mb-4">Supprimer le compte ?</h3>
-        <p class="text-slate-500 text-sm mb-8">Cette action est irréversible.</p>
-        <div class="space-y-3">
-            <button type="button" onclick="confirmDeleteAccount()" class="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
-            <button type="button" onclick="closeDeleteAccountPip()" class="w-full py-4 bg-slate-50 text-slate-400 font-bold rounded-2xl">Annuler</button>
+        <h3 class="text-xl font-black text-center text-slate-900 mb-2">Supprimer l'événement</h3>
+        <p class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed">Cet événement fait partie d'une série. Voulez-vous supprimer toute la série ou uniquement cette date ?</p>
+        
+        <div class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between">
+            <span id="delete-mode-text" class="text-[10px] font-black text-slate-700">Supprimer cet événement spécifique</span>
+            <label class="switch">
+                <input type="checkbox" id="delete-series-toggle" onchange="updateDeleteModeText()">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <button onclick="confirmDeleteSelection()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="closeDeleteConfirmation()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
         </div>
     </div>
 </div>
@@ -269,12 +325,18 @@
 <script>
     const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+    const VAPID_PUBLIC_KEY = 'BIIVWDznwx3nfErnVDvMRU0HqCpQ4s8uNFOuKMQFwwD8xXtmhMtB5T3naj_5miiWHR6dYPUV56Iu2cb69yPd4Aw';
+    
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
     const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
     window.onload = async () => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(console.error);
+        }
+
         const { data: { session } } = await sb.auth.getSession();
         if (session) initApp(session.user);
         else document.getElementById('auth-screen').style.display = 'flex';
@@ -295,80 +357,168 @@
     }
 
     async function loadProfile() {
+        // Chargement du profil et des réglages de notifications (table séparée ou champs profil)
         const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
         if (profile) {
             currentProfile = profile;
             document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
             if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
-            document.getElementById('set-email').value = currentUser.email || '';
+            
+            // Remplissage des champs réglages
             document.getElementById('set-firstname').value = profile.first_name || '';
             document.getElementById('set-lastname').value = profile.last_name || '';
             document.getElementById('set-phone').value = profile.Phone || '';
-        }
-    }
-
-    // --- ACTIONS ÉVÉNEMENTS ---
-    async function deleteEvent() {
-        // LOG IMMÉDIAT POUR TESTER LE CLIC
-        console.log("BOUTON SUPPRIMER CLIQUE");
-        
-        const eventId = document.getElementById('admin-event-id').value;
-        console.log("ID récupéré pour suppression:", eventId);
-        
-        if (!eventId) {
-            console.warn("Pas d'ID d'événement trouvé dans le champ caché.");
-            return;
-        }
-        
-        const confirmation = confirm("Attention: Cela supprimera l'événement source et TOUTES ses occurrences récurrentes. Continuer ?");
-        if (!confirmation) return;
-
-        try {
-            console.log("Envoi de la requête de suppression à Supabase pour l'ID:", eventId);
-            const { error } = await sb.from('events').delete().eq('id', eventId);
             
-            if (error) {
-                console.error("Erreur Supabase lors de la suppression:", error);
-                alert("Erreur de suppression: " + error.message);
-            } else {
-                console.log("Suppression réussie !");
-                closeAdminPanel();
-                await fetchEvents();
-                alert("Événement supprimé avec succès.");
-            }
-        } catch (err) {
-            console.error("Erreur inattendue dans deleteEvent:", err);
-        }
-    }
-
-    async function excludeOccurrence(eventId, dateStr) {
-        console.log("Masquage occurrence pour l'ID:", eventId, "à la date:", dateStr);
-        const event = eventsCache.find(e => e.id === eventId);
-        if(!event) return;
-        
-        const excluded = event.excluded_dates || [];
-        if(!excluded.includes(dateStr)) {
-            excluded.push(dateStr);
-            if(confirm("Voulez-vous masquer uniquement cette séance ?")) {
-                const { error } = await sb.from('events').update({ excluded_dates: excluded }).eq('id', eventId);
-                if(error) {
-                    console.error("Erreur masquage:", error);
-                } else {
-                    closeMobilePip();
-                    await fetchEvents();
+            // Réglages Notifications
+            const { data: notifSettings } = await sb.from('notification_settings').select('*').eq('user_id', currentUser.id).single();
+            if (notifSettings) {
+                const master = document.getElementById('notif-master');
+                master.checked = notifSettings.notif_enable || false;
+                document.getElementById('notif-options').classList.toggle('hidden', !master.checked);
+                
+                document.getElementById('notif-1h').checked = notifSettings.remind_hour || false;
+                document.getElementById('notif-1j').checked = notifSettings.remind_day || false;
+                document.getElementById('notif-1s').checked = notifSettings.remind_week || false;
+                
+                // On peut aussi stocker les valeurs personnalisées
+                if (notifSettings.custom_delay_mins) {
+                    const total = notifSettings.custom_delay_mins;
+                    document.getElementById('custom-days').value = Math.floor(total / 1440);
+                    document.getElementById('custom-hours').value = Math.floor((total % 1440) / 60);
+                    document.getElementById('custom-minutes').value = total % 60;
                 }
             }
         }
     }
 
-    async function fetchEvents() {
-        console.log("Chargement des événements...");
-        const { data, error } = await sb.from('events').select('*, registrations(id, user_id)');
-        if (error) console.error("Erreur fetch events:", error);
-        else {
-            eventsCache = data || [];
-            renderCalendar();
+    // --- LOGIQUE NOTIFICATIONS ---
+    async function togglePushSubscription() {
+        const checkbox = document.getElementById('notif-master');
+        const optionsDiv = document.getElementById('notif-options');
+        
+        if (checkbox.checked) {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert("Permission refusée. Veuillez activer les notifications dans votre navigateur.");
+                checkbox.checked = false;
+                return;
+            }
+            
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+                
+                // Upsert settings
+                await sb.from('notification_settings').upsert({
+                    user_id: currentUser.id,
+                    notif_enable: true,
+                    push_subscription: JSON.stringify(sub)
+                }, { onConflict: 'user_id' });
+                
+                optionsDiv.classList.remove('hidden');
+            } catch (err) {
+                console.error("Subscription failed:", err);
+                checkbox.checked = false;
+            }
+        } else {
+            await sb.from('notification_settings').update({ notif_enable: false }).eq('user_id', currentUser.id);
+            optionsDiv.classList.add('hidden');
         }
+    }
+
+    function openCustomReminders() { document.getElementById('custom-reminders-pip').style.display = 'flex'; }
+    function closeCustomReminders() { document.getElementById('custom-reminders-pip').style.display = 'none'; }
+
+    async function saveProfileSettings() {
+        const btn = document.getElementById('settings-save-btn');
+        btn.disabled = true;
+        btn.textContent = "Enregistrement...";
+
+        // 1. Profil de base
+        const profileUpdate = {
+            first_name: document.getElementById('set-firstname').value,
+            last_name: document.getElementById('set-lastname').value,
+            Phone: document.getElementById('set-phone').value
+        };
+        await sb.from('profiles').update(profileUpdate).eq('id', currentUser.id);
+
+        // 2. Réglages notifications
+        const customMins = (parseInt(document.getElementById('custom-days').value) * 1440) + 
+                          (parseInt(document.getElementById('custom-hours').value) * 60) + 
+                          parseInt(document.getElementById('custom-minutes').value);
+
+        const notifUpdate = {
+            notif_enable: document.getElementById('notif-master').checked,
+            remind_hour: document.getElementById('notif-1h').checked,
+            remind_day: document.getElementById('notif-1j').checked,
+            remind_week: document.getElementById('notif-1s').checked,
+            custom_delay_mins: customMins
+        };
+        await sb.from('notification_settings').update(notifUpdate).eq('user_id', currentUser.id);
+
+        btn.disabled = false;
+        btn.textContent = "Enregistré !";
+        setTimeout(() => { btn.textContent = "Enregistrer"; }, 2000);
+        loadProfile();
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+        return outputArray;
+    }
+
+    // --- LOGIQUE SUPPRESSION ---
+    function triggerDeleteProcess() {
+        const eventId = document.getElementById('admin-event-id').value;
+        const event = eventsCache.find(e => e.id === eventId);
+        if (event?.is_recurring) {
+            document.getElementById('delete-series-toggle').checked = false;
+            updateDeleteModeText();
+            document.getElementById('delete-confirmation-pip').style.display = 'flex';
+        } else {
+            if(confirm("Supprimer cet événement ?")) executeDeletion(eventId, true);
+        }
+    }
+
+    function updateDeleteModeText() {
+        const isSeries = document.getElementById('delete-series-toggle').checked;
+        document.getElementById('delete-mode-text').textContent = isSeries ? "Supprimer toute la série" : "Supprimer uniquement ce jour";
+    }
+
+    function closeDeleteConfirmation() { document.getElementById('delete-confirmation-pip').style.display = 'none'; }
+    async function confirmDeleteSelection() {
+        const eventId = document.getElementById('admin-event-id').value;
+        const isSeries = document.getElementById('delete-series-toggle').checked;
+        const dateToExclude = document.getElementById('admin-date').value;
+        await executeDeletion(eventId, isSeries, isSeries ? null : dateToExclude);
+        closeDeleteConfirmation();
+    }
+
+    async function executeDeletion(eventId, deleteAll, dateToExclude = null) {
+        if (deleteAll) {
+            await sb.from('events').delete().eq('id', eventId);
+        } else {
+            const event = eventsCache.find(e => e.id === eventId);
+            const currentExcluded = Array.isArray(event.excluded_dates) ? event.excluded_dates : [];
+            if (!currentExcluded.includes(dateToExclude)) {
+                currentExcluded.push(dateToExclude);
+                await sb.from('events').update({ excluded_dates: currentExcluded }).eq('id', eventId);
+            }
+        }
+        closeAdminPanel(); await fetchEvents();
+    }
+
+    // --- CALENDRIER & UI ---
+    async function fetchEvents() {
+        const { data } = await sb.from('events').select('*, registrations(id, user_id)');
+        if (data) { eventsCache = data; renderCalendar(); }
     }
 
     function renderCalendar() {
@@ -385,7 +535,7 @@
             const dayEvts = eventsCache.filter(e => {
                 const isDirect = e.date === dateStr;
                 const isRecur = e.is_recurring && e.recurrence_days?.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
-                const isNotExcluded = !(e.excluded_dates || []).includes(dateStr);
+                const isNotExcluded = !Array.isArray(e.excluded_dates) || !e.excluded_dates.includes(dateStr);
                 return (isDirect || isRecur) && isNotExcluded;
             });
 
@@ -401,135 +551,87 @@
         evt.stopPropagation();
         const zone = document.getElementById('mobile-pip-zone'); zone.style.pointerEvents = 'auto';
         const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-        let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button type="button" onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button type="button" onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
+        let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
         if(!events.length) html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
         else events.forEach(e => {
             const isReg = e.registrations?.some(r => r.user_id === currentUser.id), isFull = (e.registrations?.length || 0) >= e.max_participants;
             html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between">
-                <div>
-                    <h4 class="font-black text-slate-800">${e.title}</h4>
-                    <div class="flex gap-2 text-[10px]"><span class="text-blue-600 font-bold">${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div>
-                </div>
+                <div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px]"><span class="text-blue-600 font-bold">${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div></div>
                 <div class="flex items-center gap-2">
-                    <div class="text-right">
-                        <div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div>
-                        <button type="button" onclick="toggleReg('${e.id}', '${dateStr}', ${isReg})" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}" ${!isReg && isFull ? 'disabled' : ''}>${isReg ? 'Inscrit' : 'S\'inscrire'}</button>
-                    </div>
-                    ${currentProfile?.role === 'admin' ? `
-                    <div class="flex flex-col gap-1">
-                        <button type="button" onclick="editEventInstance('${e.id}')" class="p-2 text-slate-300 hover:text-blue-600 transition"><i class="fas fa-edit"></i></button>
-                        <button type="button" onclick="excludeOccurrence('${e.id}', '${dateStr}')" class="p-2 text-slate-200 hover:text-red-400 transition"><i class="fas fa-eye-slash"></i></button>
-                    </div>` : ''}
+                    <div class="text-right"><div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div>
+                    <button onclick="toggleReg('${e.id}', '${dateStr}', ${isReg})" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div>
+                    ${currentProfile?.role === 'admin' ? `<button onclick="editEventInstance('${e.id}', '${dateStr}')" class="p-2 text-slate-300"><i class="fas fa-edit"></i></button>` : ''}
                 </div>
             </div>`;
         });
         zone.innerHTML = html + `</div></div>`;
     }
 
-    async function editEventInstance(eventId) {
-        const event = eventsCache.find(e => e.id === eventId);
-        if (!event) return;
-        closeMobilePip();
+    async function editEventInstance(eventId, dateStr) {
+        const event = eventsCache.find(e => e.id === eventId); if (!event) return;
+        closeMobilePip(); resetAdminForm();
         document.getElementById('admin-panel').style.display = 'flex';
-        document.getElementById('admin-panel-title').textContent = "Modifier l'événement";
         document.getElementById('admin-event-id').value = event.id;
         document.getElementById('admin-title').value = event.title;
+        document.getElementById('admin-date').value = dateStr;
         document.getElementById('admin-loc').value = event.location;
-        document.getElementById('admin-date').value = event.date;
-        document.getElementById('admin-max').value = event.max_participants;
         document.getElementById('admin-start').value = event.start_time.substring(0,5);
-        document.getElementById('admin-end').value = event.end_time.substring(0,5);
-        document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = event.recurrence_days?.includes(cb.value) || false);
+        document.getElementById('admin-end').value = event.end_time?.substring(0,5) || "";
         document.getElementById('admin-delete-btn').classList.remove('hidden');
-        document.getElementById('admin-save-btn').textContent = "Enregistrer";
+        document.getElementById('admin-save-btn').textContent = "Modifier";
     }
 
     async function handleAdminSubmit() {
-        const eventId = document.getElementById('admin-event-id').value;
+        const id = document.getElementById('admin-event-id').value;
         const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
         const p = { 
-            owner_id: currentUser.id, 
-            title: document.getElementById('admin-title').value, 
-            location: document.getElementById('admin-loc').value, 
-            date: document.getElementById('admin-date').value, 
-            start_time: `${document.getElementById('admin-start').value}:00`, 
-            end_time: `${document.getElementById('admin-end').value}:00`, 
-            max_participants: parseInt(document.getElementById('admin-max').value), 
-            is_recurring: days.length > 0, 
-            recurrence_days: days.length > 0 ? days : null 
+            owner_id: currentUser.id, title: document.getElementById('admin-title').value, 
+            location: document.getElementById('admin-loc').value, date: document.getElementById('admin-date').value, 
+            start_time: `${document.getElementById('admin-start').value}:00`, end_time: `${document.getElementById('admin-end').value}:00`,
+            max_participants: parseInt(document.getElementById('admin-max').value),
+            is_recurring: days.length > 0, recurrence_days: days.length > 0 ? days : null 
         };
-
-        if (eventId) await sb.from('events').update(p).eq('id', eventId);
-        else await sb.from('events').insert([p]);
-        
-        closeAdminPanel(); 
-        await fetchEvents();
+        if (id) await sb.from('events').update(p).eq('id', id); else await sb.from('events').insert([p]);
+        closeAdminPanel(); await fetchEvents();
     }
 
-    // --- REGLAGES & AUTH ---
     function openSettingsPanel() { document.getElementById('user-menu').classList.add('hidden'); document.getElementById('settings-panel').style.display = 'flex'; }
     function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
-    function openPasswordPip() { document.getElementById('password-pip').style.display = 'flex'; }
-    function closePasswordPip() { document.getElementById('password-pip').style.display = 'none'; }
-    function openDeleteAccountPip() { document.getElementById('delete-account-pip').style.display = 'flex'; }
-    function closeDeleteAccountPip() { document.getElementById('delete-account-pip').style.display = 'none'; }
-    
-    async function confirmDeleteAccount() {
-        const { error } = await sb.rpc('delete_user_account');
-        if(error) alert("La suppression nécessite une re-connexion récente.");
-        else { await sb.auth.signOut(); location.reload(); }
-    }
-
-    async function saveProfileSettings() {
-        const p = {
-            first_name: document.getElementById('set-firstname').value,
-            last_name: document.getElementById('set-lastname').value,
-            Phone: document.getElementById('set-phone').value
-        };
-        const { error } = await sb.from('profiles').update(p).eq('id', currentUser.id);
-        if(!error) { alert("Profil mis à jour !"); loadProfile(); }
-    }
-
     async function toggleReg(eid, d, isR) {
         if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
         else await sb.from('registrations').insert([{ event_id: eid, user_id: currentUser.id }]);
         await fetchEvents(); closeMobilePip();
     }
-
     function openAdminPanel() { resetAdminForm(); document.getElementById('admin-panel').style.display = 'flex'; }
     function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
-    function resetAdminForm() {
-        document.getElementById('admin-event-id').value = '';
-        document.getElementById('admin-panel-title').textContent = "Nouvel Événement";
-        ['admin-title','admin-loc','admin-date','admin-start','admin-end'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
-        document.getElementById('admin-max').value = 5;
-        document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
-        document.getElementById('admin-delete-btn').classList.add('hidden');
+    function resetAdminForm() { 
+        document.getElementById('admin-event-id').value = ''; 
+        document.getElementById('admin-delete-btn').classList.add('hidden'); 
         document.getElementById('admin-save-btn').textContent = "Créer";
+        document.querySelectorAll('.day-checkbox').forEach(c => c.checked = false);
     }
-
     function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
-    function openAdminFromPip(d) { closeMobilePip(); resetAdminForm(); if(document.getElementById('admin-date')) document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
+    function openAdminFromPip(d) { closeMobilePip(); resetAdminForm(); document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
     function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
     function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
     function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
     function logout() { sb.auth.signOut(); }
     function toggleAuthMode() { document.getElementById('register-fields').classList.toggle('hidden'); }
-    
     async function handleAuth() {
         const e = document.getElementById('auth-email').value, p = document.getElementById('auth-password').value;
         const reg = !document.getElementById('register-fields').classList.contains('hidden');
         if(reg) {
-            const { error } = await sb.auth.signUp({ 
-                email: e, 
-                password: p, 
-                options: { data: { first_name: document.getElementById('auth-firstname').value, last_name: document.getElementById('auth-lastname').value, phone: document.getElementById('auth-phone').value } }
-            });
-            if(error) alert(error.message); else alert("Vérifiez vos emails !");
-        } else {
-            const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
-            if(error) alert(error.message);
-        }
+            const { data } = await sb.auth.signUp({ email: e, password: p });
+            if (data.user) {
+                await sb.from('profiles').insert([{
+                    id: data.user.id,
+                    first_name: document.getElementById('auth-firstname').value,
+                    last_name: document.getElementById('auth-lastname').value,
+                    Phone: document.getElementById('auth-phone').value,
+                    role: 'user'
+                }]);
+            }
+        } else await sb.auth.signInWithPassword({ email: e, password: p });
     }
 </script>
 </body>
