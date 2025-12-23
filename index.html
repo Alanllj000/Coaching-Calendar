@@ -31,6 +31,7 @@
             padding: 1rem; border-radius: 1rem; font-weight: 600; outline: none; transition: all 0.2s;
         }
         .input-field:focus { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.05); }
+        .input-field.error { border-color: #ef4444; background: #fef2f2; }
 
         /* --- CALENDRIER --- */
         .calendar-container { height: 62vh; overflow-y: auto; scroll-behavior: smooth; }
@@ -51,7 +52,6 @@
         .event-dot { height: 5px; width: 5px; border-radius: 50%; display: inline-block; margin-right: 2px; }
         .dot-blue { background-color: #3b82f6; }
         .dot-red { background-color: #ef4444; }
-        .dot-exception { background-color: #8b5cf6; } /* Violet pour les exceptions */
 
         /* --- PIP --- */
         #mobile-pip-zone {
@@ -77,6 +77,14 @@
             position: fixed; inset: 0; background: white; z-index: 6000;
             display: none; flex-direction: column; overflow-y: auto;
         }
+
+        /* Toggle Switch for Settings */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #e2e8f0; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #3b82f6; }
+        input:checked + .slider:before { transform: translateX(20px); }
     </style>
 </head>
 <body onclick="handleBodyClick(event)">
@@ -121,6 +129,9 @@
                 <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3">
                     <i class="fas fa-plus-circle"></i> Créer Event
                 </button>
+                <button onclick="openSettingsPanel()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center gap-3">
+                    <i class="fas fa-cog"></i> Réglages
+                </button>
                 <div class="border-t border-slate-100 my-1"></div>
                 <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3">
                     <i class="fas fa-sign-out-alt"></i> Déconnexion
@@ -141,7 +152,7 @@
 
 <div id="mobile-pip-zone"></div>
 
-<!-- PANEL ADMIN / EDITION -->
+<!-- PANEL ADMIN -->
 <div id="admin-panel" class="fullscreen-pip">
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         <div class="flex justify-between items-center mb-8">
@@ -187,7 +198,88 @@
                 </div>
             </div>
 
-            <button id="admin-save-btn" onclick="adminCreateEvent()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition">Créer</button>
+            <button id="admin-save-btn" onclick="adminCreateEvent()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition disabled:opacity-50">Créer</button>
+            <button id="admin-delete-btn" class="hidden w-full py-4 text-red-500 font-bold text-sm">Supprimer l'événement</button>
+        </div>
+    </div>
+</div>
+
+<!-- PANEL REGLAGES -->
+<div id="settings-panel" class="fullscreen-pip">
+    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black tracking-tight">Réglages</h2>
+            <button onclick="closeSettingsPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
+        </div>
+        
+        <div class="space-y-8 pb-20">
+            <!-- 1. Informations Personnelles -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Informations Personnelles</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="set-firstname" placeholder="Prénom" class="input-field">
+                    <input id="set-lastname" placeholder="Nom" class="input-field">
+                </div>
+                <input id="set-phone" placeholder="Téléphone" class="input-field">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Adresse Email</label>
+                    <input id="set-email" type="email" placeholder="Email" class="input-field">
+                </div>
+            </div>
+
+            <!-- 2. Sécurité -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sécurité</p>
+                <button onclick="openPasswordPip()" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl active:scale-95 transition flex items-center justify-center gap-3">
+                    <i class="fas fa-key text-xs"></i> Modifier le mot de passe
+                </button>
+            </div>
+
+            <!-- 3. Notifications -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Préférences Notifications</p>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-slate-800">Notifications Push</p>
+                        <p class="text-xs text-slate-400">Recevoir des alertes sur mobile</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="notif-master" onchange="togglePushSubscription()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <button onclick="saveProfileSettings()" id="settings-save-btn" class="w-full py-5 bg-slate-100 text-slate-900 text-xl font-black rounded-2xl active:scale-95 transition">Enregistrer les réglages</button>
+        </div>
+    </div>
+</div>
+
+<!-- PANEL PASSWORD CHANGE -->
+<div id="password-pip" class="fullscreen-pip" style="z-index: 7000;">
+    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black tracking-tight">Mot de passe</h2>
+            <button onclick="closePasswordPip()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-6">
+            <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-5">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Mot de passe actuel</label>
+                    <input id="old-password" type="password" placeholder="Saisir votre code actuel" class="input-field">
+                </div>
+                <div class="border-t border-slate-200 pt-2"></div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Nouveau mot de passe</label>
+                    <input id="new-password" type="password" oninput="validatePasswords()" placeholder="8 caractères min." class="input-field">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400 mb-1 ml-2">Confirmer le nouveau</label>
+                    <input id="confirm-password" type="password" oninput="validatePasswords()" placeholder="Répéter le nouveau code" class="input-field">
+                </div>
+                <p id="password-hint" class="text-[10px] font-bold text-slate-400 ml-2 transition-colors">Min 8 caractères</p>
+            </div>
+            <button id="save-password-btn" onclick="updatePassword()" class="w-full py-5 bg-slate-900 text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition">Confirmer</button>
         </div>
     </div>
 </div>
@@ -195,12 +287,22 @@
 <script>
     const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+    // Clé VAPID (Public) pour les notifications Push
+    const VAPID_PUBLIC_KEY = 'BIIVWDznwx3nfErnVDvMRU0HqCpQ4s8uNFOuKMQFwwD8xXtmhMtB5T3naj_5miiWHR6dYPUV56Iu2cb69yPd4Aw';
+    
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
     const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
     window.onload = async () => {
+        // Enregistrement plus robuste du Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js') // Utilisation de ./ pour éviter les erreurs de protocole
+                .then(reg => console.log('SW Registered', reg))
+                .catch(err => console.error('Erreur Critique SW:', err));
+        }
+
         const { data: { session } } = await sb.auth.getSession();
         if (session) initApp(session.user);
         else document.getElementById('auth-screen').style.display = 'flex';
@@ -212,77 +314,107 @@
     };
 
     async function initApp(user) {
+        if (!user) return;
         currentUser = user;
         document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('main-content').classList.remove('hidden');
-        document.getElementById('main-content').classList.add('flex');
+        const mainContent = document.getElementById('main-content');
+        mainContent.classList.remove('hidden');
+        mainContent.classList.add('flex');
         await loadProfile(); 
         await fetchEvents();
     }
 
     async function loadProfile() {
-        const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+        if (!currentUser) return;
+        const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+        if (error) return;
         currentProfile = data;
-        document.getElementById('user-initials').textContent = (data?.first_name || "?")[0].toUpperCase();
+        const initialsEl = document.getElementById('user-initials');
+        if (initialsEl) initialsEl.textContent = (data?.first_name || "?")[0].toUpperCase();
         if (data?.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+
+        document.getElementById('set-email').value = currentUser.email || '';
+        document.getElementById('set-firstname').value = data.first_name || '';
+        document.getElementById('set-lastname').value = data.last_name || '';
+        document.getElementById('set-phone').value = data.Phone || '';
+        document.getElementById('notif-master').checked = data.notif_enable || false;
+    }
+
+    async function togglePushSubscription() {
+        const checkbox = document.getElementById('notif-master');
+        if (checkbox.checked) {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert("Vous devez autoriser les notifications dans votre navigateur.");
+                checkbox.checked = false;
+                return;
+            }
+            
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+                
+                await sb.from('profiles').update({
+                    notif_enable: true,
+                    push_subscription: JSON.stringify(subscription)
+                }).eq('id', currentUser.id);
+                
+                alert("Notifications activées !");
+            } catch (err) {
+                console.error("Erreur abonnement Push:", err);
+                checkbox.checked = false;
+                alert("Erreur lors de l'abonnement. Le fichier sw.js est-il bien présent ?");
+            }
+        } else {
+            await sb.from('profiles').update({ notif_enable: false }).eq('id', currentUser.id);
+        }
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+        return outputArray;
     }
 
     async function fetchEvents() {
-        const { data } = await sb.from('events').select('*, registrations(id)');
-        if(data) { eventsCache = data; renderCalendar(); }
+        const { data, error } = await sb.from('events').select('*, registrations(id, user_id)');
+        if (error) console.error(error);
+        if (data) { eventsCache = data; renderCalendar(); }
     }
 
     function renderCalendar() {
         const grid = document.getElementById('calendar-grid');
+        if (!grid) return;
         grid.innerHTML = '';
         const y = currentDate.getFullYear(), m = currentDate.getMonth();
         document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
-        
         const firstDay = (new Date(y, m, 1).getDay() || 7) - 1;
         const lastDate = new Date(y, m + 1, 0).getDate();
-
         for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
-        
         for (let d = 1; d <= lastDate; d++) {
             const loopDate = new Date(y, m, d);
             const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const dayOfWeekName = DAY_NAMES[loopDate.getDay()];
-            
-            // LOGIQUE DE RÉCURRENCE AVEC EXCEPTIONS
-            const dayEvents = [];
-
-            // 1. Chercher d'abord les événements réels (fixes ou exceptions) pour ce jour
-            const realEvents = eventsCache.filter(e => e.date === dateStr);
-            dayEvents.push(...realEvents);
-
-            // 2. Chercher les événements récurrents parents
-            const recurringParents = eventsCache.filter(e => e.is_recurring && e.recurrence_days && new Date(e.date) <= loopDate && !e.parent_event_id);
-            
-            recurringParents.forEach(parent => {
-                // Si le jour correspond à la récurrence
+            const dayEvents = [...eventsCache.filter(e => e.date === dateStr)];
+            eventsCache.filter(e => e.is_recurring && e.recurrence_days && new Date(e.date) <= loopDate).forEach(parent => {
                 if (parent.recurrence_days.includes(dayOfWeekName)) {
-                    // VERIFIER SI UNE EXCEPTION EXISTE DEJA POUR CE PARENT A CETTE DATE
-                    const hasException = realEvents.some(re => re.parent_event_id === parent.id);
-                    if (!hasException) {
-                        dayEvents.push(parent);
-                    }
+                    if (!eventsCache.some(e => e.parent_event_id === parent.id && e.date === dateStr) && parent.date !== dateStr) dayEvents.push(parent);
                 }
             });
-            
             const cell = document.createElement('div');
             cell.className = 'calendar-day';
             cell.onclick = (e) => openDayPip(dateStr, dayEvents, e);
-            
             let dots = dayEvents.map(e => {
-                let colorClass = e.registrations?.length >= e.max_participants ? 'dot-red' : 'dot-blue';
-                if (e.parent_event_id && e.date === dateStr) colorClass = 'dot-exception'; 
-                return `<span class="event-dot ${colorClass} ${e.is_recurring && e.date !== dateStr ? 'opacity-60' : ''}"></span>`;
+                let isFull = (e.registrations?.length || 0) >= e.max_participants;
+                return `<span class="event-dot ${isFull ? 'dot-red' : 'dot-blue'} ${e.is_recurring && e.date !== dateStr ? 'opacity-60' : ''}"></span>`;
             }).join('');
-
-            cell.innerHTML = `
-                <span class="text-[10px] font-black ${new Date().toDateString() === loopDate.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span>
-                <div class="mt-auto flex flex-wrap gap-1">${dots}</div>
-            `;
+            cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopDate.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}</div>`;
             grid.appendChild(cell);
         }
     }
@@ -291,201 +423,114 @@
         evt.stopPropagation();
         const zone = document.getElementById('mobile-pip-zone');
         zone.style.pointerEvents = 'auto';
-        
         const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-        
-        let content = `
-            <div class="mobile-pip-card">
-                <div class="flex items-center justify-between p-5 border-b border-slate-50">
-                    <div class="flex flex-col">
-                        <span class="font-black text-slate-800 uppercase text-xs">${dateLabel}</span>
-                        ${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] mt-1 flex items-center gap-1">AJOUTER</button>` : ''}
-                    </div>
-                    <button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full">&times;</button>
-                </div>
-                <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-20">`;
-        
+        let content = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div class="flex flex-col"><span class="font-black text-slate-800 uppercase text-xs">${dateLabel}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] mt-1 flex items-center gap-1">AJOUTER</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3 pb-20">`;
         if (events.length === 0) content += `<div class="py-10 text-center text-slate-300 italic text-sm">Aucun cours prévu</div>`;
         else {
-            events.forEach(e => {
-                const isRecurringInstance = e.date !== dateStr;
-                content += `
-                    <div class="p-4 border border-slate-100 rounded-2xl bg-white shadow-sm flex items-center justify-between">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h4 class="font-black text-slate-800">${e.title || "Titre"}</h4>
-                                ${isRecurringInstance ? '<i class="fas fa-redo text-[8px] text-slate-300"></i>' : ''}
-                                ${e.parent_event_id && e.date === dateStr ? '<span class="px-1.5 py-0.5 bg-violet-100 text-violet-600 text-[8px] font-bold rounded">MODIFIÉ</span>' : ''}
-                            </div>
-                            <div class="flex items-center gap-3 mt-1">
-                                <span class="text-blue-600 font-bold text-xs">${(e.start_time || "").substring(0, 5)}</span>
-                                <span class="text-slate-400 text-[10px]">${e.location || 'Lieu'}</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                             <div class="text-right">
-                                <div class="text-[10px] font-black text-slate-400 uppercase mb-1">${e.registrations?.length || 0}/${e.max_participants}</div>
-                                <button class="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg active:scale-95">S'inscrire</button>
-                             </div>
-                             ${currentProfile?.role === 'admin' ? `
-                                <button onclick="editEventInstance('${e.id}', '${dateStr}')" class="p-2 text-slate-400 hover:text-blue-600">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                             ` : ''}
-                        </div>
-                    </div>`;
+            events.sort((a,b) => (a.start_time || "").localeCompare(b.start_time || "")).forEach(e => {
+                const isVirtual = e.date !== dateStr;
+                const userReg = e.registrations?.find(r => r.user_id === currentUser.id);
+                const regCount = e.registrations?.length || 0;
+                const isFull = regCount >= e.max_participants;
+                content += `<div class="p-4 border border-slate-100 rounded-2xl bg-white shadow-sm flex items-center justify-between"><div><div class="flex items-center gap-2"><h4 class="font-black text-slate-800">${e.title || "Titre"}</h4>${isVirtual ? '<i class="fas fa-redo text-[8px] text-slate-300"></i>' : '<span class="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-bold rounded">UNIQUE</span>'}</div><div class="flex items-center gap-3 mt-1"><span class="text-blue-600 font-bold text-xs">${(e.start_time || "").substring(0, 5)}</span><span class="text-slate-400 text-[10px]">${e.location || 'Lieu'}</span></div></div><div class="flex items-center gap-3"><div class="text-right"><div class="text-[10px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'} uppercase mb-1">${regCount}/${e.max_participants}</div><button onclick="toggleRegistration('${e.id}', '${dateStr}', ${!!userReg})" class="px-4 py-2 ${userReg ? 'bg-slate-100 text-slate-600' : isFull ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : 'bg-slate-900 text-white'} text-[10px] font-bold rounded-lg" ${!userReg && isFull ? 'disabled' : ''}>${userReg ? 'Inscrit' : isFull ? 'Complet' : "S'inscrire"}</button></div>${currentProfile?.role === 'admin' ? `<button onclick="editEventInstance('${e.id}', '${dateStr}')" class="p-2 text-slate-400"><i class="fas fa-edit"></i></button>` : ''}</div></div>`;
             });
         }
         content += `</div></div>`;
         zone.innerHTML = content;
     }
 
-    // FONCTION DE MODIFICATION
-    async function editEventInstance(eventId, dateStr) {
-        const event = eventsCache.find(e => e.id === eventId);
-        if(!event) return;
-
-        closeMobilePip();
-        openAdminPanel();
-
-        // On change le titre du panel
-        document.getElementById('admin-panel-title').textContent = "Modifier l'instance";
-        document.getElementById('admin-title').value = event.title;
-        document.getElementById('admin-loc').value = event.location;
-        document.getElementById('admin-date').value = dateStr;
-        document.getElementById('admin-max').value = event.max_participants;
-        document.getElementById('admin-start').value = (event.start_time || "").substring(0, 5);
-        document.getElementById('admin-end').value = (event.end_time || "").substring(0, 5);
-
-        // On cache la récurrence car on modifie une occurrence précise
-        document.getElementById('recurrence-section').style.display = 'none';
-
-        // On change l'action du bouton
-        const btn = document.getElementById('admin-save-btn');
-        btn.textContent = "Enregistrer la modification";
-        btn.onclick = () => saveEventModification(event, dateStr);
+    async function toggleRegistration(eventId, dateStr, isRegistered) {
+        if (isRegistered) await sb.from('registrations').delete().eq('event_id', eventId).eq('user_id', currentUser.id);
+        else await sb.from('registrations').insert([{ event_id: eventId, user_id: currentUser.id }]);
+        await fetchEvents(); closeMobilePip();
     }
 
-    async function saveEventModification(originalEvent, targetDate) {
-        const title = document.getElementById('admin-title').value;
-        const loc = document.getElementById('admin-loc').value;
-        const start = document.getElementById('admin-start').value;
-        const end = document.getElementById('admin-end').value;
-        const max = parseInt(document.getElementById('admin-max').value);
-
-        // Si c'est un event récurrent et qu'on modifie une date qui n'est pas la date d'origine
-        // on crée une "Exception" (nouvelle ligne avec parent_event_id)
-        const isException = originalEvent.is_recurring && originalEvent.date !== targetDate;
-
-        const payload = {
-            owner_id: currentUser.id,
-            title: title,
-            location: loc,
-            date: targetDate,
-            start_time: `${start}:00`,
-            end_time: `${end}:00`,
-            max_participants: max,
-            is_recurring: false, // L'exception elle-même n'est pas récurrente
-            parent_event_id: originalEvent.is_recurring ? originalEvent.id : null,
-            is_public: true
-        };
-
-        let result;
-        if (originalEvent.date === targetDate && !originalEvent.is_recurring) {
-            // Modification simple d'un event fixe
-            result = await sb.from('events').update(payload).eq('id', originalEvent.id);
-        } else {
-            // Création d'une exception
-            result = await sb.from('events').insert([payload]);
-        }
-
-        if(!result.error) {
-            closeAdminPanel();
-            await fetchEvents();
-        } else {
-            alert(result.error.message);
-        }
-    }
-
+    function openAdminFromPip(date) { closeMobilePip(); resetAdminForm(); document.getElementById('admin-date').value = date; openAdminPanel(); }
+    function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
+    function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
+    function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
+    
     async function adminCreateEvent() {
-        const title = document.getElementById('admin-title').value;
-        const dateVal = document.getElementById('admin-date').value;
-        const start = document.getElementById('admin-start').value;
-        const end = document.getElementById('admin-end').value;
-        const max = parseInt(document.getElementById('admin-max').value);
-        
-        const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked'))
-                                  .map(cb => cb.value.toLowerCase());
-
-        if(!title || !dateVal || !start || !end) return alert("Champs obligatoires manquants.");
-
-        const payload = {
-            owner_id: currentUser.id,
-            title: title,
-            location: document.getElementById('admin-loc').value || "Lieu",
-            date: dateVal,
-            start_time: `${start}:00`,
-            end_time: `${end}:00`,
-            max_participants: max,
-            is_recurring: selectedDays.length > 0,
-            recurrence_days: selectedDays.length > 0 ? selectedDays : null,
-            is_public: true
-        };
-
+        const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
+        const start = document.getElementById('admin-start').value, end = document.getElementById('admin-end').value;
+        const payload = { owner_id: currentUser.id, title: document.getElementById('admin-title').value, location: document.getElementById('admin-loc').value || "Lieu", date: document.getElementById('admin-date').value, start_time: start.includes(':00') ? start : `${start}:00`, end_time: end.includes(':00') ? end : `${end}:00`, max_participants: parseInt(document.getElementById('admin-max').value) || 5, is_recurring: selectedDays.length > 0, recurrence_days: selectedDays.length > 0 ? selectedDays : null, is_public: true };
         const { error } = await sb.from('events').insert([payload]);
-        
-        if(!error) {
-            resetAdminForm();
-            closeAdminPanel();
-            await fetchEvents();
-        } else {
-            alert(`Erreur : ${error.message}`);
-        }
+        if (error) alert(error.message); else { closeAdminPanel(); await fetchEvents(); }
     }
 
-    function openAdminFromPip(date) { 
-        closeMobilePip(); 
-        resetAdminForm();
-        document.getElementById('admin-date').value = date; 
-        openAdminPanel(); 
+    async function editEventInstance(eventId, dateStr) {
+        const event = eventsCache.find(e => e.id === eventId); if(!event) return;
+        closeMobilePip(); resetAdminForm(); openAdminPanel();
+        document.getElementById('admin-panel-title').textContent = "Modifier";
+        document.getElementById('admin-title').value = event.title;
+        document.getElementById('admin-date').value = dateStr;
+        document.getElementById('admin-start').value = event.start_time.substring(0, 5);
+        document.getElementById('admin-end').value = event.end_time.substring(0, 5);
+        document.getElementById('recurrence-section').style.display = 'none';
+        const delBtn = document.getElementById('admin-delete-btn'); delBtn.classList.remove('hidden');
+        delBtn.onclick = async () => { if(confirm("Supprimer ?")){ await sb.from('events').delete().eq('id', event.id); closeAdminPanel(); await fetchEvents(); }};
+        const saveBtn = document.getElementById('admin-save-btn'); saveBtn.textContent = "Sauvegarder";
+        saveBtn.onclick = () => saveEventModification(event, dateStr);
     }
 
-    function openAdminPanel() { 
-        document.getElementById('admin-panel').style.display = 'flex'; 
-    }
-
-    function closeAdminPanel() { 
-        document.getElementById('admin-panel').style.display = 'none'; 
-        resetAdminForm();
-    }
-
-    function closeMobilePip() { 
-        document.getElementById('mobile-pip-zone').style.pointerEvents = 'none'; 
-        document.getElementById('mobile-pip-zone').innerHTML = ''; 
+    async function saveEventModification(orig, targetDate) {
+        const start = document.getElementById('admin-start').value, end = document.getElementById('admin-end').value;
+        const payload = { owner_id: currentUser.id, title: document.getElementById('admin-title').value, location: document.getElementById('admin-loc').value, date: document.getElementById('admin-date').value, start_time: start.includes(':00') ? start : `${start}:00`, end_time: end.includes(':00') ? end : `${end}:00`, max_participants: parseInt(document.getElementById('admin-max').value), is_recurring: false, parent_event_id: orig.is_recurring ? orig.id : (orig.parent_event_id || null) };
+        if (orig.date === targetDate && !orig.is_recurring) await sb.from('events').update(payload).eq('id', orig.id);
+        else await sb.from('events').insert([payload]);
+        closeAdminPanel(); await fetchEvents();
     }
 
     function resetAdminForm() {
-        document.getElementById('admin-panel-title').textContent = "Nouvel Événement";
-        document.getElementById('recurrence-section').style.display = 'block';
-        const btn = document.getElementById('admin-save-btn');
-        btn.textContent = "Créer";
-        btn.onclick = adminCreateEvent;
-
         ['admin-title','admin-loc','admin-date','admin-start','admin-end'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('admin-max').value = 5;
         document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('admin-delete-btn').classList.add('hidden');
+        document.getElementById('admin-save-btn').textContent = "Créer";
+        document.getElementById('admin-save-btn').onclick = adminCreateEvent;
+        document.getElementById('recurrence-section').style.display = 'block';
+    }
+
+    function openSettingsPanel() { document.getElementById('user-menu').classList.add('hidden'); document.getElementById('settings-panel').style.display = 'flex'; }
+    function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
+    
+    function openPasswordPip() { 
+        document.getElementById('password-pip').style.display = 'flex'; 
+        ['old-password', 'new-password', 'confirm-password'].forEach(id => {
+            const el = document.getElementById(id); el.value = ""; el.classList.remove('error');
+        });
+    }
+    function closePasswordPip() { document.getElementById('password-pip').style.display = 'none'; }
+    
+    async function updatePassword() {
+        const oldP = document.getElementById('old-password').value, newP = document.getElementById('new-password').value, confP = document.getElementById('confirm-password').value;
+        if (newP !== confP) { alert("Les mots de passe ne correspondent pas"); return; }
+        const { error } = await sb.auth.updateUser({ password: newP });
+        if (error) alert(error.message); else { alert("Modifié !"); closePasswordPip(); }
+    }
+
+    async function saveProfileSettings() {
+        const updates = { first_name: document.getElementById('set-firstname').value, last_name: document.getElementById('set-lastname').value, Phone: document.getElementById('set-phone').value, notif_enable: document.getElementById('notif-master').checked };
+        const { error } = await sb.from('profiles').update(updates).eq('id', currentUser.id);
+        if (error) alert(error.message); else { await loadProfile(); closeSettingsPanel(); }
     }
 
     async function handleAuth() {
         const e = document.getElementById('auth-email').value, p = document.getElementById('auth-password').value;
-        const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
-        if(error) alert(error.message);
+        const reg = !document.getElementById('register-fields').classList.contains('hidden');
+        if (reg) {
+            const { error } = await sb.auth.signUp({ email: e, password: p, options: { data: { first_name: document.getElementById('auth-firstname').value, last_name: document.getElementById('auth-lastname').value, phone: document.getElementById('auth-phone').value }} });
+            if (error) alert(error.message); else alert("Vérifiez vos emails !");
+        } else {
+            const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
+            if (error) alert(error.message);
+        }
     }
+    function toggleAuthMode() { document.getElementById('register-fields').classList.toggle('hidden'); }
     function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); }
     function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
     function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
     function logout() { sb.auth.signOut(); }
-    function toggleAuthMode() { document.getElementById('register-fields').classList.toggle('hidden'); }
 </script>
 </body>
 </html>
