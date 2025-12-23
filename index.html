@@ -99,297 +99,66 @@
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
-    <div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
-        <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Coach Pro</h2>
-        <div class="space-y-4 max-w-sm mx-auto w-full">
-            <input id="auth-email" type="email" placeholder="Email" class="input-field">
-            <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
-            <div id="register-fields" class="hidden space-y-4">
-                <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
-                <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
-                <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
-            </div>
-            <button onclick="handleAuth()" id="auth-btn" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Se connecter</button>
-            <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">Créer un compte</p>
-            <!-- Bouton pour soumettre le formulaire -->
-            <button id="auth-submit-btn" onclick="handleRegisterStep1()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
-                  Créer mon compte
-            </button>
-        </div>
-    </div>
-</div>
+  <div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
+    <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Coach Pro</h2>
+    <div class="space-y-4 max-w-sm mx-auto w-full">
+      <input id="auth-email" type="email" placeholder="Email" class="input-field">
+      <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
 
-<!-- MAIN APP -->
-<div id="main-content" class="hidden h-full flex flex-col">
-    <!-- Header -->
-    <div class="px-4 py-3 md:px-8 md:py-4 flex justify-between items-center bg-white z-30 sticky top-0 border-b border-slate-100 min-h-[85px]">
-        <div class="flex flex-col justify-center">
-            <h1 id="month-label" class="text-2xl md:text-4xl font-black tracking-tighter capitalize text-slate-900 leading-tight mb-1">...</h1>
-            <div class="flex gap-2">
-                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-left text-sm font-black"></i></button>
-                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-right text-sm font-black"></i></button>
-            </div>
-        </div>
-        <div class="relative group-menu">
-            <button onclick="toggleUserMenu(event)" class="flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-slate-200 active:scale-90 transition">
-                <div id="user-initials" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm">?</div>
-            </button>
-            <div id="user-menu" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-[3500] hidden">
-                <button onclick="openSettingsPanel()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center gap-3"><i class="fas fa-cog"></i> Réglages</button>
-                <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3"><i class="fas fa-plus-circle"></i> Créer Event</button>
-                <div class="border-t border-slate-100 my-1"></div>
-                <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
-            </div>
-        </div>
-    </div>
+      <!-- Champs supplémentaires pour inscription -->
+      <div id="register-fields" class="hidden space-y-4">
+        <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
+        <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
+        <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
+      </div>
 
-    <!-- Calendar -->
-    <div class="calendar-container px-3 md:px-8 pt-4">
-        <div class="max-w-6xl mx-auto">
-            <div class="grid grid-cols-7 gap-px mb-2 text-[9px] md:text-xs font-black uppercase text-slate-400 tracking-widest text-center">
-                <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
-            </div>
-            <div id="calendar-grid" class="calendar-grid shadow-xl"></div>
-        </div>
-    </div>
-</div>
+      <!-- Boutons -->
+      <button id="auth-btn" onclick="handleAuth()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
+        Se connecter
+      </button>
 
-<div id="mobile-pip-zone"></div>
+      <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">
+        Créer un compte
+      </p>
 
-<!-- PANEL ADMIN (Création / Edition) -->
-<div id="admin-panel" class="fullscreen-pip">
-    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
-        <div class="flex justify-between items-center mb-8">
-            <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
-            <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
-        </div>
-        <div class="space-y-5 pb-20">
-            <input id="admin-event-id" type="hidden">
-            <input id="admin-title" placeholder="Titre" class="input-field">
-            <input id="admin-loc" placeholder="Lieu" class="input-field">
-            <div class="grid grid-cols-2 gap-4">
-                <input id="admin-date" type="date" class="input-field">
-                <input id="admin-max" type="number" placeholder="Places Max" class="input-field">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <input id="admin-start" type="time" class="input-field">
-                <input id="admin-end" type="time" class="input-field">
-            </div>
-            <div id="recurrence-section" class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-wider text-center">Récurrence</p>
-                <div class="flex flex-wrap gap-2">
-                    <label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Lun</div></label>
-                    <label class="flex-1"><input type="checkbox" value="tuesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Mar</div></label>
-                    <label class="flex-1"><input type="checkbox" value="wednesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Mer</div></label>
-                    <label class="flex-1"><input type="checkbox" value="thursday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Jeu</div></label>
-                    <label class="flex-1"><input type="checkbox" value="friday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Ven</div></label>
-                    <label class="flex-1"><input type="checkbox" value="saturday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Sam</div></label>
-                    <label class="flex-1"><input type="checkbox" value="sunday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Dim</div></label>
-                </div>
-            </div>
-            <button id="admin-save-btn" onclick="requestAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl">Enregistrer</button>
-            <button id="admin-delete-btn" onclick="triggerDeleteProcess()" class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition mt-2">Supprimer l'événement</button>
-        </div>
-    </div>
-</div>
-
-<!-- PANEL REGLAGES (Version Fusionnée) -->
-<div id="settings-panel" class="fullscreen-pip">
-    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-black tracking-tight">Réglages</h2>
-            <button onclick="closeSettingsPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
-        </div>
-        
-        <div class="space-y-8 pb-20">
-            <!-- Profil -->
-            <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
-                <div class="grid grid-cols-2 gap-4">
-                    <input id="set-firstname" placeholder="Prénom" class="input-field" oninput="checkProfileChanges()">
-                    <input id="set-lastname" placeholder="Nom" class="input-field" oninput="checkProfileChanges()">
-                </div>
-                <input id="set-phone" placeholder="Téléphone" class="input-field" oninput="checkProfileChanges()">
-                <input id="set-email" type="email" class="input-field bg-slate-50 text-slate-400" disabled>
-                <button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Mettre à jour le profil</button>
-            </div>
-
-            <!-- Sécurité -->
-            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sécurité</p>
-                <button onclick="openPasswordPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre mot de passe</button>
-                <button onclick="openEmailPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre email</button>
-            </div>
-
-            <!-- Notifications -->
-            <div id="notif-section" class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="font-bold text-slate-800">Autoriser les Notifications</p>
-                        <p class="text-xs text-slate-400">Recevoir des rappels sur cet appareil</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="notif-master" onchange="handleMasterNotifChange()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <!-- Zone grisée si désactivé -->
-                <div id="notif-content-wrapper" class="space-y-4 pt-2 border-t border-slate-50 disabled-layer">
-                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Rappels avant un event</p>
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 semaine avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1s"><span class="slider"></span></label></div>
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 jour avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1j"><span class="slider"></span></label></div>
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 heure avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1h"><span class="slider"></span></label></div>
-                    
-                    <div id="custom-reminders-list" class="space-y-2"></div>
-                    <button onclick="openCustomReminders()" class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition">Rappels personnalisés</button>
-
-                    <button id="btn-save-notif" onclick="saveNotificationPrefs()" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl transition shadow-md mt-4">Sauvegarder mes préférences</button>
-                </div>
-            </div>
-
-            <!-- Danger Zone -->
-            <div class="pt-4">
-                <button onclick="openDeleteAccountPip()" class="w-full py-4 text-red-500 font-bold text-sm border border-red-100 rounded-2xl hover:bg-red-50 transition">Supprimer le Compte</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- PiP CHOIX MODIFICATION (Série vs Unique) -->
-<div id="edit-choice-pip" class="overlay-pip">
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-        <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-layer-group text-2xl"></i></div>
-        <h3 class="text-xl font-black text-center text-slate-900 mb-2">Modifier l'événement</h3>
-        <p class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed">Cet événement fait partie d'une série. À quel niveau les modifications doivent-elles être appliquées ?</p>
-        <div class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between">
-            <span id="edit-mode-text" class="text-[10px] font-black text-slate-700">Modifier spécifiquement cet évent</span>
-            <label class="switch">
-                <input type="checkbox" id="edit-series-toggle" onchange="updateEditModeText()">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="flex flex-col gap-3">
-            <button onclick="executeAdminSubmit()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
-            <button onclick="cancelEditChoice()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-        </div>
-    </div>
-</div>
-
-<!-- PiP SUPPRESSION -->
-<div id="delete-confirmation-pip" class="overlay-pip">
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-trash-alt text-2xl"></i></div>
-        <h3 class="text-xl font-black text-center text-slate-900 mb-2">Supprimer l'événement</h3>
-        <p id="delete-pip-desc" class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed">Voulez-vous supprimer cet événement ?</p>
-        <div id="delete-switch-container" class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between hidden">
-            <span id="delete-mode-text" class="text-[10px] font-black text-slate-700">Cet événement seulement</span>
-            <label class="switch"><input type="checkbox" id="delete-series-toggle" onchange="updateDeleteModeText()"><span class="slider"></span></label>
-        </div>
-        <div class="flex flex-col gap-3">
-            <button onclick="confirmDeleteSelection()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
-            <button onclick="closeDeleteConfirmation()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-        </div>
-    </div>
-</div>
-
-<!-- Password Pip -->
-<div id="password-pip" class="overlay-pip">
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-        <h3 class="text-xl font-black text-center text-slate-900 mb-6">Modifier votre mot de passe</h3>
-        <div class="space-y-4 mb-8">
-            <input id="pwd-current" type="password" placeholder="Mot de passe actuel" class="input-field">
-            <input id="pwd-new" type="password" placeholder="Nouveau mot de passe" class="input-field">
-            <input id="pwd-confirm" type="password" placeholder="Confirmer le nouveau mot de passe" class="input-field">
-        </div>
-        <div class="flex flex-col gap-3">
-            <button onclick="validateAndChangePassword()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
-            <button onclick="closePasswordPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-        </div>
-    </div>
-</div>
-
-<!-- Email Pip -->
-<div id="email-pip" class="overlay-pip">
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-        <h3 class="text-xl font-black text-center text-slate-900 mb-6">Modifier votre email</h3>
-        <div class="space-y-4 mb-8">
-            <input id="email-current-display" type="text" readonly class="input-field bg-slate-100 text-slate-400">
-            <input id="email-new" type="email" placeholder="Nouvel email" class="input-field">
-            <input id="email-pwd-verif" type="password" placeholder="Mot de passe" class="input-field">
-        </div>
-        <div class="flex flex-col gap-3">
-            <button onclick="updateEmail()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
-            <button onclick="closeEmailPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-        </div>
-    </div>
-</div>
-
-<!-- PiP RAPPELS PERSONNALISÉS -->
-<div id="custom-reminders-pip" class="overlay-pip">
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-        <h3 class="text-xl font-black text-slate-900 mb-6 text-center">Rappel Personnalisé</h3>
-        <div class="grid grid-cols-3 gap-3 mb-8">
-            <div class="flex flex-col items-center"><input id="custom-days" type="number" value="0" min="0" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Jours</span></div>
-            <div class="flex flex-col items-center"><input id="custom-hours" type="number" value="0" min="0" max="23" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Heures</span></div>
-            <div class="flex flex-col items-center"><input id="custom-minutes" type="number" value="30" min="0" max="59" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Mins</span></div>
-        </div>
-        <div class="flex flex-col gap-3">
-            <button onclick="addCustomReminder()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Ajouter</button>
-            <button onclick="closeCustomReminders()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Account Pip -->
-<div id="delete-account-pip" class="overlay-pip">
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
-        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl"><i class="fas fa-exclamation-triangle"></i></div>
-        <h3 class="text-xl font-black text-slate-900 mb-2">Supprimer le compte ?</h3>
-        <p class="text-sm text-slate-400 mb-8 px-4">Cette action est irréversible. Toutes vos données seront supprimées définitivement.</p>
-        <div class="flex flex-col gap-3">
-            <button onclick="confirmAccountDeletion()" class="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer la suppression</button>
-            <button onclick="closeDeleteAccountPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-        </div>
-    </div>
-</div>
-<!-- PiP Modal -->
-<div id="pip-confirm" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
-  <div class="bg-white rounded-2xl shadow-lg p-6 w-80 max-w-full">
-    <h3 class="text-xl font-bold mb-4">Confirmer le mot de passe</h3>
-    <p class="text-sm text-gray-600 mb-4">
-      Veuillez confirmer votre mot de passe pour des raisons de sécurité.
-    </p>
-    <input id="confirm-password" type="password" placeholder="Mot de passe" class="input-field w-full mb-4 p-2 border rounded">
-    <div class="flex justify-end space-x-2">
-      <button id="pip-cancel" class="px-4 py-2 bg-gray-300 rounded">Annuler</button>
-      <button id="pip-confirm-btn" class="px-4 py-2 bg-slate-900 text-white rounded">Confirmer</button>
+      <button id="auth-submit-btn" onclick="handleRegisterStep1()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
+        Créer mon compte
+      </button>
     </div>
   </div>
 </div>
+
 <script>
-       // --- 1. CONFIGURATION ---
-const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // --- CONFIGURATION SUPABASE ---
+  const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
-let isRegisterMode = false;
-const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  let isRegisterMode = false;
+  let pendingProfile = {};
 
-// --- 2. AUTHENTIFICATION ---
-function toggleAuthMode() {
+  // --- TOGGLE INSCRIPTION / CONNEXION ---
+  function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
     document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
-    document.getElementById('btn-text').textContent = isRegisterMode ? "Créer mon compte" : "Se connecter";
+    document.getElementById('auth-submit-btn').classList.toggle('hidden', !isRegisterMode);
+    document.getElementById('auth-btn').classList.toggle('hidden', isRegisterMode);
     document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
-}
+  }
 
-// ✅ Stockage global (en mémoire seulement)
-let pendingProfile = {};
+  // --- CONNEXION ---
+  async function handleAuth() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) return alert("Email et mot de passe requis");
 
-// --- 3. INSCRIPTION (Step 1) ---
-async function handleRegisterStep1() {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return alert(error.message);
+    initApp(data.user);
+  }
+
+  // --- INSCRIPTION STEP 1 ---
+  async function handleRegisterStep1() {
     const emailVal = document.getElementById('auth-email').value.trim();
     const passwordVal = document.getElementById('auth-password').value;
     const fn = document.getElementById('auth-firstname').value.trim();
@@ -397,83 +166,52 @@ async function handleRegisterStep1() {
     const ph = document.getElementById('auth-phone').value.trim();
 
     if (!emailVal || !passwordVal || !fn || !ln) {
-        alert("Tous les champs sont requis !");
-        return;
+      alert("Tous les champs sont requis !");
+      return;
     }
 
-    // Stockage temporaire du profil en mémoire et dans sessionStorage
+    // Stockage temporaire
     pendingProfile = { first_name: fn, last_name: ln, phone: ph };
     sessionStorage.setItem('pendingProfile', JSON.stringify(pendingProfile));
-    sessionStorage.setItem('pendingEmail', emailVal); // utile pour confirmer mot de passe
+    sessionStorage.setItem('pendingEmail', emailVal);
 
-    // Création de l'utilisateur dans Supabase Auth
     const { data, error } = await sb.auth.signUp({ email: emailVal, password: passwordVal });
-    if (error) {
-        alert(error.message);
-        return;
-    }
+    if (error) return alert(error.message);
 
     console.log("Compte créé, profil en cache :", pendingProfile);
-
-    // Redirection vers la page de confirmation / mot de passe
     window.location.href = "/confirm-profile.html";
-}
+  }
 
-// --- 4. CONFIRMATION DU PROFIL ---
-async function confirmProfile(passwordConfirmation) {
-    // ✅ Récupération du profil depuis sessionStorage
+  // --- CONFIRMATION PROFIL ---
+  async function confirmProfile(passwordConfirmation) {
     const pendingProfile = JSON.parse(sessionStorage.getItem('pendingProfile'));
     const pendingEmail = sessionStorage.getItem('pendingEmail');
 
-    if (!pendingProfile || !pendingEmail) {
-        alert("Erreur : informations de profil manquantes");
-        return;
-    }
+    if (!pendingProfile || !pendingEmail) return alert("Informations de profil manquantes");
 
-    // Vérification du mot de passe (optionnelle mais sécurisée)
     const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({
-        email: pendingEmail,
-        password: passwordConfirmation
+      email: pendingEmail,
+      password: passwordConfirmation
     });
-
-    if (signInError) {
-        alert("Mot de passe incorrect");
-        return;
-    }
+    if (signInError) return alert("Mot de passe incorrect");
 
     const user = signInData.user;
-    if (!user) {
-        alert("Erreur : utilisateur non trouvé");
-        return;
-    }
+    if (!user) return alert("Utilisateur non trouvé");
 
-    // Insertion du profil dans la table 'profiles'
     const { error: pErr } = await sb.from('profiles').insert([{
-        id: user.id,
-        email: pendingEmail,
-        ...pendingProfile, // first_name, last_name, phone
-        role: 'user'
+      id: user.id,
+      email: pendingEmail,
+      ...pendingProfile,
+      role: 'user'
     }]);
-
-    if (pErr) {
-        alert("Erreur création profil : " + pErr.message);
-        return;
-    }
+    if (pErr) return alert("Erreur création profil : " + pErr.message);
 
     console.log("Profil créé avec succès !");
-
-    // Nettoyage du cache
     sessionStorage.removeItem('pendingProfile');
     sessionStorage.removeItem('pendingEmail');
 
-    // Lancement de l'app
     initApp(user);
-}
-
-    
-
-
-
+  }
         async function logout() { await sb.auth.signOut(); location.reload(); }
 
         // --- 3. LOGIQUE APP ---
@@ -683,6 +421,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
