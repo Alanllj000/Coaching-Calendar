@@ -146,7 +146,7 @@
             <input id="admin-loc" placeholder="Lieu (Obligatoire)" class="input-field">
             <div class="grid grid-cols-2 gap-4">
                 <input id="admin-date" type="date" class="input-field">
-                <input id="admin-max" type="number" placeholder="Places Max" class="input-field" value="99">
+                <input id="admin-max" type="number" placeholder="Places Max" class="input-field">
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <input id="admin-start" type="time" class="input-field">
@@ -621,12 +621,6 @@
             }
         } else await sb.auth.signInWithPassword({ email: e, password: p });
     }
-    document.querySelector('form').onsubmit = function() {
-    var input = document.getElementById('admin-max');
-    if (input.value === "") {
-      input.value = "99"; // On remplit par 99 juste avant l'envoi
-    }
-  };
 </script>
 
 <style>
@@ -635,4 +629,5 @@
 </style>
 </body>
 </html>
+
 
