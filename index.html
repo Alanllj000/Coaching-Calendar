@@ -876,6 +876,20 @@ function toggleAuthMode() {
     document.getElementById('auth-toggle').textContent = isRegisterMode ? 'Déjà un compte ? Se connecter' : 'Créer un compte';
 }
 
+    async function logout() {
+    const { error } = await sb.auth.signOut();
+
+    if (error) {
+        console.error('Erreur lors de la déconnexion:', error.message);
+        alert('Erreur lors de la déconnexion');
+        return;
+    }
+
+    currentUser = null;
+
+    showAuthScreen();
+    document.getElementById('main-content').classList.add('hidden');
+}
 async function handleAuth() {
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
@@ -954,6 +968,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
