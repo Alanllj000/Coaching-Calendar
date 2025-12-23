@@ -47,6 +47,7 @@
         .event-dot { height: 5px; width: 5px; border-radius: 50%; display: inline-block; margin-right: 2px; }
         .dot-blue { background-color: #3b82f6; }
         .dot-red { background-color: #ef4444; }
+        .dot-gray { background-color: #94a3b8; }
 
         #mobile-pip-zone {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 50vh; 
@@ -82,13 +83,20 @@
         input:checked + .slider:before { transform: translateX(20px); }
 
         .day-checkbox:checked + .day-label { background-color: #0f172a; color: white; border-color: #0f172a; }
+
+        /* Effet grisé pour les notifications désactivées */
+        .disabled-layer {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
     </style>
 </head>
 <body onclick="handleBodyClick(event)">
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
-    <div class="flex flex-col justify-center h-full px-8">
+    <div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
         <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Coach Pro</h2>
         <div class="space-y-4 max-w-sm mx-auto w-full">
             <input id="auth-email" type="email" placeholder="Email" class="input-field">
@@ -111,12 +119,8 @@
         <div class="flex flex-col justify-center">
             <h1 id="month-label" class="text-2xl md:text-4xl font-black tracking-tighter capitalize text-slate-900 leading-tight mb-1">...</h1>
             <div class="flex gap-2">
-                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition">
-                    <i class="fas fa-chevron-left text-sm font-black"></i>
-                </button>
-                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition">
-                    <i class="fas fa-chevron-right text-sm font-black"></i>
-                </button>
+                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-left text-sm font-black"></i></button>
+                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-right text-sm font-black"></i></button>
             </div>
         </div>
         <div class="relative group-menu">
@@ -124,16 +128,10 @@
                 <div id="user-initials" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm">?</div>
             </button>
             <div id="user-menu" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-[3500] hidden">
-                <button onclick="openSettingsPanel()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center gap-3">
-                    <i class="fas fa-cog"></i> Réglages
-                </button>
-                <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3">
-                    <i class="fas fa-plus-circle"></i> Créer Event
-                </button>
+                <button onclick="openSettingsPanel()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center gap-3"><i class="fas fa-cog"></i> Réglages</button>
+                <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3"><i class="fas fa-plus-circle"></i> Créer Event</button>
                 <div class="border-t border-slate-100 my-1"></div>
-                <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3">
-                    <i class="fas fa-sign-out-alt"></i> Déconnexion
-                </button>
+                <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
             </div>
         </div>
     </div>
@@ -151,11 +149,11 @@
 
 <div id="mobile-pip-zone"></div>
 
-<!-- PANEL ADMIN -->
+<!-- PANEL ADMIN (Création / Edition) -->
 <div id="admin-panel" class="fullscreen-pip">
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         <div class="flex justify-between items-center mb-8">
-            <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Événement</h2>
+            <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
             <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
         </div>
         <div class="space-y-5 pb-20">
@@ -170,7 +168,7 @@
                 <input id="admin-start" type="time" class="input-field">
                 <input id="admin-end" type="time" class="input-field">
             </div>
-            <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+            <div id="recurrence-section" class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
                 <p class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-wider text-center">Récurrence</p>
                 <div class="flex flex-wrap gap-2">
                     <label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Lun</div></label>
@@ -182,8 +180,8 @@
                     <label class="flex-1"><input type="checkbox" value="sunday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Dim</div></label>
                 </div>
             </div>
-            <button onclick="requestAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl">Enregistrer</button>
-            <button id="admin-delete-btn" onclick="triggerDeleteProcess()" class="hidden w-full py-4 text-red-500 font-bold text-sm">Supprimer l'événement</button>
+            <button id="admin-save-btn" onclick="requestAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl">Enregistrer</button>
+            <button id="admin-delete-btn" onclick="triggerDeleteProcess()" class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition mt-2">Supprimer l'événement</button>
         </div>
     </div>
 </div>
@@ -195,38 +193,93 @@
             <h2 class="text-3xl font-black tracking-tight">Réglages</h2>
             <button onclick="closeSettingsPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
         </div>
-        <div class="space-y-6 pb-20">
+        
+        <div class="space-y-8 pb-20">
+            <!-- 1. Informations Personnelles -->
             <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Mon Profil</p>
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
                 <div class="grid grid-cols-2 gap-4">
                     <input id="set-firstname" placeholder="Prénom" class="input-field">
                     <input id="set-lastname" placeholder="Nom" class="input-field">
                 </div>
                 <input id="set-phone" placeholder="Téléphone" class="input-field">
+                <input id="set-email" type="email" placeholder="Email" class="input-field" disabled>
+                <button onclick="saveProfileInfo()" class="w-full py-3 bg-slate-100 rounded-xl font-bold text-xs">Mettre à jour le profil</button>
             </div>
 
-            <!-- SECTION MOT DE PASSE -->
+            <!-- 2. Sécurité -->
             <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
                 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sécurité</p>
-                <button onclick="openPasswordPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier le mot de passe</button>
+                <button onclick="openPasswordPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre mot de passe</button>
+                <button onclick="openEmailPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre email</button>
             </div>
 
+            <!-- 3. Notifications -->
             <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-black text-slate-800">Alertes Push</p>
-                        <p class="text-[10px] text-slate-400">Recevoir des rappels</p>
+                        <p class="font-bold text-slate-800">Autoriser les Notifications</p>
+                        <p class="text-xs text-slate-400">Recevoir des rappels sur cet appareil</p>
                     </div>
-                    <button id="push-status-btn" onclick="enableNotifications()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black">Activer</button>
+                    <label class="switch">
+                        <input type="checkbox" id="notif-master" onchange="handleMasterNotifChange()">
+                        <span class="slider"></span>
+                    </label>
                 </div>
-                <div class="space-y-4 pt-2 border-t border-slate-50">
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">Global</span><label class="switch"><input type="checkbox" id="notif-global-toggle"><span class="slider"></span></label></div>
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 heure avant</span><label class="switch"><input type="checkbox" id="notif-hour-toggle"><span class="slider"></span></label></div>
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">La veille</span><label class="switch"><input type="checkbox" id="notif-day-toggle"><span class="slider"></span></label></div>
+
+                <!-- Zone grisée si désactivé -->
+                <div id="notif-content-wrapper" class="space-y-4 pt-2 border-t border-slate-50 transition-opacity duration-300 disabled-layer">
+                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Rappels avant un event</p>
+                    
+                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 semaine avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1s"><span class="slider"></span></label></div>
+                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 jour avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1j"><span class="slider"></span></label></div>
+                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 heure avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1h"><span class="slider"></span></label></div>
+                    
+                    <div id="custom-reminders-list" class="space-y-2"></div>
+                    <button onclick="openCustomReminders()" class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition">Rappels personnalisés</button>
+                    
+                    <button onclick="saveNotificationPrefs()" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl active:scale-95 transition shadow-md mt-4">Sauvegarder mes préférences</button>
                 </div>
             </div>
+            
+            <button onclick="openDeleteAccountPip()" class="w-full py-4 text-red-500 font-bold text-sm text-center border border-red-100 rounded-2xl hover:bg-red-50 transition">Supprimer le Compte</button>
+        </div>
+    </div>
+</div>
 
-            <button onclick="saveAllSettings()" id="settings-save-btn" class="w-full py-5 bg-slate-900 text-white text-xl font-black rounded-2xl shadow-xl">Enregistrer tout</button>
+<!-- PiP CHOIX MODIFICATION (Série vs Unique) -->
+<div id="edit-choice-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-layer-group text-2xl"></i></div>
+        <h3 class="text-xl font-black text-center text-slate-900 mb-2">Modifier l'événement</h3>
+        <p class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed">Cet événement fait partie d'une série. À quel niveau les modifications doivent-elles être appliquées ?</p>
+        <div class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between">
+            <span id="edit-mode-text" class="text-[10px] font-black text-slate-700">Modifier spécifiquement cet évent</span>
+            <label class="switch">
+                <input type="checkbox" id="edit-series-toggle" onchange="updateEditModeText()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="executeAdminSubmit()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="cancelEditChoice()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- PiP SUPPRESSION -->
+<div id="delete-confirmation-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-trash-alt text-2xl"></i></div>
+        <h3 class="text-xl font-black text-center text-slate-900 mb-2">Supprimer l'événement</h3>
+        <p id="delete-pip-desc" class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed">Voulez-vous supprimer cet événement ?</p>
+        <div id="delete-switch-container" class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between hidden">
+            <span id="delete-mode-text" class="text-[10px] font-black text-slate-700">Cet événement seulement</span>
+            <label class="switch"><input type="checkbox" id="delete-series-toggle" onchange="updateDeleteModeText()"><span class="slider"></span></label>
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="confirmDeleteSelection()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="closeDeleteConfirmation()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
         </div>
     </div>
 </div>
@@ -234,9 +287,7 @@
 <!-- PiP MODIFICATION MOT DE PASSE -->
 <div id="password-pip" class="overlay-pip">
     <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-lock text-2xl"></i></div>
         <h3 class="text-xl font-black text-center text-slate-900 mb-6">Nouveau mot de passe</h3>
-        
         <div class="space-y-4 mb-8">
             <input id="pwd-current" type="password" placeholder="Mot de passe actuel" class="input-field">
             <div>
@@ -245,7 +296,6 @@
             </div>
             <input id="pwd-confirm" type="password" placeholder="Confirmer le mot de passe" class="input-field">
         </div>
-
         <div class="flex flex-col gap-3">
             <button onclick="validateAndChangePassword()" id="btn-confirm-pwd" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
             <button onclick="closePasswordPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
@@ -253,22 +303,68 @@
     </div>
 </div>
 
+<!-- PiP MODIFICATION EMAIL -->
+<div id="email-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-center text-slate-900 mb-6">Nouvelle adresse email</h3>
+        <div class="space-y-4 mb-8">
+            <input id="email-current" type="text" readonly class="input-field bg-slate-100 text-slate-500 cursor-not-allowed">
+            <input id="email-new" type="email" placeholder="Nouvel email" class="input-field">
+            <input id="email-pwd-verif" type="password" placeholder="Mot de passe actuel" class="input-field">
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="updateEmail()" id="btn-confirm-email" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="closeEmailPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- PiP RAPPELS PERSONNALISÉS -->
+<div id="custom-reminders-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-slate-900 mb-6 text-center">Rappel Personnalisé</h3>
+        <div class="grid grid-cols-3 gap-3 mb-8">
+            <div class="flex flex-col items-center"><input id="custom-days" type="number" value="0" min="0" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Jours</span></div>
+            <div class="flex flex-col items-center"><input id="custom-hours" type="number" value="0" min="0" max="23" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Heures</span></div>
+            <div class="flex flex-col items-center"><input id="custom-minutes" type="number" value="30" min="0" max="59" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Mins</span></div>
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="addCustomReminder()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Ajouter</button>
+            <button onclick="closeCustomReminders()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- PiP SUPPRESSION COMPTE -->
+<div id="delete-account-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
+        <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-exclamation-triangle text-3xl"></i></div>
+        <h3 class="text-2xl font-black text-slate-900 mb-4">Supprimer le compte ?</h3>
+        <p class="text-slate-500 text-sm mb-8">Cette action est irréversible. Toutes vos données seront définitivement perdues.</p>
+        <div class="space-y-3">
+            <button onclick="confirmDeleteAccount()" class="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="closeDeleteAccountPip()" class="w-full py-4 bg-slate-50 text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+    const VAPID_PUBLIC_KEY = 'BIIVWDznwx3nfErnVDvMRU0HqCpQ4s8uNFOuKMQFwwD8xXtmhMtB5T3naj_5miiWHR6dYPUV56Iu2cb69yPd4Aw';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
+    let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [], archiveCache = [];
     const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
     window.onload = async () => {
+        if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+            navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW Error:', err));
+        }
         const { data: { session } } = await sb.auth.getSession();
         if (session) initApp(session.user);
-        
-        sb.auth.onAuthStateChange((event, session) => { 
-            if (event === 'SIGNED_IN' && session) initApp(session.user); 
-            if (event === 'SIGNED_OUT') location.reload(); 
-        });
+        else document.getElementById('auth-screen').style.display = 'flex';
+        sb.auth.onAuthStateChange((event, session) => { if (event === 'SIGNED_IN' && session) initApp(session.user); if (event === 'SIGNED_OUT') location.reload(); });
     };
 
     async function initApp(user) {
@@ -281,117 +377,301 @@
 
     async function loadProfile() {
         const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+        const { data: settings } = await sb.from('notification_settings').select('*').eq('user_id', currentUser.id).single();
+
         if (profile) {
             currentProfile = profile;
             document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
             if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+            
             document.getElementById('set-firstname').value = profile.first_name || '';
             document.getElementById('set-lastname').value = profile.last_name || '';
             document.getElementById('set-phone').value = profile.Phone || '';
-        }
-    }
-
-    // --- GESTION MOT DE PASSE ---
-    function openPasswordPip() {
-        document.getElementById('password-pip').style.display = 'flex';
-        resetPasswordFields();
-    }
-
-    function closePasswordPip() {
-        document.getElementById('password-pip').style.display = 'none';
-    }
-
-    function resetPasswordFields() {
-        const ids = ['pwd-current', 'pwd-new', 'pwd-confirm'];
-        ids.forEach(id => {
-            const el = document.getElementById(id);
-            el.value = '';
-            el.classList.remove('input-error');
-        });
-        document.getElementById('pwd-hint').classList.remove('text-red-500');
-        document.getElementById('pwd-hint').classList.add('text-slate-400');
-    }
-
-    async function validateAndChangePassword() {
-        const current = document.getElementById('pwd-current');
-        const newP = document.getElementById('pwd-new');
-        const confirmP = document.getElementById('pwd-confirm');
-        const hint = document.getElementById('pwd-hint');
-        const btn = document.getElementById('btn-confirm-pwd');
-
-        let hasError = false;
-
-        [current, newP, confirmP].forEach(el => el.classList.remove('input-error'));
-        hint.classList.remove('text-red-500');
-
-        if (newP.value.length < 8) {
-            newP.classList.add('input-error');
-            hint.classList.add('text-red-500');
-            hasError = true;
+            document.getElementById('set-email').value = currentUser.email || '';
+            document.getElementById('email-current').value = currentUser.email || '';
         }
 
-        if (newP.value !== confirmP.value || confirmP.value === "") {
-            confirmP.classList.add('input-error');
-            hasError = true;
-        }
-
-        if (current.value === "") {
-            current.classList.add('input-error');
-            hasError = true;
-        }
-
-        if (hasError) return;
-
-        btn.textContent = "Vérification...";
-        btn.disabled = true;
-
-        try {
-            const { error: authError } = await sb.auth.signInWithPassword({
-                email: currentUser.email,
-                password: current.value
-            });
-
-            if (authError) {
-                current.classList.add('input-error');
-                btn.textContent = "Confirmer";
-                btn.disabled = false;
-                return;
-            }
-
-            const { error: updateError } = await sb.auth.updateUser({ password: newP.value });
-
-            if (updateError) {
-                alert("Erreur lors de la mise à jour: " + updateError.message);
+        if (settings) {
+            const isEnabled = settings.notif_enable || false;
+            document.getElementById('notif-master').checked = isEnabled;
+            
+            // Gestion de l'affichage grisé
+            const wrapper = document.getElementById('notif-content-wrapper');
+            if (isEnabled) {
+                wrapper.classList.remove('disabled-layer');
             } else {
-                btn.textContent = "Modifié !";
-                btn.classList.replace('bg-slate-900', 'bg-green-600');
-                setTimeout(() => {
-                    closePasswordPip();
-                    btn.textContent = "Confirmer";
-                    btn.classList.replace('bg-green-600', 'bg-slate-900');
-                    btn.disabled = false;
-                }, 1500);
+                wrapper.classList.add('disabled-layer');
             }
-        } catch (err) {
-            console.error(err);
-            btn.textContent = "Confirmer";
-            btn.disabled = false;
+
+            document.getElementById('notif-1h').checked = settings.remind_hour;
+            document.getElementById('notif-1j').checked = settings.remind_day;
+            document.getElementById('notif-1s').checked = settings.remind_week;
+            
+            await loadCustomRemindersUI();
+        } else {
+             // Default OFF
+             document.getElementById('notif-content-wrapper').classList.add('disabled-layer');
         }
     }
 
-    // --- UI & CORE LOGIC ---
-    function openSettingsPanel() { document.getElementById('user-menu').classList.add('hidden'); document.getElementById('settings-panel').style.display = 'flex'; }
-    function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
-    function openAdminPanel() { resetAdminForm(); document.getElementById('admin-panel').style.display = 'flex'; }
-    function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
-    function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
-    function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
-    function logout() { sb.auth.signOut(); }
-    function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
+    // --- EMAIL UPDATE ---
+    function openEmailPip() { document.getElementById('email-pip').style.display = 'flex'; }
+    function closeEmailPip() { document.getElementById('email-pip').style.display = 'none'; document.getElementById('email-pwd-verif').value = ''; document.getElementById('email-new').value = ''; }
+    
+    async function updateEmail() {
+        const newEmail = document.getElementById('email-new').value;
+        const pwd = document.getElementById('email-pwd-verif').value;
+        const btn = document.getElementById('btn-confirm-email');
 
+        if (!newEmail || !pwd) { alert("Veuillez remplir tous les champs"); return; }
+
+        btn.textContent = "Vérification..."; btn.disabled = true;
+
+        // 1. Check password
+        const { error: signError } = await sb.auth.signInWithPassword({ email: currentUser.email, password: pwd });
+        if (signError) {
+            alert("Mot de passe incorrect");
+            btn.textContent = "Confirmer"; btn.disabled = false;
+            return;
+        }
+
+        // 2. Update Email
+        const { error: updateError } = await sb.auth.updateUser({ email: newEmail });
+        
+        if (updateError) {
+            alert("Erreur: " + updateError.message);
+            btn.textContent = "Confirmer"; btn.disabled = false;
+        } else {
+            alert("Email de confirmation envoyé à la nouvelle adresse !");
+            closeEmailPip();
+            btn.textContent = "Confirmer"; btn.disabled = false;
+        }
+    }
+
+    // --- NOTIFICATIONS LOGIC ---
+    async function handleMasterNotifChange() {
+        const checked = document.getElementById('notif-master').checked;
+        const wrapper = document.getElementById('notif-content-wrapper');
+
+        if (checked) {
+            const p = await Notification.requestPermission();
+            if (p !== 'granted') { 
+                document.getElementById('notif-master').checked = false; 
+                alert("Permission requise"); 
+                return; 
+            }
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+            
+            // Save immediately subscription
+            await sb.from('notification_settings').upsert({ 
+                user_id: currentUser.id, 
+                notif_enable: true, 
+                push_subscription: JSON.stringify(sub) 
+            });
+            
+            wrapper.classList.remove('disabled-layer');
+        } else {
+            await sb.from('notification_settings').upsert({ user_id: currentUser.id, notif_enable: false });
+            wrapper.classList.add('disabled-layer');
+        }
+    }
+
+    async function saveNotificationPrefs() {
+        const btn = document.getElementById('settings-save-btn'); // Actually this is triggered by the button inside notification area? 
+        // No, user asked for button inside notification section.
+        // Let's assume the button calling this is the one inside the notification div.
+        
+        // Wait, the logic is split. Profile save is one thing, Notification prefs another.
+        // User asked: "Retire le bouton Enregistrer tout... Remplace par un bouton à l'intérieur de la Section Notifications"
+        
+        const settings = {
+            user_id: currentUser.id,
+            notif_enable: document.getElementById('notif-master').checked,
+            remind_hour: document.getElementById('notif-1h').checked,
+            remind_day: document.getElementById('notif-1j').checked,
+            remind_week: document.getElementById('notif-1s').checked,
+            updated_at: new Date()
+        };
+        
+        await sb.from('notification_settings').upsert(settings);
+        alert("Préférences de notification sauvegardées !");
+    }
+
+    async function saveProfileInfo() {
+         const p = { 
+            first_name: document.getElementById('set-firstname').value, 
+            last_name: document.getElementById('set-lastname').value, 
+            Phone: document.getElementById('set-phone').value 
+        };
+        await sb.from('profiles').update(p).eq('id', currentUser.id);
+        alert("Profil mis à jour !");
+        loadProfile();
+    }
+
+    async function loadCustomRemindersUI() {
+        const { data } = await sb.from('custom_reminders').select('*').eq('user_id', currentUser.id);
+        const list = document.getElementById('custom-reminders-list');
+        list.innerHTML = '';
+        data?.forEach(r => {
+            const d = document.createElement('div');
+            d.className = "flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl text-xs";
+            d.innerHTML = `<span>${r.days}j ${r.hours}h ${r.minutes}m avant</span><button onclick="deleteCustomReminder('${r.id}')" class="text-red-400"><i class="fas fa-trash-alt"></i></button>`;
+            list.appendChild(d);
+        });
+    }
+
+    async function addCustomReminder() {
+        const d = parseInt(document.getElementById('custom-days').value)||0, h = parseInt(document.getElementById('custom-hours').value)||0, m = parseInt(document.getElementById('custom-minutes').value)||0;
+        const tot = (d*1440)+(h*60)+m;
+        if(tot<=0) return;
+        await sb.from('custom_reminders').insert([{ user_id: currentUser.id, days: d, hours: h, minutes: m, total_minutes_before: tot }]);
+        loadCustomRemindersUI();
+    }
+    
+    async function deleteCustomReminder(id) { await sb.from('custom_reminders').delete().eq('id', id); loadCustomRemindersUI(); }
+
+    function urlBase64ToUint8Array(s) { const pad = '='.repeat((4-s.length%4)%4), b = (s+pad).replace(/-/g,'+').replace(/_/g,'/'), raw = window.atob(b), out = new Uint8Array(raw.length); for(let i=0;i<raw.length;++i) out[i]=raw.charCodeAt(i); return out; }
+
+    // --- ADMIN LOGIC ---
+    function requestAdminSubmit() {
+        const eventId = document.getElementById('admin-event-id').value;
+        const event = eventsCache.find(e => e.id === eventId);
+        if (eventId && event?.is_recurring) {
+            document.getElementById('edit-series-toggle').checked = false;
+            updateEditModeText();
+            document.getElementById('edit-choice-pip').style.display = 'flex';
+        } else {
+            executeAdminSubmit();
+        }
+    }
+
+    function updateEditModeText() {
+        const isS = document.getElementById('edit-series-toggle').checked;
+        document.getElementById('edit-mode-text').textContent = isS ? "Modifier toute la Série" : "Modifier spécifiquement cet évent";
+    }
+
+    function cancelEditChoice() { document.getElementById('edit-choice-pip').style.display = 'none'; }
+
+    async function executeAdminSubmit() {
+        const eventId = document.getElementById('admin-event-id').value;
+        const isSeriesModification = document.getElementById('edit-series-toggle').checked;
+        const targetDate = document.getElementById('admin-date').value;
+        const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
+        
+        try {
+            const payload = { 
+                owner_id: currentUser.id, title: document.getElementById('admin-title').value, 
+                location: document.getElementById('admin-loc').value, date: targetDate, 
+                start_time: `${document.getElementById('admin-start').value}:00`, 
+                end_time: `${document.getElementById('admin-end').value}:00`,
+                max_participants: parseInt(document.getElementById('admin-max').value),
+                is_recurring: days.length > 0, recurrence_days: days.length > 0 ? days : null 
+            };
+
+            if (!eventId) {
+                const { error } = await sb.from('events').insert([payload]);
+                if (error) throw error;
+            } else {
+                const originalEvent = eventsCache.find(e => e.id === eventId);
+                if (originalEvent.is_recurring && !isSeriesModification) {
+                    await sb.from('events').insert([{ ...payload, is_recurring: false, recurrence_days: null }]);
+                    const excl = Array.isArray(originalEvent.excluded_dates) ? originalEvent.excluded_dates : [];
+                    if (!excl.includes(targetDate)) {
+                        excl.push(targetDate);
+                        await sb.from('events').update({ excluded_dates: excl }).eq('id', eventId);
+                    }
+                } else if (originalEvent.is_recurring && isSeriesModification) {
+                    await archivePastEventsFromSeries(originalEvent, targetDate);
+                    await sb.from('events').update(payload).eq('id', eventId);
+                } else {
+                    await sb.from('events').update(payload).eq('id', eventId);
+                }
+            }
+            document.getElementById('edit-choice-pip').style.display = 'none';
+            closeAdminPanel(); 
+            await fetchEvents();
+        } catch (err) {
+            console.error("Erreur création/modif:", err);
+            alert("Erreur lors de l'enregistrement: " + err.message);
+        }
+    }
+
+    async function archivePastEventsFromSeries(originalEvent, newStartDate) {
+        // Logic to move past occurrences to registre_events
+        // Simplified for this view, logic maintained from previous step
+        const start = new Date(originalEvent.date);
+        const limit = new Date(newStartDate);
+        let cur = new Date(start);
+        const toArchive = [];
+        while (cur < limit) {
+            const dStr = cur.toISOString().split('T')[0];
+            const dayName = DAY_NAMES[cur.getDay()];
+            if (originalEvent.recurrence_days.includes(dayName) && (!originalEvent.excluded_dates || !originalEvent.excluded_dates.includes(dStr))) {
+                 toArchive.push({
+                    original_event_id: originalEvent.id, owner_id: originalEvent.owner_id,
+                    title: originalEvent.title, location: originalEvent.location, date: dStr,
+                    start_time: originalEvent.start_time, end_time: originalEvent.end_time,
+                    max_participants: originalEvent.max_participants, participants_json: originalEvent.registrations || []
+                });
+            }
+            cur.setDate(cur.getDate() + 1);
+        }
+        if (toArchive.length > 0) await sb.from('registre_events').insert(toArchive);
+    }
+
+    function triggerDeleteProcess() {
+        const eventId = document.getElementById('admin-event-id').value;
+        const event = eventsCache.find(e => e.id === eventId);
+        if (!event) return;
+
+        const pip = document.getElementById('delete-confirmation-pip');
+        const desc = document.getElementById('delete-pip-desc');
+        const switchCont = document.getElementById('delete-switch-container');
+
+        if (event.is_recurring) {
+            desc.textContent = "Série détectée. Supprimer toute la série ou uniquement cette date ?";
+            switchCont.classList.remove('hidden');
+            document.getElementById('delete-series-toggle').checked = false;
+            updateDeleteModeText();
+        } else {
+            desc.textContent = "Voulez-vous supprimer cet événement unique ?";
+            switchCont.classList.add('hidden');
+            document.getElementById('delete-series-toggle').checked = true;
+        }
+        pip.style.display = 'flex';
+    }
+
+    function updateDeleteModeText() {
+        const isS = document.getElementById('delete-series-toggle').checked;
+        document.getElementById('delete-mode-text').textContent = isS ? "Supprimer toute la série" : "Supprimer uniquement ce jour";
+    }
+
+    function closeDeleteConfirmation() { document.getElementById('delete-confirmation-pip').style.display = 'none'; }
+    
+    async function confirmDeleteSelection() {
+        const eventId = document.getElementById('admin-event-id').value;
+        const isS = document.getElementById('delete-series-toggle').checked;
+        const dateEx = document.getElementById('admin-date').value;
+        await executeDeletion(eventId, isS, isS ? null : dateEx);
+        closeDeleteConfirmation();
+    }
+
+    async function executeDeletion(eventId, deleteAll, dateToExclude = null) {
+        if (deleteAll) await sb.from('events').delete().eq('id', eventId);
+        else {
+            const ev = eventsCache.find(e => e.id === eventId);
+            const excl = Array.isArray(ev.excluded_dates) ? [...ev.excluded_dates] : [];
+            if (!excl.includes(dateToExclude)) { excl.push(dateToExclude); await sb.from('events').update({ excluded_dates: excl }).eq('id', eventId); }
+        }
+        closeAdminPanel(); await fetchEvents();
+    }
+
+    // --- CALENDRIER ---
     async function fetchEvents() {
-        const { data } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
-        if (data) eventsCache = data;
+        const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
+        const { data: arch } = await sb.from('registre_events').select('*');
+        if (evts) eventsCache = evts; if (arch) archiveCache = arch;
         renderCalendar();
     }
 
@@ -410,58 +690,31 @@
                 const isR = e.is_recurring && e.recurrence_days?.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
                 return (isD || isR) && (!e.excluded_dates || !e.excluded_dates.includes(dateStr));
             });
+            const dayArch = archiveCache.filter(a => a.date === dateStr);
             const cell = document.createElement('div'); cell.className = 'calendar-day';
-            cell.onclick = (e) => openDayPip(dateStr, dayEvts, e);
+            cell.onclick = (e) => openDayPip(dateStr, dayEvts, dayArch, e);
             let dots = dayEvts.map(e => `<span class="event-dot ${(e.registrations?.length || 0) >= e.max_participants ? 'dot-red' : 'dot-blue'}"></span>`).join('');
-            cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}</div>`;
+            let aDots = dayArch.map(() => `<span class="event-dot dot-gray"></span>`).join('');
+            cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}${aDots}</div>`;
             grid.appendChild(cell);
         }
     }
 
-    // --- CHANGEMENT BOUTON + EN TEXTE "AJOUTER UN EVENT" ---
-    function openDayPip(dateStr, events, evt) {
+    function openDayPip(dateStr, events, archives, evt) {
         evt.stopPropagation();
         const zone = document.getElementById('mobile-pip-zone'); zone.style.pointerEvents = 'auto';
         const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-        
-        let html = `<div class="mobile-pip-card">
-            <div class="flex items-center justify-between p-5 border-b border-slate-50">
-                <span class="font-black text-slate-800 uppercase text-[10px] tracking-widest">${dateL}</span>
-                <div class="flex items-center gap-2">
-                    ${currentProfile?.role === 'admin' ? `
-                        <button onclick="createNewEventAtDate('${dateStr}')" class="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black shadow-sm active:scale-95 transition-transform">
-                            Ajouter un event
-                        </button>` : ''}
-                    <button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-500 active:scale-95 transition-transform">&times;</button>
-                </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3">`;
-            
-        if(!events.length) html += `<div class="py-12 text-center text-slate-300 italic text-sm">Rien de prévu à cette date</div>`;
+        let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
+        if(!events.length && !archives.length) html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
         else {
             events.forEach(e => {
                 const isReg = e.registrations?.some(r => r.user_id === currentUser.id), isFull = (e.registrations?.length || 0) >= e.max_participants;
-                html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between shadow-sm">
-                    <div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px]"><span class="text-blue-600 font-black">${e.start_time.substring(0,5)}</span><span class="text-slate-400 font-bold">${e.location}</span></div></div>
-                    <div class="flex items-center gap-2">
-                        <div class="text-right"><div class="text-[9px] font-black ${isFull && !isReg ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div>
-                        <button onclick="toggleReg('${e.id}', '${dateStr}', ${isReg})" class="px-3 py-2 rounded-lg text-[9px] font-black ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div>
-                        ${currentProfile?.role === 'admin' ? `<button onclick="editEventInstance('${e.id}', '${dateStr}')" class="p-2 text-slate-300 hover:text-blue-500 transition-colors"><i class="fas fa-edit"></i></button>` : ''}
-                    </div>
-                </div>`;
+                html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between"><div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px]"><span class="text-blue-600 font-bold">${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div></div><div class="flex items-center gap-2"><div class="text-right"><div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div><button onclick="toggleReg('${e.id}', '${dateStr}', ${isReg})" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div>${currentProfile?.role === 'admin' ? `<button onclick="editEventInstance('${e.id}', '${dateStr}')" class="p-2 text-slate-300"><i class="fas fa-edit"></i></button>` : ''}</div></div>`;
             });
+            archives.forEach(a => html += `<div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 flex items-center justify-between opacity-60"><div><h4 class="font-black text-slate-500 line-through">${a.title}</h4><div class="flex gap-2 text-[10px]"><span class="text-slate-400 font-bold">${a.start_time.substring(0,5)}</span><span>Archives</span></div></div><span class="text-[9px] font-black text-slate-400 uppercase italic">Terminé</span></div>`);
         }
         zone.innerHTML = html + `</div></div>`;
     }
-
-    function createNewEventAtDate(dateStr) {
-        closeMobilePip();
-        resetAdminForm();
-        document.getElementById('admin-date').value = dateStr;
-        document.getElementById('admin-panel').style.display = 'flex';
-    }
-
-    function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
 
     function editEventInstance(eid, d) {
         const ev = eventsCache.find(e => e.id === eid); if(!ev) return;
@@ -473,37 +726,70 @@
         document.getElementById('admin-loc').value = ev.location;
         document.getElementById('admin-max').value = ev.max_participants;
         document.getElementById('admin-start').value = ev.start_time.substring(0,5);
-        document.getElementById('admin-end').value = ev.end_time.substring(0,5);
+        document.getElementById('admin-end').value = ev.end_time?.substring(0,5) || "";
+        if (ev.recurrence_days) {
+            ev.recurrence_days.forEach(day => { const cb = document.querySelector(`.day-checkbox[value="${day}"]`); if(cb) cb.checked = true; });
+        }
         document.getElementById('admin-delete-btn').classList.remove('hidden');
+        document.getElementById('admin-save-btn').textContent = "Modifier";
     }
 
-    function resetAdminForm() {
-        document.getElementById('admin-event-id').value = '';
+    // --- MODALS & UTILS ---
+    function openSettingsPanel() { document.getElementById('user-menu').classList.add('hidden'); document.getElementById('settings-panel').style.display = 'flex'; }
+    function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
+    function openPasswordPip() { document.getElementById('password-pip').style.display = 'flex'; resetPasswordFields(); }
+    function closePasswordPip() { document.getElementById('password-pip').style.display = 'none'; }
+    function resetPasswordFields() { ['pwd-current', 'pwd-new', 'pwd-confirm'].forEach(id => { document.getElementById(id).value = ''; document.getElementById(id).classList.remove('input-error'); }); }
+    function openDeleteAccountPip() { document.getElementById('delete-account-pip').style.display = 'flex'; }
+    function closeDeleteAccountPip() { document.getElementById('delete-account-pip').style.display = 'none'; }
+    async function confirmDeleteAccount() { const { error } = await sb.rpc('delete_user_account'); if(error) alert("Reconnexion requise."); else { await sb.auth.signOut(); location.reload(); } }
+    async function validateAndChangePassword() {
+        const c = document.getElementById('pwd-current'), n = document.getElementById('pwd-new'), cf = document.getElementById('pwd-confirm'), h = document.getElementById('pwd-hint'), btn = document.getElementById('btn-confirm-pwd');
+        [c,n,cf].forEach(el => el.classList.remove('input-error')); h.classList.remove('text-red-500');
+        if(n.value.length < 8 || n.value !== cf.value || c.value === "") { if(n.value.length < 8) h.classList.add('text-red-500'); return; }
+        btn.textContent = "Vérification..."; btn.disabled = true;
+        try {
+            const { error: authE } = await sb.auth.signInWithPassword({ email: currentUser.email, password: c.value });
+            if(authE) { c.classList.add('input-error'); btn.textContent = "Confirmer"; btn.disabled = false; return; }
+            const { error: upE } = await sb.auth.updateUser({ password: n.value });
+            if(upE) alert(upE.message); else { btn.textContent = "Modifié !"; setTimeout(() => { closePasswordPip(); btn.textContent = "Confirmer"; btn.disabled = false; }, 1500); }
+        } catch(e) { btn.disabled = false; }
+    }
+    
+    async function toggleReg(eid, d, isR) {
+        if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
+        else await sb.from('registrations').insert([{ event_id: eid, user_id: currentUser.id }]);
+        await fetchEvents(); closeMobilePip();
+    }
+    function openAdminPanel() { resetAdminForm(); document.getElementById('admin-panel').style.display = 'flex'; }
+    function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
+    function resetAdminForm() { 
+        document.getElementById('admin-event-id').value = ''; 
+        document.getElementById('admin-delete-btn').classList.add('hidden'); 
+        document.getElementById('admin-save-btn').textContent = "Créer";
+        document.querySelectorAll('.day-checkbox').forEach(c => c.checked = false);
         document.getElementById('admin-title').value = '';
         document.getElementById('admin-loc').value = '';
-        document.getElementById('admin-max').value = '';
-        document.getElementById('admin-start').value = '';
-        document.getElementById('admin-end').value = '';
-        document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
-        document.getElementById('admin-delete-btn').classList.add('hidden');
+        document.getElementById('admin-date').value = new Date().toISOString().split('T')[0];
     }
-
+    function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
+    function openAdminFromPip(d) { closeMobilePip(); resetAdminForm(); document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
+    function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
+    function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
+    function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
+    function logout() { sb.auth.signOut(); }
+    function toggleAuthMode() { document.getElementById('register-fields').classList.toggle('hidden'); }
     async function handleAuth() {
         const e = document.getElementById('auth-email').value, p = document.getElementById('auth-password').value;
-        if(!document.getElementById('register-fields').classList.contains('hidden')) {
+        const reg = !document.getElementById('register-fields').classList.contains('hidden');
+        if(reg) {
             const { data } = await sb.auth.signUp({ email: e, password: p });
-            if (data.user) await sb.from('profiles').insert([{ id: data.user.id, first_name: document.getElementById('auth-firstname').value, last_name: document.getElementById('auth-lastname').value, Phone: document.getElementById('auth-phone').value, role: 'user' }]);
+            if (data.user) {
+                await sb.from('profiles').insert([{ id: data.user.id, first_name: document.getElementById('auth-firstname').value, last_name: document.getElementById('auth-lastname').value, Phone: document.getElementById('auth-phone').value, role: 'user' }]);
+            }
         } else await sb.auth.signInWithPassword({ email: e, password: p });
     }
-
-    async function saveAllSettings() {
-        await sb.from('profiles').update({
-            first_name: document.getElementById('set-firstname').value,
-            last_name: document.getElementById('set-lastname').value,
-            Phone: document.getElementById('set-phone').value
-        }).eq('id', currentUser.id);
-        closeSettingsPanel();
-    }
+    function urlBase64ToUint8Array(s) { const pad = '='.repeat((4-s.length%4)%4), b = (s+pad).replace(/-/g,'+').replace(/_/g,'/'), raw = window.atob(b), out = new Uint8Array(raw.length); for(let i=0;i<raw.length;++i) out[i]=raw.charCodeAt(i); return out; }
 </script>
 </body>
 </html>
