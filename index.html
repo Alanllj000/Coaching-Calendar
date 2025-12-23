@@ -349,7 +349,20 @@
         </div>
     </div>
 </div>
-
+<!-- PiP Modal -->
+<div id="pip-confirm" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
+  <div class="bg-white rounded-2xl shadow-lg p-6 w-80 max-w-full">
+    <h3 class="text-xl font-bold mb-4">Confirmer le mot de passe</h3>
+    <p class="text-sm text-gray-600 mb-4">
+      Veuillez confirmer votre mot de passe pour des raisons de sécurité.
+    </p>
+    <input id="confirm-password" type="password" placeholder="Mot de passe" class="input-field w-full mb-4 p-2 border rounded">
+    <div class="flex justify-end space-x-2">
+      <button id="pip-cancel" class="px-4 py-2 bg-gray-300 rounded">Annuler</button>
+      <button id="pip-confirm-btn" class="px-4 py-2 bg-slate-900 text-white rounded">Confirmer</button>
+    </div>
+  </div>
+</div>
 <script>
         // --- 1. CONFIGURATION ---
         const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
@@ -368,64 +381,69 @@
             document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
         }
 
-       async function handleAuth() {
+       let pendingProfile = {};
+
+async function handleRegisterStep1() {
     const emailVal = document.getElementById('auth-email').value.trim();
     const passwordVal = document.getElementById('auth-password').value;
-    const errDiv = document.getElementById('error-message');
-    const loader = document.getElementById('btn-loader');
+    const fn = document.getElementById('auth-firstname').value.trim();
+    const ln = document.getElementById('auth-lastname').value.trim();
+    const ph = document.getElementById('auth-phone').value.trim();
 
-    // Masquer l'erreur
-    errDiv.classList.add('hidden');
-
-    // Vérification des champs requis
-    if (!emailVal || !passwordVal) { 
-        errDiv.innerText = "Email et mot de passe requis"; 
-        errDiv.classList.remove('hidden'); 
-        return; 
+    if (!emailVal || !passwordVal || !fn || !ln) {
+        alert("Tous les champs sont requis !");
+        return;
     }
 
-    loader.classList.remove('hidden');
+    // Stockage temporaire des infos de profil
+    pendingProfile = { first_name: fn, last_name: ln, phone: ph };
 
-    try {
-        if (isRegisterMode) {
-            const fn = document.getElementById('auth-firstname').value.trim();
-            const ln = document.getElementById('auth-lastname').value.trim();
-            const ph = document.getElementById('auth-phone').value.trim();
-
-            if (!fn || !ln) throw new Error("Nom et Prénom requis");
-
-            // Inscription dans Supabase Auth
-            const { data, error } = await sb.auth.signUp({ 
-                email: emailVal, 
-                password: passwordVal 
-            });
-
-            if (error) throw error;
-
-            if (data.user) {
-                console.log("Auth OK pour :", emailVal);
-                // Le profil est maintenant créé automatiquement via trigger SQL
-                initApp(data.user);
-            }
-
-        } else {
-            // Connexion classique
-            const { data, error } = await sb.auth.signInWithPassword({ 
-                email: emailVal, 
-                password: passwordVal 
-            });
-
-            if (error) throw error;
-            initApp(data.user);
-        }
-    } catch (err) {
-        console.error("Auth Exception:", err);
-        errDiv.innerText = err.message;
-        errDiv.classList.remove('hidden');
-    } finally {
-        loader.classList.add('hidden');
+    const { data, error } = await sb.auth.signUp({ email: emailVal, password: passwordVal });
+    if (error) {
+        alert(error.message);
+        return;
     }
+
+    console.log("Compte créé, profil en cache :", pendingProfile);
+    // Rediriger vers page de confirmation / mot de passe
+    window.location.href = "/confirm-profile.html";
 }
+
+    async function confirmProfile(passwordConfirmation) {
+    const user = sb.auth.user();
+    if (!user) {
+        alert("Utilisateur non connecté");
+        return;
+    }
+
+    // Vérifier le mot de passe si nécessaire (optionnel)
+    const { data, error } = await sb.auth.signInWithPassword({
+        email: user.email,
+        password: passwordConfirmation
+    });
+
+    if (error) {
+        alert("Mot de passe incorrect");
+        return;
+    }
+
+    // Envoyer le profil en base
+    const { error: pErr } = await sb.from('profiles').insert([{
+        id: user.id,
+        email: user.email,
+        ...pendingProfile,  // first_name, last_name, phone
+        role: 'user'
+    }]);
+
+    if (pErr) {
+        alert("Erreur création profil : " + pErr.message);
+        return;
+    }
+
+    console.log("Profil créé avec succès !");
+    initApp(user);
+}
+
 
 
         async function logout() { await sb.auth.signOut(); location.reload(); }
@@ -637,6 +655,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
