@@ -854,7 +854,6 @@
     function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
     function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
     function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
-    function logout() { sb.auth.signOut(); }
     function toggleAuthMode() { document.getElementById('register-fields').classList.toggle('hidden'); }
     async function handleAuth() {
         const e = document.getElementById('auth-email').value, p = document.getElementById('auth-password').value;
@@ -968,6 +967,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
