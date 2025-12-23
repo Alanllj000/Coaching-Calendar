@@ -369,7 +369,6 @@
         }
 
         async function handleAuth() {
-        // On récupère les valeurs au moment du clic
         const emailVal = document.getElementById('auth-email').value.trim();
         const passwordVal = document.getElementById('auth-password').value;
         const errDiv = document.getElementById('error-message');
@@ -391,7 +390,7 @@
                 
                 if(!fn || !ln) throw new Error("Nom et Prénom requis");
                 
-                // 1. Création du compte Auth
+                // 1. Inscription dans Supabase Auth
                 const { data, error } = await sb.auth.signUp({ 
                     email: emailVal, 
                     password: passwordVal 
@@ -400,20 +399,22 @@
                 if (error) throw error;
                 
                 if (data.user) {
-                    console.log("Utilisateur créé, insertion profil pour:", emailVal);
-                    // 2. Création du profil avec sécurité sur les noms de colonnes
+                    console.log("Auth OK, création du profil pour:", emailVal);
+                    
+                    // 2. Insertion manuelle dans la table profiles
+                    // On envoie explicitement l'email à la colonne 'Email' (vérifiez bien la majuscule dans Supabase)
                     const { error: pErr } = await sb.from('profiles').insert([{ 
                         id: data.user.id, 
                         first_name: fn, 
                         last_name: ln, 
-                        email: emailVal, // On s'assure d'utiliser la variable récupérée au début
+                        Email: emailVal, // Utilisation de la variable emailVal capturée plus haut
                         Phone: ph, 
                         role: 'user' 
                     }]);
                     
                     if (pErr) {
-                        console.error("Erreur d'insertion profil détaillée:", pErr);
-                        throw new Error("Erreur base de données (Profil): " + pErr.message);
+                        console.error("Erreur Profil:", pErr);
+                        throw new Error("Compte créé mais erreur profil: " + pErr.message);
                     }
                     
                     initApp(data.user);
@@ -427,7 +428,7 @@
                 initApp(data.user);
             }
         } catch (err) {
-            console.error("Auth Error:", err);
+            console.error("Auth Exception:", err);
             errDiv.innerText = err.message;
             errDiv.classList.remove('hidden');
         } finally {
@@ -644,6 +645,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
