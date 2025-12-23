@@ -110,7 +110,7 @@
                 <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
             </div>
             <button onclick="handleAuth()" id="auth-btn" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">Se connecter</button>
-            <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">Créer un compte</p>
+            <p onclick="handleRegisterStep1()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">Créer un compte</p>
         </div>
     </div>
 </div>
@@ -364,25 +364,27 @@
   </div>
 </div>
 <script>
-        // --- 1. CONFIGURATION ---
-        const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+       // --- 1. CONFIGURATION ---
+const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
-        let isRegisterMode = false;
-        const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
+let isRegisterMode = false;
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-        // --- 2. AUTHENTIFICATION ---
-        function toggleAuthMode() {
-            isRegisterMode = !isRegisterMode;
-            document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
-            document.getElementById('btn-text').textContent = isRegisterMode ? "Créer mon compte" : "Se connecter";
-            document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
-        }
+// --- 2. AUTHENTIFICATION ---
+function toggleAuthMode() {
+    isRegisterMode = !isRegisterMode;
+    document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
+    document.getElementById('btn-text').textContent = isRegisterMode ? "Créer mon compte" : "Se connecter";
+    document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
+}
 
-       let pendingProfile = {};
+// ✅ Stockage global (en mémoire seulement)
+let pendingProfile = {};
 
+// --- 3. INSCRIPTION (Step 1) ---
 async function handleRegisterStep1() {
     const emailVal = document.getElementById('auth-email').value.trim();
     const passwordVal = document.getElementById('auth-password').value;
@@ -395,9 +397,12 @@ async function handleRegisterStep1() {
         return;
     }
 
-    // Stockage temporaire des infos de profil
+    // Stockage temporaire du profil en mémoire et dans sessionStorage
     pendingProfile = { first_name: fn, last_name: ln, phone: ph };
+    sessionStorage.setItem('pendingProfile', JSON.stringify(pendingProfile));
+    sessionStorage.setItem('pendingEmail', emailVal); // utile pour confirmer mot de passe
 
+    // Création de l'utilisateur dans Supabase Auth
     const { data, error } = await sb.auth.signUp({ email: emailVal, password: passwordVal });
     if (error) {
         alert(error.message);
@@ -405,33 +410,44 @@ async function handleRegisterStep1() {
     }
 
     console.log("Compte créé, profil en cache :", pendingProfile);
-    // Rediriger vers page de confirmation / mot de passe
+
+    // Redirection vers la page de confirmation / mot de passe
     window.location.href = "/confirm-profile.html";
 }
 
-    async function confirmProfile(passwordConfirmation) {
-    const user = sb.auth.user();
-    if (!user) {
-        alert("Utilisateur non connecté");
+// --- 4. CONFIRMATION DU PROFIL ---
+async function confirmProfile(passwordConfirmation) {
+    // ✅ Récupération du profil depuis sessionStorage
+    const pendingProfile = JSON.parse(sessionStorage.getItem('pendingProfile'));
+    const pendingEmail = sessionStorage.getItem('pendingEmail');
+
+    if (!pendingProfile || !pendingEmail) {
+        alert("Erreur : informations de profil manquantes");
         return;
     }
 
-    // Vérifier le mot de passe si nécessaire (optionnel)
-    const { data, error } = await sb.auth.signInWithPassword({
-        email: user.email,
+    // Vérification du mot de passe (optionnelle mais sécurisée)
+    const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({
+        email: pendingEmail,
         password: passwordConfirmation
     });
 
-    if (error) {
+    if (signInError) {
         alert("Mot de passe incorrect");
         return;
     }
 
-    // Envoyer le profil en base
+    const user = signInData.user;
+    if (!user) {
+        alert("Erreur : utilisateur non trouvé");
+        return;
+    }
+
+    // Insertion du profil dans la table 'profiles'
     const { error: pErr } = await sb.from('profiles').insert([{
         id: user.id,
-        email: user.email,
-        ...pendingProfile,  // first_name, last_name, phone
+        email: pendingEmail,
+        ...pendingProfile, // first_name, last_name, phone
         role: 'user'
     }]);
 
@@ -441,8 +457,16 @@ async function handleRegisterStep1() {
     }
 
     console.log("Profil créé avec succès !");
+
+    // Nettoyage du cache
+    sessionStorage.removeItem('pendingProfile');
+    sessionStorage.removeItem('pendingEmail');
+
+    // Lancement de l'app
     initApp(user);
 }
+
+    
 
 
 
@@ -655,6 +679,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
