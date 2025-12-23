@@ -512,8 +512,6 @@
             if (session) initApp(session.user);
             else document.getElementById('auth-screen').style.display = 'flex';
         };
-    
-    let isRegisterMode = false;
 
 function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
@@ -614,5 +612,6 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
