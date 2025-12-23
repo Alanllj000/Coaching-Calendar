@@ -354,7 +354,19 @@
     const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
     const VAPID_PUBLIC_KEY = 'BIIVWDznwx3nfErnVDvMRU0HqCpQ4s8uNFOuKMQFwwD8xXtmhMtB5T3naj_5miiWHR6dYPUV56Iu2cb69yPd4Aw';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function requireAuth() {
+        const { data: { session } } = await sb.auth.getSession();
+
+      if (!session) {
+        showAuthScreen();
+        return false;
+      }
     
+      currentUser = session.user;
+      return true;
+    }
+
     let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [], archiveCache = [];
     const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
@@ -916,4 +928,5 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
