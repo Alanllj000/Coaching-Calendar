@@ -351,522 +351,168 @@
 </div>
 
 <script>
-    const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
-    const VAPID_PUBLIC_KEY = 'BIIVWDznwx3nfErnVDvMRU0HqCpQ4s8uNFOuKMQFwwD8xXtmhMtB5T3naj_5miiWHR6dYPUV56Iu2cb69yPd4Aw';
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // --- 1. CONFIGURATION ---
+        const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function requireAuth() {
-        const { data: { session } } = await sb.auth.getSession();
+        let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [];
+        let isRegisterMode = false;
+        const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-      if (!session) {
-        showAuthScreen();
-        return false;
-      }
-    
-      currentUser = session.user;
-      return true;
-    }
-
-    let currentUser = null, currentProfile = null, currentDate = new Date(), eventsCache = [], archiveCache = [];
-    const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-
-    document.addEventListener('DOMContentLoaded', async () => {
-
-    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW Error:', err));
-    }
-
-    const { data: { session } } = await sb.auth.getSession();
-
-    if (!session) {
-        showAuthScreen();
-        return;
-    }
-
-    initApp(session.user);
-
-    sb.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT') {
-            showAuthScreen();
-            document.getElementById('main-content').classList.add('hidden');
+        // --- 2. AUTHENTIFICATION ---
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
+            document.getElementById('btn-text').textContent = isRegisterMode ? "Créer mon compte" : "Se connecter";
+            document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
         }
-        if (event === 'SIGNED_IN' && session) {
-            initApp(session.user);
-        }
-    });
-});
 
-
-    async function initApp(user) {
-        if (!user) return;
-        
-        currentUser = user; 
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('main-content').classList.remove('hidden');
-        await loadProfile(); 
-        await fetchEvents();
-    }
-
-    async function loadProfile() {
-        const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-        const { data: settings } = await sb.from('notification_settings').select('*').eq('user_id', currentUser.id).single();
-
-        if (profile) {
-            currentProfile = profile;
-            document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
-            if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const errDiv = document.getElementById('error-message');
+            const loader = document.getElementById('btn-loader');
             
-            document.getElementById('set-firstname').value = profile.first_name || '';
-            document.getElementById('set-lastname').value = profile.last_name || '';
-            document.getElementById('set-phone').value = profile.Phone || '';
-            document.getElementById('set-email').value = currentUser.email || '';
-            
-            // Pour l'affichage dans le Pip Email
-            const emailDisp = document.getElementById('email-current-display');
-            if(emailDisp) emailDisp.value = currentUser.email || '';
-            
-            // Vérification initiale pour l'état du bouton
-            checkProfileChanges();
-        }
+            errDiv.classList.add('hidden');
+            if (!email || !password) { errDiv.innerText = "Email/Pass requis"; errDiv.classList.remove('hidden'); return; }
+            loader.classList.remove('hidden');
 
-        if (settings) {
-            const isEnabled = settings.notif_enable || false;
-            document.getElementById('notif-master').checked = isEnabled;
-            
-            // Gestion de l'affichage grisé
-            const wrapper = document.getElementById('notif-content-wrapper');
-            if (isEnabled) {
-                wrapper.classList.remove('disabled-layer');
-            } else {
-                wrapper.classList.add('disabled-layer');
-            }
-
-            document.getElementById('notif-1h').checked = settings.remind_hour;
-            document.getElementById('notif-1j').checked = settings.remind_day;
-            document.getElementById('notif-1s').checked = settings.remind_week;
-            
-            await loadCustomRemindersUI();
-        } else {
-             // Default OFF
-             document.getElementById('notif-content-wrapper').classList.add('disabled-layer');
-        }
-    }
-
-    // --- REGLAGES LOGIC ---
-    function checkProfileChanges() {
-        if(!currentProfile) return;
-        const fn = document.getElementById('set-firstname').value;
-        const ln = document.getElementById('set-lastname').value;
-        const ph = document.getElementById('set-phone').value;
-        const btn = document.getElementById('btn-update-profile');
-        
-        // Comparaison avec les valeurs stockées
-        const changed = (fn !== currentProfile.first_name || ln !== currentProfile.last_name || ph !== (currentProfile.Phone || ''));
-        
-        if (changed) {
-            btn.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
-            btn.classList.add('bg-blue-600', 'text-white', 'cursor-pointer');
-            btn.disabled = false;
-        } else {
-            btn.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
-            btn.classList.remove('bg-blue-600', 'text-white', 'cursor-pointer');
-            btn.disabled = true;
-        }
-    }
-
-    async function saveProfileInfo() {
-        const payload = { 
-            first_name: document.getElementById('set-firstname').value, 
-            last_name: document.getElementById('set-lastname').value, 
-            Phone: document.getElementById('set-phone').value 
-        };
-        const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
-        if (!error) {
-            currentProfile = { ...currentProfile, ...payload };
-            showSuccessOverlay('profile-section');
-            checkProfileChanges();
-        } else {
-            alert("Erreur lors de la mise à jour");
-        }
-    }
-    
-    // --- NOTIFICATIONS LOGIC ---
-    function handleMasterNotifChange(save = true) {
-        const checked = document.getElementById('notif-master').checked;
-        const wrapper = document.getElementById('notif-content-wrapper');
-        
-        if (checked) {
-            wrapper.classList.remove('disabled-layer');
-            // Demande de permission si on active
-            Notification.requestPermission().then(p => {
-                if (p !== 'granted') { 
-                    document.getElementById('notif-master').checked = false; 
-                    wrapper.classList.add('disabled-layer');
-                    alert("Permission requise"); 
-                } else {
-                    navigator.serviceWorker.ready.then(reg => {
-                        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
-                    }).then(sub => {
-                        sb.from('notification_settings').upsert({ 
-                            user_id: currentUser.id, 
-                            notif_enable: true, 
-                            push_subscription: JSON.stringify(sub) 
-                        });
-                    });
-                }
-            });
-        } else {
-            wrapper.classList.add('disabled-layer');
-            if (save) sb.from('notification_settings').upsert({ user_id: currentUser.id, notif_enable: false });
-        }
-    }
-
-    async function saveNotificationPrefs() {
-        const settings = {
-            user_id: currentUser.id,
-            remind_hour: document.getElementById('notif-1h').checked,
-            remind_day: document.getElementById('notif-1j').checked,
-            remind_week: document.getElementById('notif-1s').checked,
-            updated_at: new Date()
-        };
-        // On s'assure que notif_enable reste synchro
-        settings.notif_enable = document.getElementById('notif-master').checked;
-        
-        const { error } = await sb.from('notification_settings').upsert(settings);
-        if (!error) showSuccessOverlay('notif-section');
-    }
-
-    function showSuccessOverlay(sectionId) {
-        const section = document.getElementById(sectionId);
-        if(!section) return;
-        const overlay = document.createElement('div');
-        overlay.className = "success-overlay";
-        overlay.innerHTML = `<div class="text-center"><i class="fas fa-check-circle text-blue-600 text-4xl mb-2"></i><p class="text-slate-900 font-black text-lg">Enregistré</p></div>`;
-        section.appendChild(overlay);
-        setTimeout(() => { overlay.style.opacity = '0'; overlay.style.transition = 'opacity 0.5s'; setTimeout(() => overlay.remove(), 500); }, 1500);
-    }
-
-    // --- EMAIL UPDATE ---
-    function openEmailPip() { document.getElementById('email-pip').style.display = 'flex'; }
-    function closeEmailPip() { document.getElementById('email-pip').style.display = 'none'; document.getElementById('email-pwd-verif').value = ''; document.getElementById('email-new').value = ''; }
-    
-    async function updateEmail() {
-        const newEmail = document.getElementById('email-new').value;
-        const pwd = document.getElementById('email-pwd-verif').value;
-
-        if (!newEmail || !pwd) { alert("Veuillez remplir tous les champs"); return; }
-
-        // 1. Check password
-        const { error: signError } = await sb.auth.signInWithPassword({ email: currentUser.email, password: pwd });
-        if (signError) { alert("Mot de passe incorrect"); return; }
-
-        // 2. Update Email
-        const { error: updateError } = await sb.auth.updateUser({ email: newEmail });
-        
-        if (updateError) {
-            alert("Erreur: " + updateError.message);
-        } else {
-            alert("Email de confirmation envoyé à la nouvelle adresse !");
-            closeEmailPip();
-        }
-    }
-    
-    // --- PASSWORD LOGIC ---
-    function openPasswordPip() { document.getElementById('password-pip').style.display = 'flex'; resetPasswordFields(); }
-    function closePasswordPip() { document.getElementById('password-pip').style.display = 'none'; }
-    function resetPasswordFields() { ['pwd-current', 'pwd-new', 'pwd-confirm'].forEach(id => { document.getElementById(id).value = ''; document.getElementById(id).classList.remove('input-error'); }); }
-    
-    async function validateAndChangePassword() {
-        const c = document.getElementById('pwd-current'), n = document.getElementById('pwd-new'), cf = document.getElementById('pwd-confirm');
-        
-        if(n.value.length < 6 || n.value !== cf.value || c.value === "") { alert("Vérifiez les champs"); return; }
-        
-        const { error: authE } = await sb.auth.signInWithPassword({ email: currentUser.email, password: c.value });
-        if(authE) { alert("Ancien mot de passe incorrect"); return; }
-        
-        const { error: upE } = await sb.auth.updateUser({ password: n.value });
-        if(upE) alert(upE.message); else { alert("Mot de passe modifié !"); closePasswordPip(); }
-    }
-
-    // --- DELETE ACCOUNT LOGIC ---
-    function openDeleteAccountPip() { document.getElementById('delete-account-pip').style.display = 'flex'; }
-    function closeDeleteAccountPip() { document.getElementById('delete-account-pip').style.display = 'none'; }
-    
-    async function confirmAccountDeletion() { 
-        // Utilisation de la logique Master (RPC) mais déclenchée par la nouvelle UI
-        const { error } = await sb.rpc('delete_user_account'); 
-        if(error) {
-            // Fallback si RPC manquant ou erreur
-            console.warn("RPC delete failed, trying manual delete...", error);
-            await sb.from('profiles').delete().eq('id', currentUser.id);
-        }
-        await sb.auth.signOut(); 
-        location.reload(); 
-    }
-
-    async function loadCustomRemindersUI() {
-        const { data } = await sb.from('custom_reminders').select('*').eq('user_id', currentUser.id);
-        const list = document.getElementById('custom-reminders-list');
-        list.innerHTML = '';
-        data?.forEach(r => {
-            const d = document.createElement('div');
-            d.className = "flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl text-xs";
-            d.innerHTML = `<span>${r.days}j ${r.hours}h ${r.minutes}m avant</span><button onclick="deleteCustomReminder('${r.id}')" class="text-red-400"><i class="fas fa-trash-alt"></i></button>`;
-            list.appendChild(d);
-        });
-    }
-
-    async function addCustomReminder() {
-        const d = parseInt(document.getElementById('custom-days').value)||0, h = parseInt(document.getElementById('custom-hours').value)||0, m = parseInt(document.getElementById('custom-minutes').value)||0;
-        const tot = (d*1440)+(h*60)+m;
-        if(tot<=0) return;
-        await sb.from('custom_reminders').insert([{ user_id: currentUser.id, days: d, hours: h, minutes: m, total_minutes_before: tot }]);
-        loadCustomRemindersUI();
-    }
-    
-    async function deleteCustomReminder(id) { await sb.from('custom_reminders').delete().eq('id', id); loadCustomRemindersUI(); }
-
-    function urlBase64ToUint8Array(s) { const pad = '='.repeat((4-s.length%4)%4), b = (s+pad).replace(/-/g,'+').replace(/_/g,'/'), raw = window.atob(b), out = new Uint8Array(raw.length); for(let i=0;i<raw.length;++i) out[i]=raw.charCodeAt(i); return out; }
-
-    // --- ADMIN LOGIC ---
-    function requestAdminSubmit() {
-        const eventId = document.getElementById('admin-event-id').value;
-        const event = eventsCache.find(e => e.id === eventId);
-        if (eventId && event?.is_recurring) {
-            document.getElementById('edit-series-toggle').checked = false;
-            updateEditModeText();
-            document.getElementById('edit-choice-pip').style.display = 'flex';
-        } else {
-            executeAdminSubmit();
-        }
-    }
-
-    function updateEditModeText() {
-        const isS = document.getElementById('edit-series-toggle').checked;
-        document.getElementById('edit-mode-text').textContent = isS ? "Modifier toute la Série" : "Modifier spécifiquement cet évent";
-    }
-
-    function cancelEditChoice() { document.getElementById('edit-choice-pip').style.display = 'none'; }
-
-    async function executeAdminSubmit() {
-        const eventId = document.getElementById('admin-event-id').value;
-        const isSeriesModification = document.getElementById('edit-series-toggle').checked;
-        const targetDate = document.getElementById('admin-date').value;
-        const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
-        
-        try {
-            const payload = { 
-                owner_id: currentUser.id, title: document.getElementById('admin-title').value, 
-                location: document.getElementById('admin-loc').value, date: targetDate, 
-                start_time: `${document.getElementById('admin-start').value}:00`, 
-                end_time: `${document.getElementById('admin-end').value}:00`,
-                max_participants: parseInt(document.getElementById('admin-max').value),
-                is_recurring: days.length > 0, recurrence_days: days.length > 0 ? days : null 
-            };
-
-            if (!eventId) {
-                const { error } = await sb.from('events').insert([payload]);
-                if (error) throw error;
-            } else {
-                const originalEvent = eventsCache.find(e => e.id === eventId);
-                if (originalEvent.is_recurring && !isSeriesModification) {
-                    await sb.from('events').insert([{ ...payload, is_recurring: false, recurrence_days: null }]);
-                    const excl = Array.isArray(originalEvent.excluded_dates) ? originalEvent.excluded_dates : [];
-                    if (!excl.includes(targetDate)) {
-                        excl.push(targetDate);
-                        await sb.from('events').update({ excluded_dates: excl }).eq('id', eventId);
+            try {
+                if (isRegisterMode) {
+                    const fn = document.getElementById('auth-firstname').value.trim();
+                    const ln = document.getElementById('auth-lastname').value.trim();
+                    if(!fn || !ln) throw new Error("Nom et Prénom requis");
+                    
+                    const { data, error } = await sb.auth.signUp({ email, password });
+                    if (error) throw error;
+                    if (data.user) {
+                        await sb.from('profiles').insert([{ id: data.user.id, first_name: fn, last_name: ln, Phone: document.getElementById('auth-phone').value, role: 'user' }]);
+                        initApp(data.user);
                     }
-                } else if (originalEvent.is_recurring && isSeriesModification) {
-                    await archivePastEventsFromSeries(originalEvent, targetDate);
-                    await sb.from('events').update(payload).eq('id', eventId);
                 } else {
-                    await sb.from('events').update(payload).eq('id', eventId);
+                    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    initApp(data.user);
                 }
+            } catch (err) {
+                errDiv.innerText = err.message;
+                errDiv.classList.remove('hidden');
+            } finally {
+                loader.classList.add('hidden');
             }
-            document.getElementById('edit-choice-pip').style.display = 'none';
-            closeAdminPanel(); 
-            await fetchEvents();
-        } catch (err) {
-            console.error("Erreur création/modif:", err);
-            alert("Erreur lors de l'enregistrement: " + err.message);
         }
-    }
 
-    async function archivePastEventsFromSeries(originalEvent, newStartDate) {
-        const start = new Date(originalEvent.date);
-        const limit = new Date(newStartDate);
-        let cur = new Date(start);
-        const toArchive = [];
-        while (cur < limit) {
-            const dStr = cur.toISOString().split('T')[0];
-            const dayName = DAY_NAMES[cur.getDay()];
-            if (originalEvent.recurrence_days.includes(dayName) && (!originalEvent.excluded_dates || !originalEvent.excluded_dates.includes(dStr))) {
-                 toArchive.push({
-                    original_event_id: originalEvent.id, owner_id: originalEvent.owner_id,
-                    title: originalEvent.title, location: originalEvent.location, date: dStr,
-                    start_time: originalEvent.start_time, end_time: originalEvent.end_time,
-                    max_participants: originalEvent.max_participants, participants_json: originalEvent.registrations || []
+        async function logout() { await sb.auth.signOut(); location.reload(); }
+
+        // --- 3. LOGIQUE APP ---
+        async function initApp(user) {
+            if (!user) return;
+            currentUser = user;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-content').classList.remove('hidden');
+            await loadProfile();
+            await fetchEvents();
+        }
+
+        async function loadProfile() {
+            const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+            if (profile) {
+                currentProfile = profile;
+                document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
+                if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+                document.getElementById('set-firstname').value = profile.first_name || '';
+                document.getElementById('set-lastname').value = profile.last_name || '';
+                document.getElementById('set-phone').value = profile.Phone || '';
+            }
+        }
+
+        async function fetchEvents() {
+            const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
+            if (evts) eventsCache = evts;
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            const y = currentDate.getFullYear(), m = currentDate.getMonth();
+            document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
+            const firstDay = (new Date(y, m, 1).getDay() || 7) - 1, lastDate = new Date(y, m + 1, 0).getDate();
+            
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
+            for (let d = 1; d <= lastDate; d++) {
+                const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const loopD = new Date(y, m, d);
+                const dayEvts = eventsCache.filter(e => {
+                    const isD = e.date === dateStr;
+                    const isR = e.is_recurring && e.recurrence_days?.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
+                    return (isD || isR) && (!e.excluded_dates || !e.excluded_dates.includes(dateStr));
+                });
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day';
+                cell.onclick = (e) => openDayPip(dateStr, dayEvts, e);
+                let dots = dayEvts.map(e => `<span class="event-dot ${(e.registrations?.length || 0) >= e.max_participants ? 'dot-red' : 'dot-blue'}"></span>`).join('');
+                cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}</div>`;
+                grid.appendChild(cell);
+            }
+        }
+
+        function openDayPip(dateStr, events, evt) {
+            evt.stopPropagation();
+            const zone = document.getElementById('mobile-pip-zone');
+            zone.style.pointerEvents = 'auto';
+            const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+            let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
+            if(!events.length) html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
+            else {
+                events.forEach(e => {
+                    const isReg = e.registrations?.some(r => r.user_id === currentUser.id), isFull = (e.registrations?.length || 0) >= e.max_participants;
+                    html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between"><div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px] font-bold text-blue-600"><span>${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div></div><div class="text-right"><div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div><button onclick="toggleReg('${e.id}', '${isReg}')" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div></div>`;
                 });
             }
-            cur.setDate(cur.getDate() + 1);
+            zone.innerHTML = html + `</div></div>`;
         }
-        if (toArchive.length > 0) await sb.from('registre_events').insert(toArchive);
-    }
 
-    function triggerDeleteProcess() {
-        const eventId = document.getElementById('admin-event-id').value;
-        const event = eventsCache.find(e => e.id === eventId);
-        if (!event) return;
-
-        const pip = document.getElementById('delete-confirmation-pip');
-        const desc = document.getElementById('delete-pip-desc');
-        const switchCont = document.getElementById('delete-switch-container');
-
-        if (event.is_recurring) {
-            desc.textContent = "Série détectée. Supprimer toute la série ou uniquement cette date ?";
-            switchCont.classList.remove('hidden');
-            document.getElementById('delete-series-toggle').checked = false;
-            updateDeleteModeText();
-        } else {
-            desc.textContent = "Voulez-vous supprimer cet événement unique ?";
-            switchCont.classList.add('hidden');
-            document.getElementById('delete-series-toggle').checked = true;
+        // --- 4. ACTIONS & UI ---
+        async function toggleReg(eid, isR) {
+            if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
+            else await sb.from('registrations').insert([{ event_id: eid, user_id: currentUser.id }]);
+            await fetchEvents(); closeMobilePip();
         }
-        pip.style.display = 'flex';
-    }
 
-    function updateDeleteModeText() {
-        const isS = document.getElementById('delete-series-toggle').checked;
-        document.getElementById('delete-mode-text').textContent = isS ? "Supprimer toute la série" : "Supprimer uniquement ce jour";
-    }
+        async function saveProfileInfo() {
+            const payload = { first_name: document.getElementById('set-firstname').value, last_name: document.getElementById('set-lastname').value, Phone: document.getElementById('set-phone').value };
+            const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
+            if (!error) { currentProfile = {...currentProfile, ...payload}; alert("Profil mis à jour"); }
+        }
 
-    function closeDeleteConfirmation() { document.getElementById('delete-confirmation-pip').style.display = 'none'; }
+        async function executeAdminSubmit() {
+            const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
+            const payload = { owner_id: currentUser.id, title: document.getElementById('admin-title').value, location: document.getElementById('admin-loc').value, date: document.getElementById('admin-date').value, start_time: document.getElementById('admin-start').value, end_time: document.getElementById('admin-end').value, max_participants: parseInt(document.getElementById('admin-max').value), is_recurring: days.length > 0, recurrence_days: days };
+            await sb.from('events').insert([payload]);
+            closeAdminPanel(); await fetchEvents();
+        }
+
+        async function executeDeletion(id, all) { if(all) await sb.from('events').delete().eq('id', id); closeAdminPanel(); await fetchEvents(); }
+
+        function checkProfileChanges() { document.getElementById('btn-update-profile').classList.remove('bg-slate-100', 'text-slate-400'); document.getElementById('btn-update-profile').classList.add('bg-slate-900', 'text-white'); }
+        function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
+        function openAdminFromPip(d) { closeMobilePip(); document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
+        function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
+        function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
+        function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
+        function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
+        function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
+        function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
+        function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
+
+        window.onload = async () => {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) initApp(session.user);
+            else document.getElementById('auth-screen').style.display = 'flex';
+        };
     
-    async function confirmDeleteSelection() {
-        const eventId = document.getElementById('admin-event-id').value;
-        const isS = document.getElementById('delete-series-toggle').checked;
-        const dateEx = document.getElementById('admin-date').value;
-        await executeDeletion(eventId, isS, isS ? null : dateEx);
-        closeDeleteConfirmation();
-    }
-
-    async function executeDeletion(eventId, deleteAll, dateToExclude = null) {
-        if (deleteAll) await sb.from('events').delete().eq('id', eventId);
-        else {
-            const ev = eventsCache.find(e => e.id === eventId);
-            const excl = Array.isArray(ev.excluded_dates) ? [...ev.excluded_dates] : [];
-            if (!excl.includes(dateToExclude)) { excl.push(dateToExclude); await sb.from('events').update({ excluded_dates: excl }).eq('id', eventId); }
-        }
-        closeAdminPanel(); await fetchEvents();
-    }
-
-    // --- CALENDRIER ---
-    async function fetchEvents() {
-        const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
-        const { data: arch } = await sb.from('registre_events').select('*');
-        if (evts) eventsCache = evts; if (arch) archiveCache = arch;
-        renderCalendar();
-    }
-
-    function renderCalendar() {
-        const grid = document.getElementById('calendar-grid'); if(!grid) return;
-        grid.innerHTML = '';
-        const y = currentDate.getFullYear(), m = currentDate.getMonth();
-        document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
-        const firstDay = (new Date(y, m, 1).getDay() || 7) - 1, lastDate = new Date(y, m + 1, 0).getDate();
-        for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
-        for (let d = 1; d <= lastDate; d++) {
-            const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const loopD = new Date(y, m, d);
-            const dayEvts = eventsCache.filter(e => {
-                const isD = e.date === dateStr;
-                const isR = e.is_recurring && e.recurrence_days?.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
-                return (isD || isR) && (!e.excluded_dates || !e.excluded_dates.includes(dateStr));
-            });
-            const dayArch = archiveCache.filter(a => a.date === dateStr);
-            const cell = document.createElement('div'); cell.className = 'calendar-day';
-            cell.onclick = (e) => openDayPip(dateStr, dayEvts, dayArch, e);
-            let dots = dayEvts.map(e => `<span class="event-dot ${(e.registrations?.length || 0) >= e.max_participants ? 'dot-red' : 'dot-blue'}"></span>`).join('');
-            let aDots = dayArch.map(() => `<span class="event-dot dot-gray"></span>`).join('');
-            cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}${aDots}</div>`;
-            grid.appendChild(cell);
-        }
-    }
-
-    function openDayPip(dateStr, events, archives, evt) {
-        evt.stopPropagation();
-        const zone = document.getElementById('mobile-pip-zone'); zone.style.pointerEvents = 'auto';
-        const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-        let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
-        if(!events.length && !archives.length) html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
-        else {
-            events.forEach(e => {
-                const isReg = e.registrations?.some(r => r.user_id === currentUser.id), isFull = (e.registrations?.length || 0) >= e.max_participants;
-                html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between"><div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px]"><span class="text-blue-600 font-bold">${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div></div><div class="flex items-center gap-2"><div class="text-right"><div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div><button onclick="toggleReg('${e.id}', '${dateStr}', ${isReg})" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div>${currentProfile?.role === 'admin' ? `<button onclick="editEventInstance('${e.id}', '${dateStr}')" class="p-2 text-slate-300"><i class="fas fa-edit"></i></button>` : ''}</div></div>`;
-            });
-            archives.forEach(a => html += `<div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 flex items-center justify-between opacity-60"><div><h4 class="font-black text-slate-500 line-through">${a.title}</h4><div class="flex gap-2 text-[10px]"><span class="text-slate-400 font-bold">${a.start_time.substring(0,5)}</span><span>Archives</span></div></div><span class="text-[9px] font-black text-slate-400 uppercase italic">Terminé</span></div>`);
-        }
-        zone.innerHTML = html + `</div></div>`;
-    }
-
-    function editEventInstance(eid, d) {
-        const ev = eventsCache.find(e => e.id === eid); if(!ev) return;
-        closeMobilePip(); resetAdminForm();
-        document.getElementById('admin-panel').style.display = 'flex';
-        document.getElementById('admin-event-id').value = ev.id;
-        document.getElementById('admin-title').value = ev.title;
-        document.getElementById('admin-date').value = d;
-        document.getElementById('admin-loc').value = ev.location;
-        document.getElementById('admin-max').value = ev.max_participants;
-        document.getElementById('admin-start').value = ev.start_time.substring(0,5);
-        document.getElementById('admin-end').value = ev.end_time?.substring(0,5) || "";
-        if (ev.recurrence_days) {
-            ev.recurrence_days.forEach(day => { const cb = document.querySelector(`.day-checkbox[value="${day}"]`); if(cb) cb.checked = true; });
-        }
-        document.getElementById('admin-delete-btn').classList.remove('hidden');
-        document.getElementById('admin-save-btn').textContent = "Modifier";
-    }
-
-    // --- MODALS & UTILS ---
-    function openSettingsPanel() { document.getElementById('user-menu').classList.add('hidden'); document.getElementById('settings-panel').style.display = 'flex'; }
-    function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
-    function openCustomReminders() { document.getElementById('custom-reminders-pip').style.display = 'flex'; }
-    function closeCustomReminders() { document.getElementById('custom-reminders-pip').style.display = 'none'; }
-    
-    async function toggleReg(eid, d, isR) {
-        if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
-        else await sb.from('registrations').insert([{ event_id: eid, user_id: currentUser.id }]);
-        await fetchEvents(); closeMobilePip();
-    }
-    function openAdminPanel() { resetAdminForm(); document.getElementById('admin-panel').style.display = 'flex'; }
-    function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
-    function resetAdminForm() { 
-        document.getElementById('admin-event-id').value = ''; 
-        document.getElementById('admin-delete-btn').classList.add('hidden'); 
-        document.getElementById('admin-save-btn').textContent = "Créer";
-        document.querySelectorAll('.day-checkbox').forEach(c => c.checked = false);
-        document.getElementById('admin-title').value = '';
-        document.getElementById('admin-loc').value = '';
-        document.getElementById('admin-date').value = new Date().toISOString().split('T')[0];
-    }
-    function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
-    function openAdminFromPip(d) { closeMobilePip(); resetAdminForm(); document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
-    function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
-    function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
-    function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
-    function logout() { sb.auth.signOut(); }
-    function toggleAuthMode() { document.getElementById('register-fields').classList.toggle('hidden'); }
-    async function handleAuth() {
-        const e = document.getElementById('auth-email').value, p = document.getElementById('auth-password').value;
-        const reg = !document.getElementById('register-fields').classList.contains('hidden');
-        if(reg) {
-            const { data } = await sb.auth.signUp({ email: e, password: p });
-            if (data.user) {
-                await sb.from('profiles').insert([{ id: data.user.id, first_name: document.getElementById('auth-firstname').value, last_name: document.getElementById('auth-lastname').value, Phone: document.getElementById('auth-phone').value, role: 'user' }]);
-            }
-        } else await sb.auth.signInWithPassword({ email: e, password: p });
-    }
     let isRegisterMode = false;
 
 function toggleAuthMode() {
@@ -968,4 +614,5 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
