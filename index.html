@@ -835,6 +835,85 @@
             }
         } else await sb.auth.signInWithPassword({ email: e, password: p });
     }
+    let isRegisterMode = false;
+
+function toggleAuthMode() {
+    isRegisterMode = !isRegisterMode;
+
+    document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
+    document.getElementById('auth-btn').textContent = isRegisterMode ? 'Créer le compte' : 'Se connecter';
+    document.getElementById('auth-toggle').textContent = isRegisterMode ? 'Déjà un compte ? Se connecter' : 'Créer un compte';
+}
+
+async function handleAuth() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+
+    if (!email || !password) {
+        alert("Email et mot de passe requis");
+        return;
+    }
+
+    if (!isRegisterMode) {
+        // 🔐 LOGIN
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+            alert(error.message);
+        }
+        return;
+    }
+
+    // 🆕 REGISTER
+    const firstName = document.getElementById('auth-firstname').value.trim();
+    const lastName = document.getElementById('auth-lastname').value.trim();
+    const phone = document.getElementById('auth-phone').value.trim();
+
+    if (!firstName || !lastName) {
+        alert("Prénom et nom requis");
+        return;
+    }
+
+    const { data, error } = await sb.auth.signUp({
+        email,
+        password
+    });
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    const user = data.user;
+    if (!user) {
+        alert("Veuillez confirmer votre email avant de continuer.");
+        return;
+    }
+
+    // 🧾 CRÉATION DU PROFIL
+    const { error: profileError } = await sb.from('profiles').insert({
+        id: user.id,
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone,
+        role: 'user'
+    });
+
+    if (profileError) {
+        alert("Compte créé mais erreur profil: " + profileError.message);
+        return;
+    }
+
+    // Optionnel : settings par défaut
+    await sb.from('notification_settings').insert({
+        user_id: user.id,
+        notif_enable: false
+    });
+
+    // Connexion automatique
+    await sb.auth.signInWithPassword({ email, password });
+}
+
 </script>
 </body>
 </html>
+
