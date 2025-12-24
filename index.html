@@ -743,6 +743,120 @@ function checkProfileChanges() {
 }
 
 
+
+// Map pour convertir les valeurs des checkbox en index JS (0-6)
+const dayToNum = {
+    'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+    'thursday': 4, 'friday': 5, 'saturday': 6
+};
+
+// Fonction pour récupérer les jours cochés
+function getSelectedDays() {
+    const checkboxes = document.querySelectorAll('.day-checkbox:checked');
+    return Array.from(checkboxes).map(cb => dayToNum[cb.value]);
+}
+async function requestAdminSubmit() {
+    const title = document.getElementById('admin-title').value;
+    const location = document.getElementById('admin-loc').value;
+    const dateStr = document.getElementById('admin-date').value;
+    const startTime = document.getElementById('admin-start').value;
+    const endTime = document.getElementById('admin-end').value;
+    const maxParticipants = document.getElementById('admin-max').value || 99;
+    const selectedDays = getSelectedDays();
+
+    if (!title || !dateStr || !startTime || !endTime) {
+        alert("Merci de remplir au moins le titre, la date et les heures.");
+        return;
+    }
+
+    const isRecurring = selectedDays.length > 0;
+
+    try {
+        if (!isRecurring) {
+            // CAS 1 : Événement unique
+            await insertSingleEvent(title, location, dateStr, startTime, endTime, maxParticipants);
+        } else {
+            // CAS 2 : Série (Option B)
+            await insertRecurringSeries(title, location, dateStr, startTime, endTime, maxParticipants, selectedDays);
+        }
+
+        alert("Événement(s) créé(s) avec succès !");
+        closeAdminPanel();
+        if (typeof loadEvents === "function") loadEvents(); // Recharge ton calendrier
+    } catch (err) {
+        console.error("Erreur création:", err);
+        alert("Erreur lors de la création.");
+    }
+}
+
+// Fonction pour l'événement unique
+async function insertSingleEvent(title, loc, date, start, end, max) {
+    const { error } = await sb.from('events').insert([{
+        title,
+        location: loc,
+        date,
+        start_time: start,
+        end_time: end,
+        max_participants: max,
+        owner_id: currentUser.id,
+        is_recurring: false
+    }]);
+    if (error) throw error;
+}
+
+// Fonction pour la série sur 1 an
+async function insertRecurringSeries(title, loc, startDateStr, start, end, max, selectedDays) {
+    // 1. Créer le "Parent" (L'événement maître)
+    const { data: parentEvent, error: parentError } = await sb.from('events').insert([{
+        title,
+        location: loc,
+        date: startDateStr,
+        start_time: start,
+        end_time: end,
+        max_participants: max,
+        owner_id: currentUser.id,
+        is_recurring: true,
+        recurrence_days: selectedDays // On stocke les jours en JSONB
+    }]).select().single();
+
+    if (parentError) throw parentError;
+
+    // 2. Calculer les occurrences sur 52 semaines (1 an)
+    const occurrences = [];
+    const startPeriod = new Date(startDateStr);
+    const endPeriod = new Date(startPeriod);
+    endPeriod.setFullYear(endPeriod.getFullYear() + 1); // +1 an
+
+    let current = new Date(startPeriod);
+    
+    while (current <= endPeriod) {
+        const dayOfWeek = current.getDay(); // 0-6
+        if (selectedDays.includes(dayOfWeek)) {
+            // On clone la date pour l'occurrence
+            occurrences.push({
+                title,
+                location: loc,
+                date: current.toISOString().split('T')[0],
+                start_time: start,
+                end_time: end,
+                max_participants: max,
+                owner_id: currentUser.id,
+                is_recurring: true,
+                parent_event_id: parentEvent.id // Liaison au parent
+            });
+        }
+        current.setDate(current.getDate() + 1);
+    }
+
+    // 3. Insertion groupée (Bulk insert)
+    const { error: bulkError } = await sb.from('events').insert(occurrences);
+    if (bulkError) throw bulkError;
+}
+
+
+
+
+
     
   window.onload = async () => {
       const { data: { session } } = await sb.auth.getSession();
@@ -752,6 +866,7 @@ function checkProfileChanges() {
 </script>
 </body>
 </html>
+
 
 
 
