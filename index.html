@@ -457,49 +457,54 @@
 
   // --- CONFIRMATION PROFIL ---
   async function confirmProfile(passwordConfirmation) {
-  const pendingProfile = JSON.parse(sessionStorage.getItem('pendingProfile'));
-  const pendingEmail = sessionStorage.getItem('pendingEmail'));
+    // ✅ Récupération du profil depuis sessionStorage
+    const pendingProfile = JSON.parse(sessionStorage.getItem('pendingProfile'));
+    const pendingEmail = sessionStorage.getItem('pendingEmail');
+    if (!pendingProfile || !pendingEmail) {
+        alert("Erreur : informations de profil manquantes");
+        return;
+    }
 
-  if (!pendingProfile || !pendingEmail) {
-    alert("Informations de profil manquantes");
-    return;
-  }
+  // Vérification du mot de passe (optionnelle mais sécurisée)
+    const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({
+        email: pendingEmail,
+        password: passwordConfirmation
+    });
+    if (signInError) {
+        alert("Mot de passe incorrect");
+        return;
+    }
 
-  // Vérification du mot de passe
-  const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({
-    email: pendingEmail,
-    password: passwordConfirmation
-  });
+    const user = signInData.user;
+    if (!user) {
+        alert("Erreur : utilisateur non trouvé");
+        return;
+    }
 
-  if (signInError) {
-    alert("Mot de passe incorrect");
-    return;
-  }
+  // ✅ Upsert du profil dans la table 'profiles'
+    const { error: pErr } = await sb.from('profiles').upsert(
+        [{ 
+            id: user.id, 
+            email: pendingEmail, 
+            ...pendingProfile, // first_name, last_name, phone
+            role: 'user' 
+        }],
+        { onConflict: 'id' } // clé unique pour upsert
+    );
 
-  const user = signInData.user;
-  if (!user) {
-    alert("Utilisateur non trouvé");
-    return;
-  }
+    if (pErr) {
+        alert("Erreur création/mise à jour du profil : " + pErr.message);
+        return;
+    }
 
-  // ✅ Upsert pour créer ou mettre à jour le profil
-  const { error: upsertErr } = await sb.from('profiles').upsert([{
-    id: user.id,
-    email: pendingEmail,
-    ...pendingProfile,
-    role: 'user'
-  }], { onConflict: 'id' }); // <-- "id" est la clé unique (UUID)
-  
-  if (upsertErr) {
-    alert("Erreur création / mise à jour profil : " + upsertErr.message);
-    return;
-  }
+    console.log("Profil créé ou mis à jour avec succès !");
 
-  console.log("Profil créé ou mis à jour avec succès !");
-  sessionStorage.removeItem('pendingProfile');
-  sessionStorage.removeItem('pendingEmail');
+      // Nettoyage du cache
+    sessionStorage.removeItem('pendingProfile');
+    sessionStorage.removeItem('pendingEmail');
 
-  initApp(user);
+    // Lancement de l'app
+    initApp(user);
 }
 
         async function logout() { await sb.auth.signOut(); location.reload(); }
@@ -711,6 +716,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
