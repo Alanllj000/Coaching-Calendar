@@ -546,16 +546,24 @@
   }
 
   async function loadProfile() {
-      const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-      if (profile) {
-          currentProfile = profile;
-          document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
-          if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
-          document.getElementById('set-firstname').value = profile.first_name || '';
-          document.getElementById('set-lastname').value = profile.last_name || '';
-          document.getElementById('set-phone').value = profile.phone || '';
-      }
+  const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (error) {
+    console.warn('loadProfile error:', error);
   }
+  if (profile) {
+    currentProfile = profile;
+    document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
+    if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+    document.getElementById('set-firstname').value = profile.first_name || '';
+    document.getElementById('set-lastname').value = profile.last_name || '';
+    document.getElementById('set-phone').value = profile.phone || '';
+    // Affiche l'email provenant de profiles (préférer la source profile pour cohérence)
+    document.getElementById('set-email').value = profile.email || (currentUser?.email || '');
+  } else {
+    // fallback si pas de profile
+    document.getElementById('set-email').value = currentUser?.email || '';
+  }
+}
 
   async function fetchEvents() {
       const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
@@ -720,7 +728,7 @@ async function updateEmail() {
   if (!currentUser?.email) return alert('Impossible de récupérer votre email pour vérification.');
 
   try {
-    // Ré-authentifier
+    // Ré-authentifier l'utilisateur avec l'ancien email pour valider la demande
     const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
       email: currentUser.email,
       password: pwd
@@ -730,27 +738,37 @@ async function updateEmail() {
       return alert('Mot de passe incorrect.');
     }
 
-    // Demander la mise à jour de l'email (Supabase enverra peut‑être un email de confirmation)
-    const { data: upd, error: updErr } = await sb.auth.updateUser({ email: newEmail });
-    if (updErr) {
-      console.error('Erreur updateUser email:', updErr);
-      return alert('Erreur lors de la mise à jour de l\'email : ' + (updErr.message || updErr));
+    // Demander la mise à jour de l'email côté Auth
+    const { data: updAuth, error: updAuthErr } = await sb.auth.updateUser({ email: newEmail });
+    if (updAuthErr) {
+      console.error('Erreur updateUser email:', updAuthErr);
+      return alert('Erreur lors de la mise à jour de l\'email : ' + (updAuthErr.message || JSON.stringify(updAuthErr)));
     }
 
-    alert('Email mis à jour. Vérifiez vos messages si une confirmation est requise.');
-    // Mettre à jour currentUser/email affiché si disponible
-    const { data: getUserData } = await sb.auth.getUser();
-    if (getUserData?.user) {
-      currentUser = getUserData.user;
-      document.getElementById('set-email').value = currentUser.email || '';
+    // Mettre à jour la table profiles pour refléter le nouvel email (utile même si confirmation requise)
+    const { error: pErr } = await sb.from('profiles').update({ email: newEmail }).eq('id', currentUser.id);
+    if (pErr) {
+      console.warn('Erreur mise à jour profiles.email:', pErr);
+      // Ne bloquons pas l'affichage mais avertissons
+      alert('Email mis à jour côté Auth, mais impossible de mettre à jour le profil local : ' + (pErr.message || JSON.stringify(pErr)));
     }
+
+    // Mettre à jour currentUser affiché (getUser peut encore renvoyer l'ancien email si confirmation requise)
+    const { data: getUserData } = await sb.auth.getUser();
+    if (getUserData?.user) currentUser = getUserData.user;
+
+    // Mettre à jour l'UI
+    document.getElementById('set-email').value = newEmail;
+    // si vous conservez currentProfile en mémoire, le mettre à jour aussi :
+    if (currentProfile) currentProfile.email = newEmail;
+
+    alert('Email mis à jour. Si une confirmation est requise, vérifiez la boîte du nouvel email pour confirmer.');
     closeEmailPip();
   } catch (err) {
     console.error('updateEmail catch:', err);
-    alert('Une erreur est survenue : ' + (err.message || err));
+    alert('Une erreur est survenue : ' + (err.message || JSON.stringify(err)));
   } finally {
     document.getElementById('email-pwd-verif').value = '';
-    // laisser le nouvel email rempli pour feedback
   }
 }
   window.onload = async () => {
@@ -761,4 +779,5 @@ async function updateEmail() {
 </script>
 </body>
 </html>
+
 
