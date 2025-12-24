@@ -390,8 +390,7 @@
 </div>
       
 <script>
-  // --- CONFIGURATION SUPABASE ---
-  const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
+    const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -399,8 +398,13 @@
   let pendingProfile = {}; 
   let pendingEmail = "";
   let pendingPassword = "";
+  let currentDate = new Date();
+  let currentUser = null;
+  let currentProfile = null;
+  let eventsCache = [];
+  const DAY_NAMES = {0:'sunday', 1:'monday', 2:'tuesday', 3:'wednesday', 4:'thursday', 5:'friday', 6:'saturday'};
 
-  // --- TOGGLE INSCRIPTION / CONNEXION (Inchangé) ---
+  // --- TOGGLE INSCRIPTION / CONNEXION ---
   function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
     document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
@@ -409,7 +413,7 @@
     document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
   }
 
-  // --- CONNEXION (Inchangé car le SDK gère déjà les users confirmés via Edge Function) ---
+  // --- CONNEXION ---
   async function handleAuth() {
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
@@ -420,7 +424,7 @@
     initApp(data.user);
   }
 
-  // --- INSCRIPTION STEP 1 (Modifié pour préparer les données) ---
+  // --- INSCRIPTION STEP 1 ---
   function handleRegisterStep1() {
     const emailVal = document.getElementById('auth-email').value.trim();
     const passwordVal = document.getElementById('auth-password').value;
@@ -440,60 +444,157 @@
     openConfirmProfilePip();
   }
 
-  // --- CONFIRMATION ET CREATION FINALE (Modifié pour appeler l'Edge Function) ---
+  function openConfirmProfilePip() {
+    document.getElementById('confirm-profile-pip').style.display = 'flex';
+  }
+
+  function closeConfirmProfilePip() {
+    document.getElementById('confirm-profile-pip').style.display = 'none';
+  }
+
+  // --- CONFIRMATION ET CREATION FINALE (MODIFIÉ POUR EDGE FUNCTION) ---
   async function handleSignUp() {
-    // On appelle l'Edge Function au lieu de sb.auth.signUp
+    // On appelle l'Edge Function au lieu de sb.auth.signUp pour bypasser les emails
     const { data, error } = await sb.functions.invoke('gestion-des-users', {
       body: { 
         action: 'signup', 
         email: pendingEmail, 
         password: pendingPassword,
-        userData: pendingProfile // Inclut first_name, last_name, phone
+        userData: pendingProfile 
       }
     });
 
-    if (error) {
-      return alert("Erreur d'inscription : " + error.message);
-    }
+    if (error) return alert("Erreur d'inscription : " + error.message);
 
-    alert("Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
+    alert("Compte créé ! Vous pouvez maintenant vous connecter.");
     closeConfirmProfilePip();
-    toggleAuthMode(); // Bascule vers l'écran de connexion
+    toggleAuthMode();
   }
 
-  // --- CHANGE EMAIL FLOW (Modifié pour appeler l'Edge Function) ---
-  async function updateEmail() {
-    const newEmail = document.getElementById('email-new').value.trim();
-    const pwd = document.getElementById('email-pwd-verif').value;
+  async function logout() { await sb.auth.signOut(); location.reload(); }
 
-    try {
-      // 1. On vérifie quand même le mot de passe actuel pour la sécurité
-      const { error: loginErr } = await sb.auth.signInWithPassword({
-        email: currentUser.email,
-        password: pwd
-      });
-      if (loginErr) return alert("Mot de passe incorrect.");
+  // --- LOGIQUE APP ---
+  async function initApp(user) {
+      if (!user) return;
+      currentUser = user;
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('main-content').classList.remove('hidden');
+      await loadProfile();
+      await fetchEvents();
+  }
 
-      // 2. Appel de l'Edge Function pour changer l'email sans confirmation e-mail
-      const { data, error: functionErr } = await sb.functions.invoke('gestion-des-users', {
-        body: { 
-          action: 'updateEmail', 
-          userId: currentUser.id, 
-          email: newEmail 
-        }
-      });
-
-      if (functionErr) throw functionErr;
-
-      alert("Email mis à jour ! Veuillez vous reconnecter.");
-      await logout(); 
-
-    } catch (err) {
-      alert("Erreur : " + err.message);
+  async function loadProfile() {
+    const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+    if (error) console.warn('loadProfile error:', error);
+    
+    if (profile) {
+      currentProfile = profile;
+      document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
+      if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+      document.getElementById('set-firstname').value = profile.first_name || '';
+      document.getElementById('set-lastname').value = profile.last_name || '';
+      document.getElementById('set-phone').value = profile.phone || '';
+      document.getElementById('set-email').value = profile.email || (currentUser?.email || '');
+    } else {
+      document.getElementById('set-email').value = currentUser?.email || '';
     }
   }
 
-  // --- CHANGE PASSWORD (Inchangé car sb.auth.updateUser fonctionne sans e-mail si connecté) ---
+  async function fetchEvents() {
+      const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
+      if (evts) eventsCache = evts;
+      renderCalendar();
+  }
+
+  function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+      const y = currentDate.getFullYear(), m = currentDate.getMonth();
+      document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
+      const firstDay = (new Date(y, m, 1).getDay() || 7) - 1, lastDate = new Date(y, m + 1, 0).getDate();
+      
+      for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
+      for (let d = 1; d <= lastDate; d++) {
+          const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const loopD = new Date(y, m, d);
+          const dayEvts = eventsCache.filter(e => {
+              const isD = e.date === dateStr;
+              const isR = e.is_recurring && e.recurrence_days?.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
+              return (isD || isR) && (!e.excluded_dates || !e.excluded_dates.includes(dateStr));
+          });
+          const cell = document.createElement('div');
+          cell.className = 'calendar-day';
+          cell.onclick = (e) => openDayPip(dateStr, dayEvts, e);
+          let dots = dayEvts.map(e => `<span class="event-dot ${(e.registrations?.length || 0) >= e.max_participants ? 'dot-red' : 'dot-blue'}"></span>`).join('');
+          cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}</div>`;
+          grid.appendChild(cell);
+      }
+  }
+
+  function openDayPip(dateStr, events, evt) {
+      evt.stopPropagation();
+      const zone = document.getElementById('mobile-pip-zone');
+      zone.style.pointerEvents = 'auto';
+      const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
+      if(!events.length) html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
+      else {
+          events.forEach(e => {
+              const isReg = e.registrations?.some(r => r.user_id === currentUser.id), isFull = (e.registrations?.length || 0) >= e.max_participants;
+              html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between"><div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px] font-bold text-blue-600"><span>${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div></div><div class="text-right"><div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div><button onclick="toggleReg('${e.id}', '${isReg}')" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div></div>`;
+          });
+      }
+      zone.innerHTML = html + `</div></div>`;
+  }
+
+  async function toggleReg(eid, isR) {
+      if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
+      else await sb.from('registrations').insert([{ event_id: eid, user_id: currentUser.id }]);
+      await fetchEvents(); closeMobilePip();
+  }
+
+  async function saveProfileInfo() {
+      const payload = { first_name: document.getElementById('set-firstname').value, last_name: document.getElementById('set-lastname').value, phone: document.getElementById('set-phone').value };
+      const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
+      if (!error) { currentProfile = {...currentProfile, ...payload}; alert("Profil mis à jour"); }
+  }
+
+  async function executeAdminSubmit() {
+      const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
+      const payload = { owner_id: currentUser.id, title: document.getElementById('admin-title').value, location: document.getElementById('admin-loc').value, date: document.getElementById('admin-date').value, start_time: document.getElementById('admin-start').value, end_time: document.getElementById('admin-end').value, max_participants: parseInt(document.getElementById('admin-max').value), is_recurring: days.length > 0, recurrence_days: days };
+      await sb.from('events').insert([payload]);
+      closeAdminPanel(); await fetchEvents();
+  }
+
+  async function executeDeletion(id, all) { if(all) await sb.from('events').delete().eq('id', id); closeAdminPanel(); await fetchEvents(); }
+
+  function checkProfileChanges() { document.getElementById('btn-update-profile').classList.remove('bg-slate-100', 'text-slate-400'); document.getElementById('btn-update-profile').classList.add('bg-slate-900', 'text-white'); }
+  function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
+  function openAdminFromPip(d) { closeMobilePip(); document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
+  function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
+  function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
+  function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
+  function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
+  function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
+  function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
+  
+  // Correction de la fonction handleBodyClick qui manquait
+  function handleBodyClick(e) { 
+    const menu = document.getElementById('user-menu');
+    if(menu && !e.target.closest('.group-menu')) menu.classList.add('hidden'); 
+  }
+
+  // --- PASSWORD & EMAIL PIPS ---
+  function openPasswordPip() { document.getElementById('password-pip').style.display = 'flex'; }
+  function closePasswordPip() { document.getElementById('password-pip').style.display = 'none'; }
+  function openEmailPip() {
+    const emailInput = document.getElementById('email-current-display');
+    if (currentUser?.email) emailInput.value = currentUser.email;
+    document.getElementById('email-pip').style.display = 'flex';
+  }
+  function closeEmailPip() { document.getElementById('email-pip').style.display = 'none'; }
+
+  // --- CHANGE PASSWORD ---
   async function validateAndChangePassword() {
     const currentPwd = document.getElementById('pwd-current').value;
     const newPwd = document.getElementById('pwd-new').value;
@@ -502,27 +603,43 @@
     if (!currentPwd || !newPwd || !confirmPwd) return alert('Tous les champs sont requis.');
     if (newPwd !== confirmPwd) return alert('Les nouveaux mots de passe ne correspondent pas.');
 
-    const { error: signInErr } = await sb.auth.signInWithPassword({
-      email: currentUser.email,
-      password: currentPwd
-    });
+    const { error: signInErr } = await sb.auth.signInWithPassword({ email: currentUser.email, password: currentPwd });
     if (signInErr) return alert('Mot de passe actuel incorrect.');
 
     const { error: updateErr } = await sb.auth.updateUser({ password: newPwd });
     if (updateErr) return alert('Erreur : ' + updateErr.message);
 
-    alert('Mot de passe mis à jour avec succès.');
+    alert('Mot de passe mis à jour !');
     closePasswordPip();
   }
 
-  // --- FONCTIONS RESTANTES (Inchangées) ---
-  function openConfirmProfilePip() { document.getElementById('confirm-profile-pip').style.display = 'flex'; }
-  function closeConfirmProfilePip() { document.getElementById('confirm-profile-pip').style.display = 'none'; }
-  async function logout() { await sb.auth.signOut(); location.reload(); }
-  
-  // ... (Toutes tes autres fonctions initApp, loadProfile, fetchEvents, etc. restent identiques)
+  // --- CHANGE EMAIL (MODIFIÉ POUR EDGE FUNCTION) ---
+  async function updateEmail() {
+    const newEmail = document.getElementById('email-new').value.trim();
+    const pwd = document.getElementById('email-pwd-verif').value;
+
+    const { error: loginErr } = await sb.auth.signInWithPassword({ email: currentUser.email, password: pwd });
+    if (loginErr) return alert("Mot de passe incorrect.");
+
+    const { data, error: functionErr } = await sb.functions.invoke('gestion-des-users', {
+      body: { action: 'updateEmail', userId: currentUser.id, email: newEmail }
+    });
+
+    if (functionErr) return alert("Erreur : " + functionErr.message);
+
+    alert("Email mis à jour ! Veuillez vous reconnecter.");
+    await logout(); 
+  }
+
+  window.onload = async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) initApp(session.user);
+      else document.getElementById('auth-screen').style.display = 'flex';
+  };
+</script>
 </body>
 </html>
+
 
 
 
