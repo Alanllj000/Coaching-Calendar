@@ -211,10 +211,10 @@
             <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
                 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
                 <div class="grid grid-cols-2 gap-4">
-                    <input id="set-firstname" placeholder="Prénom" class="input-field" oninput="checkProfileChanges()">
-                    <input id="set-lastname" placeholder="Nom" class="input-field" oninput="checkProfileChanges()">
+                    <input id="set-firstname" oninput="checkProfileChanges()" placeholder="Prénom" class="input-field" oninput="checkProfileChanges()">
+                    <input id="set-lastname" oninput="checkProfileChanges()" placeholder="Nom" class="input-field" oninput="checkProfileChanges()">
                 </div>
-                <input id="set-phone" placeholder="Téléphone" class="input-field" oninput="checkProfileChanges()">
+                <input id="set-phone" oninput="checkProfileChanges()" placeholder="Téléphone" class="input-field" oninput="checkProfileChanges()">
                 <input id="set-email" type="email" class="input-field bg-slate-50 text-slate-400" disabled>
                 <button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Mettre à jour le profil</button>
             </div>
@@ -509,17 +509,16 @@
   }
 
     // Exemple de ce qu'il faut faire dans loadProfile
-async function loadProfile() {
+
+  async function loadProfile() {
   if (!currentUser) return;
 
-  // On affiche l'email de l'Auth par défaut
   document.getElementById('set-email').value = currentUser.email || '';
 
-  // On récupère le profil
   const { data: profile, error } = await sb.from('profiles')
     .select('*')
     .eq('id', currentUser.id)
-    .maybeSingle(); // <--- Changement ici : ne plante pas si vide
+    .maybeSingle();
 
   if (error) {
     console.error("Erreur lecture profil:", error.message);
@@ -528,28 +527,31 @@ async function loadProfile() {
 
   if (profile) {
     currentProfile = profile;
-    console.log("Profil chargé:", profile);
-
+    
     // Remplissage des champs
     document.getElementById('set-firstname').value = profile.first_name || '';
     document.getElementById('set-lastname').value = profile.last_name || '';
     document.getElementById('set-phone').value = profile.phone || '';
     
-    // Mise à jour de l'UI
+    // --- NOUVEAU : On mémorise les données pour détecter les changements ---
+    initialProfileData = {
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        phone: profile.phone || ''
+    };
+    // On initialise l'état du bouton (gris par défaut)
+    checkProfileChanges();
+    // -----------------------------------------------------------------------
+
     if (profile.first_name) {
         document.getElementById('user-initials').textContent = profile.first_name[0].toUpperCase();
     }
 
-    // Vérification du rôle Admin
     if (profile.role === 'admin') {
-      console.log("Accès Admin détecté");
       document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
     }
-  } else {
-    console.log("Aucun profil trouvé dans la table pour cet ID. Création nécessaire ?");
   }
 }
-  
 
   async function fetchEvents() {
       const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
@@ -711,7 +713,37 @@ async function loadProfile() {
   alert("Email mis à jour avec succès ! Veuillez vous reconnecter avec votre nouvelle adresse.");
   await logout(); 
 }
+let initialProfileData = {};
 
+// Cette fonction compare les champs actuels avec les données initiales
+function checkProfileChanges() {
+    const currentData = {
+        first_name: document.getElementById('set-firstname').value,
+        last_name: document.getElementById('set-lastname').value,
+        phone: document.getElementById('set-phone').value
+    };
+
+    const hasChanged = currentData.first_name !== initialProfileData.first_name ||
+                       currentData.last_name !== initialProfileData.last_name ||
+                       currentData.phone !== initialProfileData.phone;
+
+    const btn = document.getElementById('btn-update-profile');
+
+    if (hasChanged) {
+        // État Actif : Noir, cliquable, curseur main
+        btn.disabled = false;
+        btn.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.add('bg-slate-900', 'text-white', 'cursor-pointer', 'hover:bg-black');
+    } else {
+        // État Inactif : Gris, bloqué, curseur par défaut (on enlève le barré)
+        btn.disabled = true;
+        btn.classList.add('bg-slate-100', 'text-slate-400');
+        btn.classList.remove('bg-slate-900', 'text-white', 'cursor-pointer', 'cursor-not-allowed', 'hover:bg-black');
+    }
+}
+
+
+    
   window.onload = async () => {
       const { data: { session } } = await sb.auth.getSession();
       if (session) initApp(session.user);
@@ -720,6 +752,7 @@ async function loadProfile() {
 </script>
 </body>
 </html>
+
 
 
 
