@@ -454,61 +454,84 @@
 async function confirmProfile() {
   const confirmPwd = document.getElementById('confirm-profile-password').value;
 
-  if (!confirmPwd) {
-    return alert("Veuillez entrer votre mot de passe pour confirmer.");
-  }
-  if (confirmPwd !== pendingPassword) {
-    return alert("Le mot de passe de confirmation ne correspond pas.");
-  }
+  if (!confirmPwd) return alert("Veuillez entrer votre mot de passe pour confirmer.");
+  if (confirmPwd !== pendingPassword) return alert("Le mot de passe de confirmation ne correspond pas.");
 
-  // Désactiver le bouton / indiquer chargement si nécessaire (optionnel)
   try {
     console.log("Tentative d'inscription pour", pendingEmail);
 
-    // 1) Inscription
-    const { data, error } = await sb.auth.signUp({
+    // essayer signUp
+    let { data, error } = await sb.auth.signUp({
       email: pendingEmail,
       password: pendingPassword,
       options: {
         data: {
           first_name: pendingProfile.first_name,
           last_name: pendingProfile.last_name,
-          Phone: pendingProfile.phone
+          phone: pendingProfile.phone // <-- metadata key en minuscules (cohérent)
         }
       }
     });
 
     if (error) {
-      console.error("signUp error:", error);
-      throw error;
-    }
-    console.log("signUp data:", data);
-
-    // signUp peut retourner session=user si la confirmation d'email n'est pas requise.
-    let user = data?.user;
-    let session = data?.session;
-
-    // 2) Si pas de session/user, tenter signIn (utile si signUp ne crée pas la session)
-    if (!user || !session) {
-      console.log("Aucune session renvoyée par signUp, tentative de connexion...");
-      const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
-        email: pendingEmail,
-        password: pendingPassword
-      });
-
-      if (signInErr) {
-        // Ici, très probablement l'email confirmation est requis — informer l'utilisateur.
-        console.warn("signInWithPassword failed:", signInErr);
-        closeConfirmProfilePip();
-        toggleAuthMode(); // revenir à l'écran de connexion
-        alert("Compte créé. Vérifiez votre e‑mail pour confirmer votre compte avant de vous connecter.");
-        return;
+      console.warn("signUp error:", error);
+      const msg = (error?.message || "").toLowerCase();
+      if (msg.includes('already registered') || msg.includes('user already exists')) {
+        // utilisateur déjà présent : tenter connexion
+        const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
+          email: pendingEmail,
+          password: pendingPassword
+        });
+        if (signInErr) {
+          console.warn("signInWithPassword failed:", signInErr);
+          closeConfirmProfilePip();
+          toggleAuthMode();
+          alert("Le compte existe déjà. Vérifiez votre e‑mail ou connectez‑vous.");
+          return;
+        }
+        data = signInData;
+        console.log("signIn successful:", signInData);
+      } else {
+        throw error;
       }
-
-      user = signInData?.user;
-      session = signInData?.session;
-      console.log("signIn successful:", signInData);
     }
+
+    // récupérer utilisateur authentifié
+    let user = data?.user;
+    if (!user) {
+      const { data: getUserData, error: getUserErr } = await sb.auth.getUser();
+      if (getUserErr) console.warn("getUser warning:", getUserErr);
+      user = getUserData?.user;
+    }
+    if (!user) throw new Error("Impossible de récupérer l'utilisateur authentifié.");
+
+    // UP-SERT profile — ATTENTION : utiliser 'phone' en minuscules
+    const profilePayload = {
+      id: user.id,
+      email: pendingEmail,
+      first_name: pendingProfile.first_name || '',
+      last_name: pendingProfile.last_name || '',
+      phone: pendingProfile.phone || '', // <--- colonne 'phone' en minuscule
+      role: 'user'
+    };
+
+    console.log("Upsert profile payload:", profilePayload);
+    const { error: pErr } = await sb.from('profiles').upsert([profilePayload]);
+
+    if (pErr) {
+      console.error("Erreur upsert profile:", pErr);
+      alert("Erreur lors de la sauvegarde du profil : " + (pErr.message || JSON.stringify(pErr)));
+      return;
+    }
+
+    // tout OK
+    closeConfirmProfilePip();
+    initApp(user);
+  } catch (err) {
+    console.error("confirmProfile catch:", err);
+    alert("Une erreur est survenue : " + (err.message || JSON.stringify(err)));
+  }
+}
 
     // 3) Récupérer l'utilisateur authentifié via le client (sécurise la source de user)
     const { data: getUserData, error: getUserErr } = await sb.auth.getUser();
@@ -669,5 +692,6 @@ async function confirmProfile() {
 </script>
 </body>
 </html>
+
 
 
