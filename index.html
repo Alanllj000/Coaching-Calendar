@@ -512,24 +512,41 @@
 async function loadProfile() {
   if (!currentUser) return;
 
-  // Affiche au moins l'email de l'Auth immédiatement
-  document.getElementById('set-email').value = currentUser.email;
+  // On affiche l'email de l'Auth par défaut
+  document.getElementById('set-email').value = currentUser.email || '';
 
+  // On récupère le profil
   const { data: profile, error } = await sb.from('profiles')
     .select('*')
     .eq('id', currentUser.id)
-    .single();
+    .maybeSingle(); // <--- Changement ici : ne plante pas si vide
 
   if (error) {
-    console.error("Erreur RLS ou lecture :", error.message);
+    console.error("Erreur lecture profil:", error.message);
     return;
   }
-  
-  // Si on arrive ici, les RLS fonctionnent !
+
   if (profile) {
+    currentProfile = profile;
+    console.log("Profil chargé:", profile);
+
+    // Remplissage des champs
     document.getElementById('set-firstname').value = profile.first_name || '';
     document.getElementById('set-lastname').value = profile.last_name || '';
-    // ... reste du remplissage
+    document.getElementById('set-phone').value = profile.phone || '';
+    
+    // Mise à jour de l'UI
+    if (profile.first_name) {
+        document.getElementById('user-initials').textContent = profile.first_name[0].toUpperCase();
+    }
+
+    // Vérification du rôle Admin
+    if (profile.role === 'admin') {
+      console.log("Accès Admin détecté");
+      document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+    }
+  } else {
+    console.log("Aucun profil trouvé dans la table pour cet ID. Création nécessaire ?");
   }
 }
   
@@ -703,6 +720,7 @@ async function loadProfile() {
 </script>
 </body>
 </html>
+
 
 
 
