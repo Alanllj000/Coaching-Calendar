@@ -642,6 +642,117 @@
   let eventsCache = [];
   const DAY_NAMES = {0:'sunday', 1:'monday', 2:'tuesday', 3:'wednesday', 4:'thursday', 5:'friday', 6:'saturday'};
 
+    // === PIP Password / Email helpers ===
+function openPasswordPip() {
+  document.getElementById('password-pip').style.display = 'flex';
+}
+function closePasswordPip() {
+  document.getElementById('password-pip').style.display = 'none';
+}
+function openEmailPip() {
+  // préremplir l'email courant si possible
+  const emailInput = document.getElementById('email-current-display');
+  if (currentUser?.email) emailInput.value = currentUser.email;
+  document.getElementById('email-pwd-verif').value = '';
+  document.getElementById('email-new').value = '';
+  document.getElementById('email-pip').style.display = 'flex';
+}
+function closeEmailPip() {
+  document.getElementById('email-pip').style.display = 'none';
+}
+
+// === Change password flow ===
+async function validateAndChangePassword() {
+  const currentPwd = document.getElementById('pwd-current').value;
+  const newPwd = document.getElementById('pwd-new').value;
+  const confirmPwd = document.getElementById('pwd-confirm').value;
+
+  if (!currentPwd || !newPwd || !confirmPwd) return alert('Tous les champs sont requis.');
+  if (newPwd !== confirmPwd) return alert('Les nouveaux mots de passe ne correspondent pas.');
+  if (!currentUser?.email) {
+    // essayer récupérer l'email depuis le client auth
+    const { data } = await sb.auth.getUser();
+    if (data?.user?.email) currentUser = data.user;
+  }
+  if (!currentUser?.email) return alert('Impossible de récupérer votre email pour vérification.');
+
+  try {
+    // Ré-authentifier : signInWithPassword vérifiera l'ancien mot de passe.
+    const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
+      email: currentUser.email,
+      password: currentPwd
+    });
+    if (signInErr) {
+      console.warn('Ré-auth échoue :', signInErr);
+      return alert('Mot de passe actuel incorrect.');
+    }
+
+    // Mettre à jour le mot de passe
+    const { data: updateData, error: updateErr } = await sb.auth.updateUser({ password: newPwd });
+    if (updateErr) {
+      console.error('Erreur updateUser password:', updateErr);
+      return alert('Erreur lors de la mise à jour du mot de passe : ' + (updateErr.message || updateErr));
+    }
+
+    alert('Mot de passe mis à jour avec succès.');
+    closePasswordPip();
+  } catch (err) {
+    console.error('validateAndChangePassword catch:', err);
+    alert('Une erreur est survenue : ' + (err.message || err));
+  } finally {
+    // vider champs
+    document.getElementById('pwd-current').value = '';
+    document.getElementById('pwd-new').value = '';
+    document.getElementById('pwd-confirm').value = '';
+  }
+}
+
+// === Change email flow ===
+async function updateEmail() {
+  const newEmail = document.getElementById('email-new').value.trim();
+  const pwd = document.getElementById('email-pwd-verif').value;
+
+  if (!newEmail || !pwd) return alert('Nouveau email et mot de passe requis pour vérification.');
+  if (!currentUser?.email) {
+    const { data } = await sb.auth.getUser();
+    if (data?.user?.email) currentUser = data.user;
+  }
+  if (!currentUser?.email) return alert('Impossible de récupérer votre email pour vérification.');
+
+  try {
+    // Ré-authentifier
+    const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
+      email: currentUser.email,
+      password: pwd
+    });
+    if (signInErr) {
+      console.warn('Ré-auth échoue (email update):', signInErr);
+      return alert('Mot de passe incorrect.');
+    }
+
+    // Demander la mise à jour de l'email (Supabase enverra peut‑être un email de confirmation)
+    const { data: upd, error: updErr } = await sb.auth.updateUser({ email: newEmail });
+    if (updErr) {
+      console.error('Erreur updateUser email:', updErr);
+      return alert('Erreur lors de la mise à jour de l\'email : ' + (updErr.message || updErr));
+    }
+
+    alert('Email mis à jour. Vérifiez vos messages si une confirmation est requise.');
+    // Mettre à jour currentUser/email affiché si disponible
+    const { data: getUserData } = await sb.auth.getUser();
+    if (getUserData?.user) {
+      currentUser = getUserData.user;
+      document.getElementById('set-email').value = currentUser.email || '';
+    }
+    closeEmailPip();
+  } catch (err) {
+    console.error('updateEmail catch:', err);
+    alert('Une erreur est survenue : ' + (err.message || err));
+  } finally {
+    document.getElementById('email-pwd-verif').value = '';
+    // laisser le nouvel email rempli pour feedback
+  }
+}
   window.onload = async () => {
       const { data: { session } } = await sb.auth.getSession();
       if (session) initApp(session.user);
@@ -650,3 +761,4 @@
 </script>
 </body>
 </html>
+
