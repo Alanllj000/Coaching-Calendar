@@ -1,1 +1,652 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Coach Pro - App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f8fafc; 
+            color: #0f172a;
+            overflow: hidden; 
+            height: 100vh;
+            width: 100vw;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: pan-x pan-y;
+        }
 
+        .input-field {
+            width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; 
+            padding: 1rem; border-radius: 1rem; font-weight: 600; outline: none; transition: all 0.2s;
+        }
+        .input-field:focus { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.05); }
+        .input-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
+
+        .calendar-container { height: 62vh; overflow-y: auto; scroll-behavior: smooth; }
+        @media (min-width: 769px) { .calendar-container { height: calc(100vh - 110px); padding-bottom: 80px; } }
+
+        .calendar-grid { 
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; 
+            background-color: #e2e8f0; border-radius: 1.5rem; overflow: hidden; border: 1px solid #e2e8f0;
+        }
+
+        .calendar-day { 
+            min-height: 85px; background-color: white; padding: 0.5rem; 
+            display: flex; flex-direction: column; cursor: pointer; transition: background 0.2s; position: relative;
+        }
+        .calendar-day:hover:not(.empty) { background-color: #f8fafc; }
+        .calendar-day.empty { background-color: #f1f5f9; cursor: default; }
+
+        .event-dot { height: 5px; width: 5px; border-radius: 50%; display: inline-block; margin-right: 2px; }
+        .dot-blue { background-color: #3b82f6; }
+        .dot-red { background-color: #ef4444; }
+        .dot-gray { background-color: #94a3b8; }
+
+        #mobile-pip-zone {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 50vh; 
+            z-index: 5000; pointer-events: none;
+        }
+        .mobile-pip-card {
+            pointer-events: auto;
+            width: 100%; height: 100%; background: white;
+            border-top-left-radius: 2rem; border-top-right-radius: 2rem;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column;
+            animation: slideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow: hidden;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .fullscreen-pip {
+            position: fixed; inset: 0; background: white; z-index: 6000;
+            display: none; flex-direction: column; overflow-y: auto;
+        }
+
+        .overlay-pip {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 10000; display: none; align-items: center; justify-content: center; padding: 1.5rem;
+        }
+
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #e2e8f0; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #3b82f6; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .day-checkbox:checked + .day-label { background-color: #0f172a; color: white; border-color: #0f172a; }
+
+        .disabled-layer { opacity: 0.4; pointer-events: none; filter: grayscale(1); transition: all 0.3s; }
+        
+        .success-overlay {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center;
+            z-index: 100; border-radius: 1.5rem; animation: fadeIn 0.3s forwards;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body onclick="handleBodyClick(event)">
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
+  <div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
+    <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Coach Pro</h2>
+    <div class="space-y-4 max-w-sm mx-auto w-full">
+      <input id="auth-email" type="email" placeholder="Email" class="input-field">
+      <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
+
+      <div id="register-fields" class="hidden space-y-4">
+        <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
+        <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
+        <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
+      </div>
+
+      <button id="auth-btn" onclick="handleAuth()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
+        Se connecter
+      </button>
+
+      <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">
+        Créer un compte
+      </p>
+
+      <button id="auth-submit-btn" onclick="handleRegisterStep1()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
+        Créer mon compte
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-content" class="hidden h-full flex flex-col">
+    <!-- Header -->
+    <div class="px-4 py-3 md:px-8 md:py-4 flex justify-between items-center bg-white z-30 sticky top-0 border-b border-slate-100 min-h-[85px]">
+        <div class="flex flex-col justify-center">
+            <h1 id="month-label" class="text-2xl md:text-4xl font-black tracking-tighter capitalize text-slate-900 leading-tight mb-1">...</h1>
+            <div class="flex gap-2">
+                <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-left text-sm font-black"></i></button>
+                <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-right text-sm font-black"></i></button>
+            </div>
+        </div>
+        <div class="relative group-menu">
+            <button onclick="toggleUserMenu(event)" class="flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-slate-200 active:scale-90 transition">
+                <div id="user-initials" class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm">?</div>
+            </button>
+            <div id="user-menu" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-[3500] hidden">
+                <button onclick="openSettingsPanel()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center gap-3"><i class="fas fa-cog"></i> Réglages</button>
+                <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3"><i class="fas fa-plus-circle"></i> Créer Event</button>
+                <div class="border-t border-slate-100 my-1"></div>
+                <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="calendar-container px-3 md:px-8 pt-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-7 gap-px mb-2 text-[9px] md:text-xs font-black uppercase text-slate-400 tracking-widest text-center">
+                <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+            </div>
+            <div id="calendar-grid" class="calendar-grid shadow-xl"></div>
+        </div>
+    </div>
+</div>
+
+<div id="mobile-pip-zone"></div>
+
+<!-- PANEL ADMIN -->
+<div id="admin-panel" class="fullscreen-pip">
+    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
+        <div class="flex justify-between items-center mb-8">
+            <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
+            <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-5 pb-20">
+            <input id="admin-event-id" type="hidden">
+            <input id="admin-title" placeholder="Titre" class="input-field">
+            <input id="admin-loc" placeholder="Lieu" class="input-field">
+            <div class="grid grid-cols-2 gap-4">
+                <input id="admin-date" type="date" class="input-field">
+                <input id="admin-max" type="number" placeholder="Places Max" class="input-field">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <input id="admin-start" type="time" class="input-field">
+                <input id="admin-end" type="time" class="input-field">
+            </div>
+            <div id="recurrence-section" class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-wider text-center">Récurrence</p>
+                <div class="flex flex-wrap gap-2">
+                    <label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Lun</div></label>
+                    <label class="flex-1"><input type="checkbox" value="tuesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Mar</div></label>
+                    <label class="flex-1"><input type="checkbox" value="wednesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Mer</div></label>
+                    <label class="flex-1"><input type="checkbox" value="thursday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Jeu</div></label>
+                    <label class="flex-1"><input type="checkbox" value="friday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Ven</div></label>
+                    <label class="flex-1"><input type="checkbox" value="saturday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Sam</div></label>
+                    <label class="flex-1"><input type="checkbox" value="sunday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Dim</div></label>
+                </div>
+            </div>
+            <button id="admin-save-btn" onclick="requestAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl">Enregistrer</button>
+            <button id="admin-delete-btn" onclick="triggerDeleteProcess()" class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition mt-2">Supprimer l'événement</button>
+        </div>
+    </div>
+</div>
+
+<!-- PANEL REGLAGES -->
+<div id="settings-panel" class="fullscreen-pip">
+    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black tracking-tight">Réglages</h2>
+            <button onclick="closeSettingsPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
+        </div>
+        
+        <div class="space-y-8 pb-20">
+            <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="set-firstname" placeholder="Prénom" class="input-field" oninput="checkProfileChanges()">
+                    <input id="set-lastname" placeholder="Nom" class="input-field" oninput="checkProfileChanges()">
+                </div>
+                <input id="set-phone" placeholder="Téléphone" class="input-field" oninput="checkProfileChanges()">
+                <input id="set-email" type="email" class="input-field bg-slate-50 text-slate-400" disabled>
+                <button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Mettre à jour le profil</button>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sécurité</p>
+                <button onclick="openPasswordPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre mot de passe</button>
+                <button onclick="openEmailPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre email</button>
+            </div>
+
+            <div id="notif-section" class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 relative">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-slate-800">Autoriser les Notifications</p>
+                        <p class="text-xs text-slate-400">Recevoir des rappels sur cet appareil</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="notif-master" onchange="handleMasterNotifChange()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div id="notif-content-wrapper" class="space-y-4 pt-2 border-t border-slate-50 disabled-layer">
+                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Rappels avant un event</p>
+                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 semaine avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1s"><span class="slider"></span></label></div>
+                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 jour avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1j"><span class="slider"></span></label></div>
+                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 heure avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1h"><span class="slider"></span></label></div>
+                    
+                    <div id="custom-reminders-list" class="space-y-2"></div>
+                    <button onclick="openCustomReminders()" class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition">Rappels personnalisés</button>
+
+                    <button id="btn-save-notif" onclick="saveNotificationPrefs()" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl transition shadow-md mt-4">Sauvegarder mes préférences</button>
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <button onclick="openDeleteAccountPip()" class="w-full py-4 text-red-500 font-bold text-sm border border-red-100 rounded-2xl hover:bg-red-50 transition">Supprimer le Compte</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PiP CHOIX MODIFICATION -->
+<div id="edit-choice-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-layer-group text-2xl"></i></div>
+        <h3 class="text-xl font-black text-center text-slate-900 mb-2">Modifier l'événement</h3>
+        <p class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed">Cet événement fait partie d'une série. À quel niveau les modifications doivent-elles être appliquées ?</p>
+        <div class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between">
+            <span id="edit-mode-text" class="text-[10px] font-black text-slate-700">Modifier spécifiquement cet évent</span>
+            <label class="switch">
+                <input type="checkbox" id="edit-series-toggle" onchange="updateEditModeText()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="executeAdminSubmit()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="cancelEditChoice()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- PiP SUPPRESSION -->
+<div id="delete-confirmation-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-trash-alt text-2xl"></i></div>
+        <h3 class="text-xl font-black text-center text-slate-900 mb-2">Supprimer l'événement</h3>
+        <p id="delete-pip-desc" class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed">Voulez-vous supprimer cet événement ?</p>
+        <div id="delete-switch-container" class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between hidden">
+            <span id="delete-mode-text" class="text-[10px] font-black text-slate-700">Cet événement seulement</span>
+            <label class="switch"><input type="checkbox" id="delete-series-toggle" onchange="updateDeleteModeText()"><span class="slider"></span></label>
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="confirmDeleteSelection()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="closeDeleteConfirmation()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Password Pip -->
+<div id="password-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-center text-slate-900 mb-6">Modifier votre mot de passe</h3>
+        <div class="space-y-4 mb-8">
+            <input id="pwd-current" type="password" placeholder="Mot de passe actuel" class="input-field">
+            <input id="pwd-new" type="password" placeholder="Nouveau mot de passe" class="input-field">
+            <input id="pwd-confirm" type="password" placeholder="Confirmer le nouveau mot de passe" class="input-field">
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="validateAndChangePassword()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="closePasswordPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Email Pip -->
+<div id="email-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-center text-slate-900 mb-6">Modifier votre email</h3>
+        <div class="space-y-4 mb-8">
+            <input id="email-current-display" type="text" readonly class="input-field bg-slate-100 text-slate-400">
+            <input id="email-new" type="email" placeholder="Nouvel email" class="input-field">
+            <input id="email-pwd-verif" type="password" placeholder="Mot de passe" class="input-field">
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="updateEmail()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
+            <button onclick="closeEmailPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- PiP RAPPELS PERSONNALISÉS -->
+<div id="custom-reminders-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-slate-900 mb-6 text-center">Rappel Personnalisé</h3>
+        <div class="grid grid-cols-3 gap-3 mb-8">
+            <div class="flex flex-col items-center"><input id="custom-days" type="number" value="0" min="0" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Jours</span></div>
+            <div class="flex flex-col items-center"><input id="custom-hours" type="number" value="0" min="0" max="23" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Heures</span></div>
+            <div class="flex flex-col items-center"><input id="custom-minutes" type="number" value="30" min="0" max="59" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Mins</span></div>
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="addCustomReminder()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Ajouter</button>
+            <button onclick="closeCustomReminders()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Pip -->
+<div id="delete-account-pip" class="overlay-pip">
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl"><i class="fas fa-exclamation-triangle"></i></div>
+        <h3 class="text-xl font-black text-slate-900 mb-2">Supprimer le compte ?</h3>
+        <p class="text-sm text-slate-400 mb-8 px-4">Cette action est irréversible. Toutes vos données seront supprimées définitivement.</p>
+        <div class="flex flex-col gap-3">
+            <button onclick="confirmAccountDeletion()" class="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer la suppression</button>
+            <button onclick="closeDeleteAccountPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- PiP Modal Generic -->
+<div id="pip-confirm" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[10000]">
+  <div class="bg-white rounded-2xl shadow-lg p-6 w-80 max-w-full">
+    <h3 class="text-xl font-bold mb-4">Confirmer le mot de passe</h3>
+    <p class="text-sm text-gray-600 mb-4">
+      Veuillez confirmer votre mot de passe pour des raisons de sécurité.
+    </p>
+    <input id="confirm-password" type="password" placeholder="Mot de passe" class="input-field w-full mb-4 p-2 border rounded">
+    <div class="flex justify-end space-x-2">
+      <button id="pip-cancel" class="px-4 py-2 bg-gray-300 rounded">Annuler</button>
+      <button id="pip-confirm-btn" class="px-4 py-2 bg-slate-900 text-white rounded">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- PiP Confirmation Profil -->
+<div id="confirm-profile-pip" class="overlay-pip">
+  <div class="bg-white w-full max-w-sm rounded-2xl p-8 shadow-2xl mx-auto">
+    <h3 class="text-xl font-black text-slate-900 text-center mb-4">Confirmer le compte</h3>
+    <p class="text-sm text-slate-400 text-center mb-6">
+      Veuillez confirmer votre mot de passe pour finaliser l'inscription.
+    </p>
+    <input id="confirm-profile-password" type="password" placeholder="Confirmer le mot de passe" class="input-field w-full mb-4 p-3 border rounded-lg">
+    <div class="flex flex-col gap-3">
+      <button id="confirm-profile-btn" onclick="confirmProfile()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">
+        Confirmer et Accéder
+      </button>
+      <button onclick="closeConfirmProfilePip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">
+        Annuler
+      </button>
+    </div>
+  </div>
+</div>
+      
+<script>
+  // --- CONFIGURATION SUPABASE ---
+  const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_Dv8Xw8kqBqff3XL6t_LpNw_kkfUqRsc';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let isRegisterMode = false;
+  let pendingProfile = {}; 
+  let pendingEmail = "";
+  let pendingPassword = "";
+
+  // --- TOGGLE INSCRIPTION / CONNEXION ---
+  function toggleAuthMode() {
+    isRegisterMode = !isRegisterMode;
+    document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
+    document.getElementById('auth-submit-btn').classList.toggle('hidden', !isRegisterMode);
+    document.getElementById('auth-btn').classList.toggle('hidden', isRegisterMode);
+    document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
+  }
+
+  // --- CONNEXION ---
+  async function handleAuth() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) return alert("Email et mot de passe requis");
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return alert(error.message);
+    initApp(data.user);
+  }
+
+  // --- INSCRIPTION STEP 1 ---
+  function handleRegisterStep1() {
+    const emailVal = document.getElementById('auth-email').value.trim();
+    const passwordVal = document.getElementById('auth-password').value;
+    const fn = document.getElementById('auth-firstname').value.trim();
+    const ln = document.getElementById('auth-lastname').value.trim();
+    const ph = document.getElementById('auth-phone').value.trim();
+
+    // Validation
+    if (!emailVal || !passwordVal || !fn || !ln) {
+      alert("Tous les champs obligatoires (Email, Mot de passe, Prénom, Nom) sont requis !");
+      return;
+    }
+
+    pendingProfile = { first_name: fn, last_name: ln, phone: ph };
+    pendingEmail = emailVal;
+    pendingPassword = passwordVal;
+
+    openConfirmProfilePip();
+  }
+
+  function openConfirmProfilePip() {
+    document.getElementById('confirm-profile-pip').style.display = 'flex';
+  }
+
+  function closeConfirmProfilePip() {
+    document.getElementById('confirm-profile-pip').style.display = 'none';
+  }
+
+  // --- CONFIRMATION ET CREATION FINALE ---
+  async function confirmProfile() {
+    const confirmPwd = document.getElementById('confirm-profile-password').value;
+
+    if (!confirmPwd) return alert("Veuillez entrer votre mot de passe pour confirmer.");
+    if (confirmPwd !== pendingPassword) return alert("Le mot de passe de confirmation ne correspond pas.");
+
+    try {
+      console.log("Tentative d'inscription pour", pendingEmail);
+
+      // essayer signUp
+      let { data, error } = await sb.auth.signUp({
+        email: pendingEmail,
+        password: pendingPassword,
+        options: {
+          data: {
+            first_name: pendingProfile.first_name,
+            last_name: pendingProfile.last_name,
+            phone: pendingProfile.phone // metadata key en minuscules
+          }
+        }
+      });
+
+      if (error) {
+        console.warn("signUp error:", error);
+        const msg = (error?.message || "").toLowerCase();
+        if (msg.includes('already registered') || msg.includes('user already exists')) {
+          // utilisateur déjà présent : tenter connexion
+          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
+            email: pendingEmail,
+            password: pendingPassword
+          });
+          if (signInErr) {
+            console.warn("signInWithPassword failed:", signInErr);
+            closeConfirmProfilePip();
+            toggleAuthMode();
+            alert("Le compte existe déjà. Vérifiez votre e‑mail ou connectez‑vous.");
+            return;
+          }
+          data = signInData;
+          console.log("signIn successful:", signInData);
+        } else {
+          throw error;
+        }
+      }
+
+      // récupérer utilisateur authentifié
+      let user = data?.user;
+      if (!user) {
+        const { data: getUserData, error: getUserErr } = await sb.auth.getUser();
+        if (getUserErr) console.warn("getUser warning:", getUserErr);
+        user = getUserData?.user;
+      }
+      if (!user) throw new Error("Impossible de récupérer l'utilisateur authentifié.");
+
+      // UP-SERT profile — utiliser 'phone' en minuscules
+      const profilePayload = {
+        id: user.id,
+        email: pendingEmail,
+        first_name: pendingProfile.first_name || '',
+        last_name: pendingProfile.last_name || '',
+        phone: pendingProfile.phone || '',
+        role: 'user'
+      };
+
+      console.log("Upsert profile payload:", profilePayload);
+      const { error: pErr } = await sb.from('profiles').upsert([profilePayload]);
+
+      if (pErr) {
+        console.error("Erreur upsert profile:", pErr);
+        alert("Erreur lors de la sauvegarde du profil : " + (pErr.message || JSON.stringify(pErr)));
+        return;
+      }
+
+      // tout OK
+      closeConfirmProfilePip();
+      initApp(user);
+    } catch (err) {
+      console.error("confirmProfile catch:", err);
+      alert("Une erreur est survenue : " + (err.message || JSON.stringify(err)));
+    }
+  }
+  // Fin de la partie ajoutée/modifiée ici
+
+  async function logout() { await sb.auth.signOut(); location.reload(); }
+
+  // --- LOGIQUE APP ---
+  async function initApp(user) {
+      if (!user) return;
+      currentUser = user;
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('main-content').classList.remove('hidden');
+      await loadProfile();
+      await fetchEvents();
+  }
+
+  async function loadProfile() {
+      const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+      if (profile) {
+          currentProfile = profile;
+          document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
+          if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+          document.getElementById('set-firstname').value = profile.first_name || '';
+          document.getElementById('set-lastname').value = profile.last_name || '';
+          document.getElementById('set-phone').value = profile.phone || '';
+      }
+  }
+
+  async function fetchEvents() {
+      const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
+      if (evts) eventsCache = evts;
+      renderCalendar();
+  }
+
+  function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+      const y = currentDate.getFullYear(), m = currentDate.getMonth();
+      document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
+      const firstDay = (new Date(y, m, 1).getDay() || 7) - 1, lastDate = new Date(y, m + 1, 0).getDate();
+      
+      for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
+      for (let d = 1; d <= lastDate; d++) {
+          const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const loopD = new Date(y, m, d);
+          const dayEvts = eventsCache.filter(e => {
+              const isD = e.date === dateStr;
+              const isR = e.is_recurring && e.recurrence_days?.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
+              return (isD || isR) && (!e.excluded_dates || !e.excluded_dates.includes(dateStr));
+          });
+          const cell = document.createElement('div');
+          cell.className = 'calendar-day';
+          cell.onclick = (e) => openDayPip(dateStr, dayEvts, e);
+          let dots = dayEvts.map(e => `<span class="event-dot ${(e.registrations?.length || 0) >= e.max_participants ? 'dot-red' : 'dot-blue'}"></span>`).join('');
+          cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}</div>`;
+          grid.appendChild(cell);
+      }
+  }
+
+  function openDayPip(dateStr, events, evt) {
+      evt.stopPropagation();
+      const zone = document.getElementById('mobile-pip-zone');
+      zone.style.pointerEvents = 'auto';
+      const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
+      if(!events.length) html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
+      else {
+          events.forEach(e => {
+              const isReg = e.registrations?.some(r => r.user_id === currentUser.id), isFull = (e.registrations?.length || 0) >= e.max_participants;
+              html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between"><div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px] font-bold text-blue-600"><span>${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div></div><div class="text-right"><div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div><button onclick="toggleReg('${e.id}', '${isReg}')" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div></div>`;
+          });
+      }
+      zone.innerHTML = html + `</div></div>`;
+  }
+
+  async function toggleReg(eid, isR) {
+      if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
+      else await sb.from('registrations').insert([{ event_id: eid, user_id: currentUser.id }]);
+      await fetchEvents(); closeMobilePip();
+  }
+
+  async function saveProfileInfo() {
+      const payload = { first_name: document.getElementById('set-firstname').value, last_name: document.getElementById('set-lastname').value, phone: document.getElementById('set-phone').value };
+      const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
+      if (!error) { currentProfile = {...currentProfile, ...payload}; alert("Profil mis à jour"); }
+  }
+
+  async function executeAdminSubmit() {
+      const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
+      const payload = { owner_id: currentUser.id, title: document.getElementById('admin-title').value, location: document.getElementById('admin-loc').value, date: document.getElementById('admin-date').value, start_time: document.getElementById('admin-start').value, end_time: document.getElementById('admin-end').value, max_participants: parseInt(document.getElementById('admin-max').value), is_recurring: days.length > 0, recurrence_days: days };
+      await sb.from('events').insert([payload]);
+      closeAdminPanel(); await fetchEvents();
+  }
+
+  async function executeDeletion(id, all) { if(all) await sb.from('events').delete().eq('id', id); closeAdminPanel(); await fetchEvents(); }
+
+  function checkProfileChanges() { document.getElementById('btn-update-profile').classList.remove('bg-slate-100', 'text-slate-400'); document.getElementById('btn-update-profile').classList.add('bg-slate-900', 'text-white'); }
+  function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
+  function openAdminFromPip(d) { closeMobilePip(); document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
+  function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
+  function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
+  function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
+  function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
+  function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
+  function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
+  function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
+
+  let currentDate = new Date();
+  let currentUser = null;
+  let currentProfile = null;
+  let eventsCache = [];
+  const DAY_NAMES = {0:'sunday', 1:'monday', 2:'tuesday', 3:'wednesday', 4:'thursday', 5:'friday', 6:'saturday'};
+
+  window.onload = async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) initApp(session.user);
+      else document.getElementById('auth-screen').style.display = 'flex';
+  };
+</script>
+</body>
+</html>
