@@ -450,87 +450,28 @@
   }
 
   // --- CONFIRMATION ET CREATION FINALE ---
-  async function confirmProfile() {
-    const confirmPwd = document.getElementById('confirm-profile-password').value;
+  async function handleSignUp(email, password, firstName, lastName) {
+  // 1. Création du compte Auth
+  const { data, error: authError } = await sb.auth.signUp({ email, password });
+  
+  if (authError) return alert("Erreur d'inscription : " + authError.message);
 
-    if (!confirmPwd) return alert("Veuillez entrer votre mot de passe pour confirmer.");
-    if (confirmPwd !== pendingPassword) return alert("Le mot de passe de confirmation ne correspond pas.");
-
-    try {
-      console.log("Tentative d'inscription pour", pendingEmail);
-
-      // essayer signUp
-      let { data, error } = await sb.auth.signUp({
-        email: pendingEmail,
-        password: pendingPassword,
-        options: {
-          data: {
-            first_name: pendingProfile.first_name,
-            last_name: pendingProfile.last_name,
-            phone: pendingProfile.phone // metadata key en minuscules
-          }
-        }
-      });
-
-      if (error) {
-        console.warn("signUp error:", error);
-        const msg = (error?.message || "").toLowerCase();
-        if (msg.includes('already registered') || msg.includes('user already exists')) {
-          // utilisateur déjà présent : tenter connexion
-          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
-            email: pendingEmail,
-            password: pendingPassword
-          });
-          if (signInErr) {
-            console.warn("signInWithPassword failed:", signInErr);
-            closeConfirmProfilePip();
-            toggleAuthMode();
-            alert("Le compte existe déjà. Vérifiez votre e‑mail ou connectez‑vous.");
-            return;
-          }
-          data = signInData;
-          console.log("signIn successful:", signInData);
-        } else {
-          throw error;
-        }
+  // 2. Création manuelle du profil (si l'auth a réussi)
+  if (data?.user) {
+    const { error: profileError } = await sb.from('profiles').insert([
+      { 
+        id: data.user.id, 
+        email: email, 
+        first_name: firstName, 
+        last_name: lastName,
+        role: 'user' 
       }
-
-      // récupérer utilisateur authentifié
-      let user = data?.user;
-      if (!user) {
-        const { data: getUserData, error: getUserErr } = await sb.auth.getUser();
-        if (getUserErr) console.warn("getUser warning:", getUserErr);
-        user = getUserData?.user;
-      }
-      if (!user) throw new Error("Impossible de récupérer l'utilisateur authentifié.");
-
-      // UP-SERT profile — utiliser 'phone' en minuscules
-      const profilePayload = {
-        id: user.id,
-        email: pendingEmail,
-        first_name: pendingProfile.first_name || '',
-        last_name: pendingProfile.last_name || '',
-        phone: pendingProfile.phone || '',
-        role: 'user'
-      };
-
-      console.log("Upsert profile payload:", profilePayload);
-      const { error: pErr } = await sb.from('profiles').upsert([profilePayload]);
-
-      if (pErr) {
-        console.error("Erreur upsert profile:", pErr);
-        alert("Erreur lors de la sauvegarde du profil : " + (pErr.message || JSON.stringify(pErr)));
-        return;
-      }
-
-      // tout OK
-      closeConfirmProfilePip();
-      initApp(user);
-    } catch (err) {
-      console.error("confirmProfile catch:", err);
-      alert("Une erreur est survenue : " + (err.message || JSON.stringify(err)));
-    }
+    ]);
+    
+    if (profileError) console.error("Le compte est créé mais le profil a échoué:", profileError);
+    alert("Compte créé !");
   }
+}
   // Fin de la partie ajoutée/modifiée ici
 
   async function logout() { await sb.auth.signOut(); location.reload(); }
@@ -720,21 +661,29 @@ async function updateEmail() {
   const newEmail = document.getElementById('email-new').value.trim();
   const pwd = document.getElementById('email-pwd-verif').value;
 
-  if (!newEmail || !pwd) return alert('Email et mot de passe requis.');
-
   try {
-    // Cette commande va déclencher le trigger SQL qu'on vient d'installer
+    // 1. Vérifier le mot de passe actuel (Re-authentification)
+    const { error: loginErr } = await sb.auth.signInWithPassword({
+      email: currentUser.email,
+      password: pwd
+    });
+    if (loginErr) return alert("Mot de passe incorrect.");
+
+    // 2. Mettre à jour l'email dans Supabase Auth
     const { error: authErr } = await sb.auth.updateUser({ email: newEmail });
     if (authErr) throw authErr;
 
-    // Mise à jour de la table publique
-    await sb.from('profiles').update({ email: newEmail }).eq('id', currentUser.id);
-    
-    alert('Email modifié avec succès ! Reconnexion obligatoire.');
+    // 3. Mettre à jour l'email dans TA table profiles
+    const { error: profErr } = await sb.from('profiles')
+      .update({ email: newEmail })
+      .eq('id', currentUser.id);
+
+    // 4. Forcer la déconnexion pour rafraîchir le token
+    alert("Email mis à jour ! Veuillez vous reconnecter.");
     await logout(); 
 
   } catch (err) {
-    alert('Erreur : ' + err.message);
+    alert("Erreur : " + err.message);
   }
 }
   window.onload = async () => {
@@ -745,6 +694,7 @@ async function updateEmail() {
 </script>
 </body>
 </html>
+
 
 
 
