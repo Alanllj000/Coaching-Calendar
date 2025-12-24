@@ -508,40 +508,31 @@
       await fetchEvents();
   }
 
-  async function loadProfile() {
+    // Exemple de ce qu'il faut faire dans loadProfile
+async function loadProfile() {
   if (!currentUser) return;
-  
-  // On force la récupération depuis la table profiles
+
+  // Affiche au moins l'email de l'Auth immédiatement
+  document.getElementById('set-email').value = currentUser.email;
+
   const { data: profile, error } = await sb.from('profiles')
     .select('*')
     .eq('id', currentUser.id)
     .single();
 
   if (error) {
-    console.warn('Erreur loadProfile:', error);
+    console.error("Erreur RLS ou lecture :", error.message);
     return;
   }
-
+  
+  // Si on arrive ici, les RLS fonctionnent !
   if (profile) {
-    currentProfile = profile;
-    
-    // Mise à jour de l'UI (Initiales)
-    document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
-    
-    // Affichage du bouton Admin
-    if (profile.role === 'admin') {
-      document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
-    } else {
-      document.getElementById('btn-admin-panel-menu').classList.add('hidden');
-    }
-
-    // Remplissage des champs dans Réglages
     document.getElementById('set-firstname').value = profile.first_name || '';
     document.getElementById('set-lastname').value = profile.last_name || '';
-    document.getElementById('set-phone').value = profile.phone || '';
-    document.getElementById('set-email').value = profile.email || '';
+    // ... reste du remplissage
   }
 }
+  
 
   async function fetchEvents() {
       const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
@@ -712,6 +703,7 @@
 </script>
 </body>
 </html>
+
 
 
 
