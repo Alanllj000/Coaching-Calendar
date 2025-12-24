@@ -92,6 +92,24 @@
             z-index: 100; border-radius: 1.5rem; animation: fadeIn 0.3s forwards;
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Classes pour verrouiller visuellement l'interface */
+    .input-disabled {
+        text-decoration: line-through;
+        opacity: 0.5;
+        pointer-events: none;
+        background-color: #f1f5f9 !important;
+    }
+    
+    .day-label-disabled {
+        text-decoration: line-through;
+        opacity: 0.3;
+        cursor: not-allowed !important;
+    }
+    
+    .cursor-not-allowed {
+        cursor: not-allowed !important;
+    }
     </style>
 </head>
 <body onclick="handleBodyClick(event)">
@@ -954,7 +972,27 @@ async function loadEvents() {
     for (let day = 1; day <= lastDay.getDate(); day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayEvents = events.filter(e => e.date === dateStr);
+        // À l'intérieur de la boucle for (let day = 1...) de loadEvents
+        const today = new Date();
+        today.setHours(0,0,0,0); 
+        const currentDayDate = new Date(dateStr);
+        const isPast = currentDayDate < today;
         
+        grid.innerHTML += `
+            <div class="calendar-day ${isPast ? 'bg-slate-100/50 cursor-not-allowed' : ''}">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-bold ${isPast ? 'text-slate-300' : ''}">${day}</span>
+                    ${isAdmin ? `
+                        <button onclick="${isPast ? '' : `handleDayClick('${dateStr}')`}" 
+                                class="text-[10px] ${isPast ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white'} px-2 py-1 rounded-lg font-bold"
+                                ${isPast ? 'title="Date non sélectionnable."' : ''}>
+                            Ajouter
+                        </button>
+                    ` : ''}
+                </div>
+                <div class="overflow-y-auto flex-1">${eventsHtml}</div>
+            </div>
+        `;
         let eventsHtml = '';
         dayEvents.forEach(ev => {
             const isOwner = ev.owner_id === currentUser.id;
@@ -985,11 +1023,27 @@ async function loadEvents() {
 }
 // Quand on clique sur une case vide (pour créer un event)
 function handleDayClick(date) {
-    if (profile?.role !== 'admin') return;
-    openAdminPanel(); // Ta fonction qui ouvre la PiP
+    const today = new Date().toISOString().split('T')[0];
+    const isAdminSaveBtn = document.getElementById('admin-save-btn');
+    
+    openAdminPanel(); // Ta fonction pour afficher la PiP
     document.getElementById('admin-date').value = date;
-    document.getElementById('admin-event-id').value = ''; // Mode création
-    resetRecurrenceCheckboxes(); // Vider les jours cochés
+    document.getElementById('admin-event-id').value = ''; // On s'assure qu'on est en mode création
+    
+    // Reset des styles et checkboxes
+    resetRecurrenceCheckboxes();
+    
+    if (date < today) {
+        // Si par hasard on arrive sur une date passée : on verrouille
+        document.getElementById('admin-title').classList.add('input-disabled');
+        isAdminSaveBtn.style.display = 'none';
+        document.querySelectorAll('.day-label').forEach(el => el.classList.add('day-label-disabled'));
+    } else {
+        // Date valide : on déverrouille tout
+        document.getElementById('admin-title').classList.remove('input-disabled');
+        isAdminSaveBtn.style.display = 'block';
+        document.querySelectorAll('.day-label').forEach(el => el.classList.remove('day-label-disabled'));
+    }
 }
 
 // Initialisation au chargement de la page
@@ -1008,6 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
 
