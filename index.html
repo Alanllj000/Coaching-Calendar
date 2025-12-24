@@ -95,38 +95,6 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body onclick="handleBodyClick(event)">
-
-<!-- AUTH SCREEN -->
-<div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
-  <div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
-    <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Coach Pro</h2>
-    <div class="space-y-4 max-w-sm mx-auto w-full">
-      <input id="auth-email" type="email" placeholder="Email" class="input-field">
-      <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
-
-      <!-- Champs supplémentaires pour inscription -->
-      <div id="register-fields" class="hidden space-y-4">
-        <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
-        <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
-        <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
-      </div>
-
-      <!-- Boutons -->
-      <button id="auth-btn" onclick="handleAuth()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
-        Se connecter
-      </button>
-
-      <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">
-        Créer un compte
-      </p>
-
-      <button id="auth-submit-btn" onclick="handleRegisterStep1()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
-        Créer mon compte
-      </button>
-    </div>
-  </div>
-</div>
 
 <script>
   // --- CONFIGURATION SUPABASE ---
@@ -438,6 +406,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
