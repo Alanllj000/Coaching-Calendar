@@ -597,10 +597,24 @@
   }
 
   async function saveProfileInfo() {
-      const payload = { first_name: document.getElementById('set-firstname').value, last_name: document.getElementById('set-lastname').value, phone: document.getElementById('set-phone').value };
-      const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
-      if (!error) { currentProfile = {...currentProfile, ...payload}; alert("Profil mis à jour"); }
-  }
+    const payload = { 
+        first_name: document.getElementById('set-firstname').value, 
+        last_name: document.getElementById('set-lastname').value, 
+        phone: document.getElementById('set-phone').value 
+    };
+    
+    const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
+    
+    if (error) {
+        alert("Erreur : " + error.message);
+    } else {
+        alert("Profil mis à jour !");
+        await loadProfile(); // <--- TRÈS IMPORTANT : On recharge les données pour rafraîchir l'interface
+        // Remettre le bouton de sauvegarde en gris
+        document.getElementById('btn-update-profile').classList.add('bg-slate-100', 'text-slate-400');
+        document.getElementById('btn-update-profile').classList.remove('bg-slate-900', 'text-white');
+    }
+}
 
   async function executeAdminSubmit() {
       const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
@@ -698,6 +712,7 @@
 </script>
 </body>
 </html>
+
 
 
 
