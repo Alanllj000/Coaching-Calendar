@@ -720,53 +720,41 @@ async function updateEmail() {
   const newEmail = document.getElementById('email-new').value.trim();
   const pwd = document.getElementById('email-pwd-verif').value;
 
-  if (!newEmail || !pwd) return alert('Nouveau email et mot de passe requis pour vérification.');
-  if (!currentUser?.email) {
-    const { data } = await sb.auth.getUser();
-    if (data?.user?.email) currentUser = data.user;
-  }
-  if (!currentUser?.email) return alert('Impossible de récupérer votre email pour vérification.');
+  if (!newEmail || !pwd) return alert('Nouveau email et mot de passe requis.');
 
   try {
-    // Ré-authentifier l'utilisateur avec l'ancien email pour valider la demande
-    const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
+    // 1. Ré-authentification pour sécurité
+    const { error: signInErr } = await sb.auth.signInWithPassword({
       email: currentUser.email,
       password: pwd
     });
-    if (signInErr) {
-      console.warn('Ré-auth échoue (email update):', signInErr);
-      return alert('Mot de passe incorrect.');
-    }
+    
+    if (signInErr) return alert('Mot de passe incorrect.');
 
-    // Demander la mise à jour de l'email côté Auth
-    const { data: updAuth, error: updAuthErr } = await sb.auth.updateUser({ email: newEmail });
+    // 2. Mise à jour de l'email
+    // Grâce à tes triggers SQL, auth.users ET public.profiles sont mis à jour ici
+    const { error: updAuthErr } = await sb.auth.updateUser({ email: newEmail });
+    
     if (updAuthErr) {
-      console.error('Erreur updateUser email:', updAuthErr);
-      return alert('Erreur lors de la mise à jour de l\'email : ' + (updAuthErr.message || JSON.stringify(updAuthErr)));
+      console.error('Erreur updateUser:', updAuthErr);
+      return alert('Erreur : ' + updAuthErr.message);
     }
 
-    // Mettre à jour la table profiles pour refléter le nouvel email (utile même si confirmation requise)
-    const { error: pErr } = await sb.from('profiles').update({ email: newEmail }).eq('id', currentUser.id);
-    if (pErr) {
-      console.warn('Erreur mise à jour profiles.email:', pErr);
-      // Ne bloquons pas l'affichage mais avertissons
-      alert('Email mis à jour côté Auth, mais impossible de mettre à jour le profil local : ' + (pErr.message || JSON.stringify(pErr)));
-    }
-
-    // Mettre à jour currentUser affiché (getUser peut encore renvoyer l'ancien email si confirmation requise)
-    const { data: getUserData } = await sb.auth.getUser();
-    if (getUserData?.user) currentUser = getUserData.user;
-
-    // Mettre à jour l'UI
-    document.getElementById('set-email').value = newEmail;
-    // si vous conservez currentProfile en mémoire, le mettre à jour aussi :
-    if (currentProfile) currentProfile.email = newEmail;
-
-    alert('Email mis à jour. Si une confirmation est requise, vérifiez la boîte du nouvel email pour confirmer.');
+    // 3. LA CLÉ : On ne fait pas de getUser() ou d'update profiles ici !
+    // Tes triggers SQL s'en sont déjà chargés. 
+    // On informe l'utilisateur et on le déconnecte pour rafraîchir le Token.
+    
+    alert('Succès ! Votre email a été modifié. Veuillez vous reconnecter avec votre nouvelle adresse.');
+    
+    // On ferme la fenêtre de dialogue
     closeEmailPip();
+    
+    // On appelle ta fonction logout pour vider proprement le cache
+    await logout();
+
   } catch (err) {
     console.error('updateEmail catch:', err);
-    alert('Une erreur est survenue : ' + (err.message || JSON.stringify(err)));
+    alert('Une erreur est survenue.');
   } finally {
     document.getElementById('email-pwd-verif').value = '';
   }
@@ -779,5 +767,6 @@ async function updateEmail() {
 </script>
 </body>
 </html>
+
 
 
