@@ -121,7 +121,7 @@
         Créer un compte
       </p>
 
-      <button id="auth-submit-btn" onclick="handleRegisterStep1()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
+      <button id="auth-submit-btn" onclick="handleRegisterStep1()" onclick=""class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
         Créer mon compte
       </button>
     </div>
@@ -395,7 +395,7 @@
         Créer un compte
       </p>
 
-      <button id="auth-submit-btn" onclick="handleRegisterStep1()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
+      <button id="auth-submit-btn" onclick="handleRegisterStep1()" onclick="openConfirmProfilePip() "class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
         Créer mon compte
       </button>
     </div>
@@ -475,6 +475,10 @@
     window.location.href = "/confirm-profile.html";
   }
 
+     // --- Ouvrir / Fermer la PiP ---
+  function openConfirmProfilePip() {
+    document.getElementById('confirm-profile-pip').classList.remove('hidden');
+  }
   // --- CONFIRMATION PROFIL ---
   async function confirmProfile(passwordConfirmation) {
     // ✅ Récupération du profil depuis sessionStorage
@@ -736,6 +740,7 @@ async function handleAuth() {
 </script>
 </body>
 </html>
+
 
 
 
