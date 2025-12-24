@@ -453,23 +453,48 @@
   }
 
   // --- CONFIRMATION ET CREATION FINALE (MODIFIÉ POUR EDGE FUNCTION) ---
+  // --- CONFIRMATION ET CREATION FINALE ---
   async function handleSignUp() {
-    // On appelle l'Edge Function au lieu de sb.auth.signUp pour bypasser les emails
-    const { data, error } = await sb.functions.invoke('gestion-des-users--update--registration-and-connexion-', {
-      body: { 
-        action: 'signup', 
-        email: pendingEmail, 
-        password: pendingPassword,
-        userData: pendingProfile 
+    const confirmPwd = document.getElementById('confirm-profile-password').value;
+
+    // Vérification de sécurité locale
+    if (!confirmPwd) return alert("Veuillez entrer votre mot de passe pour confirmer.");
+    if (confirmPwd !== pendingPassword) return alert("Le mot de passe de confirmation ne correspond pas.");
+
+    try {
+      console.log("Appel Edge Function pour:", pendingEmail);
+
+      const { data, error } = await sb.functions.invoke('gestion-des-users--update--registration-and-connexion-', {
+        body: { 
+          action: 'signup', 
+          email: pendingEmail, 
+          password: pendingPassword,
+          userData: pendingProfile 
+        }
+      });
+
+      // Si l'Edge Function renvoie une erreur 400 ou autre
+      if (error) {
+        // Tentative de lire le message d'erreur détaillé renvoyé par Deno
+        const errorDetail = error.context ? await error.context.json() : error;
+        throw new Error(errorDetail.error || error.message);
       }
-    });
 
-    if (error) return alert("Erreur d'inscription : " + error.message);
+      alert("Compte créé avec succès ! Connectez-vous maintenant.");
+      closeConfirmProfilePip();
+      toggleAuthMode(); // Bascule sur l'écran de connexion
+      
+      // On pré-remplit l'email pour l'utilisateur
+      document.getElementById('auth-email').value = pendingEmail;
 
-    alert("Compte créé ! Vous pouvez maintenant vous connecter.");
-    closeConfirmProfilePip();
-    toggleAuthMode();
+    } catch (err) {
+      console.error("Erreur détaillée:", err);
+      alert("Erreur : " + err.message);
+    }
   }
+
+  // Pour corriger l'erreur "confirmProfile is not defined" dans ton HTML
+  const confirmProfile = handleSignUp;
 
   async function logout() { await sb.auth.signOut(); location.reload(); }
 
@@ -655,6 +680,7 @@
 </script>
 </body>
 </html>
+
 
 
 
