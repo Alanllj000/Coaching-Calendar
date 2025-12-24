@@ -720,43 +720,21 @@ async function updateEmail() {
   const newEmail = document.getElementById('email-new').value.trim();
   const pwd = document.getElementById('email-pwd-verif').value;
 
-  if (!newEmail || !pwd) return alert('Nouveau email et mot de passe requis.');
+  if (!newEmail || !pwd) return alert('Email et mot de passe requis.');
 
   try {
-    // 1. Ré-authentification pour sécurité
-    const { error: signInErr } = await sb.auth.signInWithPassword({
-      email: currentUser.email,
-      password: pwd
-    });
-    
-    if (signInErr) return alert('Mot de passe incorrect.');
+    // Cette commande va déclencher le trigger SQL qu'on vient d'installer
+    const { error: authErr } = await sb.auth.updateUser({ email: newEmail });
+    if (authErr) throw authErr;
 
-    // 2. Mise à jour de l'email
-    // Grâce à tes triggers SQL, auth.users ET public.profiles sont mis à jour ici
-    const { error: updAuthErr } = await sb.auth.updateUser({ email: newEmail });
+    // Mise à jour de la table publique
+    await sb.from('profiles').update({ email: newEmail }).eq('id', currentUser.id);
     
-    if (updAuthErr) {
-      console.error('Erreur updateUser:', updAuthErr);
-      return alert('Erreur : ' + updAuthErr.message);
-    }
-
-    // 3. LA CLÉ : On ne fait pas de getUser() ou d'update profiles ici !
-    // Tes triggers SQL s'en sont déjà chargés. 
-    // On informe l'utilisateur et on le déconnecte pour rafraîchir le Token.
-    
-    alert('Succès ! Votre email a été modifié. Veuillez vous reconnecter avec votre nouvelle adresse.');
-    
-    // On ferme la fenêtre de dialogue
-    closeEmailPip();
-    
-    // On appelle ta fonction logout pour vider proprement le cache
-    await logout();
+    alert('Email modifié avec succès ! Reconnexion obligatoire.');
+    await logout(); 
 
   } catch (err) {
-    console.error('updateEmail catch:', err);
-    alert('Une erreur est survenue.');
-  } finally {
-    document.getElementById('email-pwd-verif').value = '';
+    alert('Erreur : ' + err.message);
   }
 }
   window.onload = async () => {
@@ -767,6 +745,7 @@ async function updateEmail() {
 </script>
 </body>
 </html>
+
 
 
 
