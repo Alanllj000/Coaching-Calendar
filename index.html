@@ -455,7 +455,7 @@
   // --- CONFIRMATION ET CREATION FINALE (MODIFIÉ POUR EDGE FUNCTION) ---
   async function handleSignUp() {
     // On appelle l'Edge Function au lieu de sb.auth.signUp pour bypasser les emails
-    const { data, error } = await sb.functions.invoke('gestion-des-users', {
+    const { data, error } = await sb.functions.invoke('gestion-des-users--update--registration-and-connexion-', {
       body: { 
         action: 'signup', 
         email: pendingEmail, 
@@ -614,22 +614,38 @@
   }
 
   // --- CHANGE EMAIL (MODIFIÉ POUR EDGE FUNCTION) ---
-  async function updateEmail() {
-    const newEmail = document.getElementById('email-new').value.trim();
-    const pwd = document.getElementById('email-pwd-verif').value;
+ async function updateEmail() {
+  const newEmail = document.getElementById('email-new').value.trim();
+  const pwd = document.getElementById('email-pwd-verif').value;
 
-    const { error: loginErr } = await sb.auth.signInWithPassword({ email: currentUser.email, password: pwd });
-    if (loginErr) return alert("Mot de passe incorrect.");
+  if (!newEmail || !pwd) return alert("Tous les champs sont requis.");
 
-    const { data, error: functionErr } = await sb.functions.invoke('gestion-des-users', {
-      body: { action: 'updateEmail', userId: currentUser.id, email: newEmail }
-    });
+  // 1. Vérification du mot de passe (Re-authentification)
+  const { error: loginErr } = await sb.auth.signInWithPassword({ 
+    email: currentUser.email, 
+    password: pwd 
+  });
+  
+  if (loginErr) return alert("Mot de passe incorrect.");
 
-    if (functionErr) return alert("Erreur : " + functionErr.message);
+  // 2. Appel de la fonction avec le NOM EXACT du dashboard
+  const { data, error: functionErr } = await sb.functions.invoke('gestion-des-users--update--registration-and-connexion-', {
+    body: { 
+      action: 'updateEmail', 
+      userId: currentUser.id, 
+      email: newEmail 
+    }
+  });
 
-    alert("Email mis à jour ! Veuillez vous reconnecter.");
-    await logout(); 
+  if (functionErr) {
+    console.error(functionErr);
+    return alert("Erreur lors de la mise à jour : " + functionErr.message);
   }
+
+  // 3. Succès
+  alert("Email mis à jour avec succès ! Veuillez vous reconnecter avec votre nouvelle adresse.");
+  await logout(); 
+}
 
   window.onload = async () => {
       const { data: { session } } = await sb.auth.getSession();
@@ -639,6 +655,7 @@
 </script>
 </body>
 </html>
+
 
 
 
