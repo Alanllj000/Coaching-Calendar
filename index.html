@@ -852,8 +852,87 @@ async function insertRecurringSeries(title, loc, startDateStr, start, end, max, 
     const { error: bulkError } = await sb.from('events').insert(occurrences);
     if (bulkError) throw bulkError;
 }
+let currentMonth = new Date(); // Variable globale pour savoir quel mois afficher
 
+async function loadEvents() {
+    const grid = document.getElementById('calendar-grid');
+    if (!grid) return;
 
+    // 1. Déterminer les dates du mois à afficher
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // Ajustement pour que lundi soit le premier jour (si ton calendrier commence par Lundi)
+    let startOffset = firstDay.getDay() - 1;
+    if (startOffset === -1) startOffset = 6; 
+
+    // 2. Récupérer les données Supabase
+    const { data: events, error } = await sb
+        .from('events')
+        .select('*')
+        .gte('date', firstDay.toISOString().split('T')[0])
+        .lte('date', lastDay.toISOString().split('T')[0]);
+
+    if (error) {
+        console.error("Erreur chargement events:", error);
+        return;
+    }
+
+    grid.innerHTML = '';
+
+    // 3. Créer les cases vides du début
+    for (let i = 0; i < startOffset; i++) {
+        grid.innerHTML += `<div class="calendar-day empty"></div>`;
+    }
+
+    // 4. Créer les cases des jours
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayEvents = events.filter(e => e.date === dateStr);
+        
+        let eventsHtml = '';
+        dayEvents.forEach(ev => {
+            const isOwner = ev.owner_id === currentUser.id;
+            const isAdmin = profile?.role === 'admin';
+            
+            // Logique Point 6 : Icône différente si on est propriétaire ou non
+            eventsHtml += `
+                <div class="flex items-center gap-1 mb-1 group cursor-pointer" onclick="openEventDetails('${ev.id}')">
+                    <span class="event-dot dot-blue"></span>
+                    <span class="text-[9px] font-bold truncate flex-1">${ev.title}</span>
+                    ${isAdmin ? `
+                        <span class="text-[10px] ${isOwner ? 'text-blue-500' : 'text-slate-300'}" 
+                              title="${isOwner ? 'Modifier' : 'Vous n\'êtes pas propriétaire'}">
+                            ${isOwner ? '✎' : '🔒'}
+                        </span>
+                    ` : ''}
+                </div>
+            `;
+        });
+
+        grid.innerHTML += `
+            <div class="calendar-day" onclick="handleDayClick('${dateStr}')">
+                <span class="text-xs font-bold mb-1">${day}</span>
+                <div class="overflow-y-auto flex-1">${eventsHtml}</div>
+            </div>
+        `;
+    }
+}
+// Quand on clique sur une case vide (pour créer un event)
+function handleDayClick(date) {
+    if (profile?.role !== 'admin') return;
+    openAdminPanel(); // Ta fonction qui ouvre la PiP
+    document.getElementById('admin-date').value = date;
+    document.getElementById('admin-event-id').value = ''; // Mode création
+    resetRecurrenceCheckboxes(); // Vider les jours cochés
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', () => {
+    loadEvents();
+});
 
 
 
@@ -866,6 +945,7 @@ async function insertRecurringSeries(title, loc, startDateStr, start, end, max, 
 </script>
 </body>
 </html>
+
 
 
 
