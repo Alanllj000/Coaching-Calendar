@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
@@ -73,7 +72,7 @@
         .overlay-pip {
             position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-            z-index: 8000; display: none; align-items: center; justify-content: center; padding: 1.5rem;
+            z-index: 10000; display: none; align-items: center; justify-content: center; padding: 1.5rem;
         }
 
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -105,14 +104,12 @@
       <input id="auth-email" type="email" placeholder="Email" class="input-field">
       <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
 
-      <!-- Champs supplémentaires pour inscription -->
       <div id="register-fields" class="hidden space-y-4">
         <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
         <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
         <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
       </div>
 
-      <!-- Boutons -->
       <button id="auth-btn" onclick="handleAuth()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
         Se connecter
       </button>
@@ -121,7 +118,7 @@
         Créer un compte
       </p>
 
-      <button id="auth-submit-btn" onclick="handleRegisterStep1()" onclick=""class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
+      <button id="auth-submit-btn" onclick="handleRegisterStep1()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
         Créer mon compte
       </button>
     </div>
@@ -165,7 +162,7 @@
 
 <div id="mobile-pip-zone"></div>
 
-<!-- PANEL ADMIN (Création / Edition) -->
+<!-- PANEL ADMIN -->
 <div id="admin-panel" class="fullscreen-pip">
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         <div class="flex justify-between items-center mb-8">
@@ -202,7 +199,7 @@
     </div>
 </div>
 
-<!-- PANEL REGLAGES (Version Fusionnée) -->
+<!-- PANEL REGLAGES -->
 <div id="settings-panel" class="fullscreen-pip">
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         <div class="flex justify-between items-center mb-8">
@@ -211,7 +208,6 @@
         </div>
         
         <div class="space-y-8 pb-20">
-            <!-- Profil -->
             <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
                 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
                 <div class="grid grid-cols-2 gap-4">
@@ -223,14 +219,12 @@
                 <button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Mettre à jour le profil</button>
             </div>
 
-            <!-- Sécurité -->
             <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
                 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sécurité</p>
                 <button onclick="openPasswordPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre mot de passe</button>
                 <button onclick="openEmailPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre email</button>
             </div>
 
-            <!-- Notifications -->
             <div id="notif-section" class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 relative">
                 <div class="flex items-center justify-between">
                     <div>
@@ -243,7 +237,6 @@
                     </label>
                 </div>
                 
-                <!-- Zone grisée si désactivé -->
                 <div id="notif-content-wrapper" class="space-y-4 pt-2 border-t border-slate-50 disabled-layer">
                     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Rappels avant un event</p>
                     <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 semaine avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1s"><span class="slider"></span></label></div>
@@ -257,7 +250,6 @@
                 </div>
             </div>
 
-            <!-- Danger Zone -->
             <div class="pt-4">
                 <button onclick="openDeleteAccountPip()" class="w-full py-4 text-red-500 font-bold text-sm border border-red-100 rounded-2xl hover:bg-red-50 transition">Supprimer le Compte</button>
             </div>
@@ -265,7 +257,7 @@
     </div>
 </div>
 
-<!-- PiP CHOIX MODIFICATION (Série vs Unique) -->
+<!-- PiP CHOIX MODIFICATION -->
 <div id="edit-choice-pip" class="overlay-pip">
     <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
         <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-layer-group text-2xl"></i></div>
@@ -362,8 +354,9 @@
         </div>
     </div>
 </div>
-<!-- PiP Modal -->
-<div id="pip-confirm" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
+
+<!-- PiP Modal Generic -->
+<div id="pip-confirm" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[10000]">
   <div class="bg-white rounded-2xl shadow-lg p-6 w-80 max-w-full">
     <h3 class="text-xl font-bold mb-4">Confirmer le mot de passe</h3>
     <p class="text-sm text-gray-600 mb-4">
@@ -373,46 +366,21 @@
     <div class="flex justify-end space-x-2">
       <button id="pip-cancel" class="px-4 py-2 bg-gray-300 rounded">Annuler</button>
       <button id="pip-confirm-btn" class="px-4 py-2 bg-slate-900 text-white rounded">Confirmer</button>
-  <div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
-    <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Coach Pro</h2>
-    <div class="space-y-4 max-w-sm mx-auto w-full">
-      <input id="auth-email" type="email" placeholder="Email" class="input-field">
-      <input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
-
-      <!-- Champs supplémentaires pour inscription -->
-      <div id="register-fields" class="hidden space-y-4">
-        <input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
-        <input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
-        <input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
-      </div>
-
-      <!-- Boutons -->
-      <button id="auth-btn" onclick="handleAuth()" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
-        Se connecter
-      </button>
-
-      <p onclick="toggleAuthMode()" id="auth-toggle" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">
-        Créer un compte
-      </p>
-
-      <button id="auth-submit-btn" onclick="handleRegisterStep1()" onclick="openConfirmProfilePip() "class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
-        Créer mon compte
-      </button>
     </div>
   </div>
 </div>
 
-      <!-- PiP Confirmation Profil -->
-<div id="confirm-profile-pip" class="overlay-pip hidden">
+<!-- PiP Confirmation Profil -->
+<div id="confirm-profile-pip" class="overlay-pip">
   <div class="bg-white w-full max-w-sm rounded-2xl p-8 shadow-2xl mx-auto">
-    <h3 class="text-xl font-black text-slate-900 text-center mb-4">Confirmer votre profil</h3>
+    <h3 class="text-xl font-black text-slate-900 text-center mb-4">Confirmer le compte</h3>
     <p class="text-sm text-slate-400 text-center mb-6">
-      Veuillez entrer votre mot de passe pour valider la création de votre profil.
+      Veuillez confirmer votre mot de passe pour finaliser l'inscription.
     </p>
-    <input id="confirm-profile-password" type="password" placeholder="Mot de passe" class="input-field w-full mb-4 p-3 border rounded-lg">
+    <input id="confirm-profile-password" type="password" placeholder="Confirmer le mot de passe" class="input-field w-full mb-4 p-3 border rounded-lg">
     <div class="flex flex-col gap-3">
-      <button id="confirm-profile-btn" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">
-        Confirmer
+      <button id="confirm-profile-btn" onclick="confirmProfile()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">
+        Confirmer et Accéder
       </button>
       <button onclick="closeConfirmProfilePip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">
         Annuler
@@ -428,7 +396,9 @@
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let isRegisterMode = false;
-  let pendingProfile = {};
+  let pendingProfile = {}; 
+  let pendingEmail = "";
+  let pendingPassword = "";
 
   // --- TOGGLE INSCRIPTION / CONNEXION ---
   function toggleAuthMode() {
@@ -451,311 +421,213 @@
   }
 
   // --- INSCRIPTION STEP 1 ---
-  async function handleRegisterStep1() {
+  function handleRegisterStep1() {
     const emailVal = document.getElementById('auth-email').value.trim();
     const passwordVal = document.getElementById('auth-password').value;
     const fn = document.getElementById('auth-firstname').value.trim();
     const ln = document.getElementById('auth-lastname').value.trim();
     const ph = document.getElementById('auth-phone').value.trim();
 
+    // Validation
     if (!emailVal || !passwordVal || !fn || !ln) {
-      alert("Tous les champs sont requis !");
+      alert("Tous les champs obligatoires (Email, Mot de passe, Prénom, Nom) sont requis !");
       return;
     }
 
-    // Stockage temporaire
     pendingProfile = { first_name: fn, last_name: ln, phone: ph };
-    sessionStorage.setItem('pendingProfile', JSON.stringify(pendingProfile));
-    sessionStorage.setItem('pendingEmail', emailVal);
+    pendingEmail = emailVal;
+    pendingPassword = passwordVal;
 
-    const { data, error } = await sb.auth.signUp({ email: emailVal, password: passwordVal });
-    if (error) return alert(error.message);
-
-    console.log("Compte créé, profil en cache :", pendingProfile);
-    window.location.href = "/confirm-profile.html";
+    openConfirmProfilePip();
   }
 
-     // --- Ouvrir / Fermer la PiP ---
   function openConfirmProfilePip() {
-    document.getElementById('confirm-profile-pip').classList.remove('hidden');
+    document.getElementById('confirm-profile-pip').style.display = 'flex';
   }
-  // --- CONFIRMATION PROFIL ---
-  async function confirmProfile(passwordConfirmation) {
-    // ✅ Récupération du profil depuis sessionStorage
-    const pendingProfile = JSON.parse(sessionStorage.getItem('pendingProfile'));
-    const pendingEmail = sessionStorage.getItem('pendingEmail');
-    if (!pendingProfile || !pendingEmail) {
-        alert("Erreur : informations de profil manquantes");
-        return;
-    }
 
-  // Vérification du mot de passe (optionnelle mais sécurisée)
-    const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({
-        email: pendingEmail,
-        password: passwordConfirmation
-    });
-    if (signInError) {
-        alert("Mot de passe incorrect");
-        return;
-    }
+  function closeConfirmProfilePip() {
+    document.getElementById('confirm-profile-pip').style.display = 'none';
+  }
 
-    const user = signInData.user;
-    if (!user) {
-        alert("Erreur : utilisateur non trouvé");
-        return;
-    }
+  // --- CONFIRMATION ET CREATION FINALE ---
+  // Partie ajoutée/modifiée commence ici
+  async function confirmProfile() {
+    const confirmPwd = document.getElementById('confirm-profile-password').value;
+    
+    if (!confirmPwd) return alert("Veuillez entrer votre mot de passe pour confirmer.");
+    if (confirmPwd !== pendingPassword) return alert("Le mot de passe de confirmation ne correspond pas.");
 
-  // ✅ Upsert du profil dans la table 'profiles'
-    const { error: pErr } = await sb.from('profiles').upsert(
-        [{ 
-            id: user.id, 
-            email: pendingEmail, 
-            ...pendingProfile, // first_name, last_name, phone
-            role: 'user' 
-        }],
-        { onConflict: 'id' } // clé unique pour upsert
-    );
-
-    if (pErr) {
-        alert("Erreur création/mise à jour du profil : " + pErr.message);
-        return;
-    }
-
-    console.log("Profil créé ou mis à jour avec succès !");
-
-      // Nettoyage du cache
-    sessionStorage.removeItem('pendingProfile');
-    sessionStorage.removeItem('pendingEmail');
-
-    // Lancement de l'app
-    initApp(user);
-}
-
-        async function logout() { await sb.auth.signOut(); location.reload(); }
-
-        // --- 3. LOGIQUE APP ---
-        async function initApp(user) {
-            if (!user) return;
-            currentUser = user;
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('main-content').classList.remove('hidden');
-            await loadProfile();
-            await fetchEvents();
-        }
-
-        async function loadProfile() {
-            const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-            if (profile) {
-                currentProfile = profile;
-                document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
-                if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
-                document.getElementById('set-firstname').value = profile.first_name || '';
-                document.getElementById('set-lastname').value = profile.last_name || '';
-                document.getElementById('set-phone').value = profile.Phone || '';
+    // 1. Création du compte (SignUp)
+    // On passe aussi Phone (Majuscule) dans les metadata au cas où le trigger l'utilise
+    const { data, error } = await sb.auth.signUp({ 
+        email: pendingEmail, 
+        password: pendingPassword,
+        options: { 
+            data: {
+                first_name: pendingProfile.first_name,
+                last_name: pendingProfile.last_name,
+                Phone: pendingProfile.phone // Attention à la casse ici
             }
         }
+    });
 
-        async function fetchEvents() {
-            const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
-            if (evts) eventsCache = evts;
-            renderCalendar();
-        }
+    if (error) return alert("Erreur lors de l'inscription : " + error.message);
 
-        function renderCalendar() {
-            const grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '';
-            const y = currentDate.getFullYear(), m = currentDate.getMonth();
-            document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
-            const firstDay = (new Date(y, m, 1).getDay() || 7) - 1, lastDate = new Date(y, m + 1, 0).getDate();
-            
-            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
-            for (let d = 1; d <= lastDate; d++) {
-                const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const loopD = new Date(y, m, d);
-                const dayEvts = eventsCache.filter(e => {
-                    const isD = e.date === dateStr;
-                    const isR = e.is_recurring && e.recurrence_days?.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
-                    return (isD || isR) && (!e.excluded_dates || !e.excluded_dates.includes(dateStr));
-                });
-                const cell = document.createElement('div');
-                cell.className = 'calendar-day';
-                cell.onclick = (e) => openDayPip(dateStr, dayEvts, e);
-                let dots = dayEvts.map(e => `<span class="event-dot ${(e.registrations?.length || 0) >= e.max_participants ? 'dot-red' : 'dot-blue'}"></span>`).join('');
-                cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}</div>`;
-                grid.appendChild(cell);
+    // 2. Gestion Session & Profil
+    let session = data.session;
+    let user = data.user;
+
+    // Si signUp ne renvoie pas de session (ex: config email confirm), on tente un signIn forcé
+    if (!session) {
+        const { data: signInData } = await sb.auth.signInWithPassword({
+             email: pendingEmail,
+             password: pendingPassword
+        });
+        session = signInData.session;
+        user = signInData.user;
+    }
+
+    // Si on a une session, on peut écrire dans profiles (pour contourner RLS Anon)
+    if (session && user) {
+        const { error: pErr } = await sb.from('profiles').upsert([
+            { 
+                id: user.id, 
+                email: pendingEmail, 
+                first_name: pendingProfile.first_name,
+                last_name: pendingProfile.last_name,
+                Phone: pendingProfile.phone, // "Phone" avec majuscule (comme dans saveProfileInfo)
+                role: 'user' 
             }
-        }
-
-        function openDayPip(dateStr, events, evt) {
-            evt.stopPropagation();
-            const zone = document.getElementById('mobile-pip-zone');
-            zone.style.pointerEvents = 'auto';
-            const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-            let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
-            if(!events.length) html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
-            else {
-                events.forEach(e => {
-                    const isReg = e.registrations?.some(r => r.user_id === currentUser.id), isFull = (e.registrations?.length || 0) >= e.max_participants;
-                    html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between"><div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px] font-bold text-blue-600"><span>${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div></div><div class="text-right"><div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div><button onclick="toggleReg('${e.id}', '${isReg}')" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div></div>`;
-                });
-            }
-            zone.innerHTML = html + `</div></div>`;
-        }
-
-        // --- 4. ACTIONS & UI ---
-        async function toggleReg(eid, isR) {
-            if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
-            else await sb.from('registrations').insert([{ event_id: eid, user_id: currentUser.id }]);
-            await fetchEvents(); closeMobilePip();
-        }
-
-        async function saveProfileInfo() {
-            const payload = { first_name: document.getElementById('set-firstname').value, last_name: document.getElementById('set-lastname').value, Phone: document.getElementById('set-phone').value };
-            const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
-            if (!error) { currentProfile = {...currentProfile, ...payload}; alert("Profil mis à jour"); }
-        }
-
-        async function executeAdminSubmit() {
-            const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
-            const payload = { owner_id: currentUser.id, title: document.getElementById('admin-title').value, location: document.getElementById('admin-loc').value, date: document.getElementById('admin-date').value, start_time: document.getElementById('admin-start').value, end_time: document.getElementById('admin-end').value, max_participants: parseInt(document.getElementById('admin-max').value), is_recurring: days.length > 0, recurrence_days: days };
-            await sb.from('events').insert([payload]);
-            closeAdminPanel(); await fetchEvents();
-        }
-
-        async function executeDeletion(id, all) { if(all) await sb.from('events').delete().eq('id', id); closeAdminPanel(); await fetchEvents(); }
-
-        function checkProfileChanges() { document.getElementById('btn-update-profile').classList.remove('bg-slate-100', 'text-slate-400'); document.getElementById('btn-update-profile').classList.add('bg-slate-900', 'text-white'); }
-        function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
-        function openAdminFromPip(d) { closeMobilePip(); document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
-        function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
-        function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
-        function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
-        function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
-        function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
-        function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
-        function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
-
-        window.onload = async () => {
-            const { data: { session } } = await sb.auth.getSession();
-            if (session) initApp(session.user);
-            else document.getElementById('auth-screen').style.display = 'flex';
-        };
-
-function toggleAuthMode() {
-    isRegisterMode = !isRegisterMode;
-
-    document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
-    document.getElementById('auth-btn').textContent = isRegisterMode ? 'Créer le compte' : 'Se connecter';
-    document.getElementById('auth-toggle').textContent = isRegisterMode ? 'Déjà un compte ? Se connecter' : 'Créer un compte';
-}
-
-    async function logout() {
-    const { error } = await sb.auth.signOut();
-
-    if (error) {
-        console.error('Erreur lors de la déconnexion:', error.message);
-        alert('Erreur lors de la déconnexion');
-        return;
+        ]);
+        
+        if (pErr) console.error("Erreur insertion profil:", pErr);
+        
+        // 3. Redirection Réussie
+        closeConfirmProfilePip();
+        initApp(user);
+    } else {
+        // Cas où même le signIn échoue (ex: Email confirmation strict obligatoire avant login)
+        alert("Compte créé ! Veuillez vérifier vos emails pour valider le compte avant de vous connecter.");
+        closeConfirmProfilePip();
+        toggleAuthMode(); // Retour au login
     }
+  }
+  // Fin de la partie ajoutée/modifiée ici
 
-    currentUser = null;
+  async function logout() { await sb.auth.signOut(); location.reload(); }
 
-    showAuthScreen();
-    document.getElementById('main-content').classList.add('hidden');
-}
-async function handleAuth() {
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
+  // --- LOGIQUE APP ---
+  async function initApp(user) {
+      if (!user) return;
+      currentUser = user;
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('main-content').classList.remove('hidden');
+      await loadProfile();
+      await fetchEvents();
+  }
 
-    if (!email || !password) {
-        alert("Email et mot de passe requis");
-        return;
-    }
+  async function loadProfile() {
+      const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+      if (profile) {
+          currentProfile = profile;
+          document.getElementById('user-initials').textContent = (profile.first_name || "?")[0].toUpperCase();
+          if (profile.role === 'admin') document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+          document.getElementById('set-firstname').value = profile.first_name || '';
+          document.getElementById('set-lastname').value = profile.last_name || '';
+          document.getElementById('set-phone').value = profile.Phone || '';
+      }
+  }
 
-    if (!isRegisterMode) {
-        // 🔐 LOGIN
-        const { error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) {
-            alert(error.message);
-        }
-        return;
-    }
+  async function fetchEvents() {
+      const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
+      if (evts) eventsCache = evts;
+      renderCalendar();
+  }
 
-    // 🆕 REGISTER
-    const firstName = document.getElementById('auth-firstname').value.trim();
-    const lastName = document.getElementById('auth-lastname').value.trim();
-    const phone = document.getElementById('auth-phone').value.trim();
+  function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+      const y = currentDate.getFullYear(), m = currentDate.getMonth();
+      document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
+      const firstDay = (new Date(y, m, 1).getDay() || 7) - 1, lastDate = new Date(y, m + 1, 0).getDate();
+      
+      for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
+      for (let d = 1; d <= lastDate; d++) {
+          const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const loopD = new Date(y, m, d);
+          const dayEvts = eventsCache.filter(e => {
+              const isD = e.date === dateStr;
+              const isR = e.is_recurring && e.recurrence_days?.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
+              return (isD || isR) && (!e.excluded_dates || !e.excluded_dates.includes(dateStr));
+          });
+          const cell = document.createElement('div');
+          cell.className = 'calendar-day';
+          cell.onclick = (e) => openDayPip(dateStr, dayEvts, e);
+          let dots = dayEvts.map(e => `<span class="event-dot ${(e.registrations?.length || 0) >= e.max_participants ? 'dot-red' : 'dot-blue'}"></span>`).join('');
+          cell.innerHTML = `<span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span><div class="mt-auto flex flex-wrap gap-1">${dots}</div>`;
+          grid.appendChild(cell);
+      }
+  }
 
-    if (!firstName || !lastName) {
-        alert("Prénom et nom requis");
-        return;
-    }
+  function openDayPip(dateStr, events, evt) {
+      evt.stopPropagation();
+      const zone = document.getElementById('mobile-pip-zone');
+      zone.style.pointerEvents = 'auto';
+      const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      let html = `<div class="mobile-pip-card"><div class="flex items-center justify-between p-5 border-b border-slate-50"><div><span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>${currentProfile?.role === 'admin' ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}</div><button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button></div><div class="flex-1 overflow-y-auto p-4 space-y-3">`;
+      if(!events.length) html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
+      else {
+          events.forEach(e => {
+              const isReg = e.registrations?.some(r => r.user_id === currentUser.id), isFull = (e.registrations?.length || 0) >= e.max_participants;
+              html += `<div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between"><div><h4 class="font-black text-slate-800">${e.title}</h4><div class="flex gap-2 text-[10px] font-bold text-blue-600"><span>${e.start_time.substring(0,5)}</span><span class="text-slate-400">${e.location}</span></div></div><div class="text-right"><div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${e.registrations?.length || 0}/${e.max_participants}</div><button onclick="toggleReg('${e.id}', '${isReg}')" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">${isReg ? 'Inscrit' : 'S\'inscrire'}</button></div></div>`;
+          });
+      }
+      zone.innerHTML = html + `</div></div>`;
+  }
 
-    const { data, error } = await sb.auth.signUp({
-        email,
-        password
-    });
+  async function toggleReg(eid, isR) {
+      if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
+      else await sb.from('registrations').insert([{ event_id: eid, user_id: currentUser.id }]);
+      await fetchEvents(); closeMobilePip();
+  }
 
-    if (error) {
-        alert(error.message);
-        return;
-    }
+  async function saveProfileInfo() {
+      const payload = { first_name: document.getElementById('set-firstname').value, last_name: document.getElementById('set-lastname').value, Phone: document.getElementById('set-phone').value };
+      const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
+      if (!error) { currentProfile = {...currentProfile, ...payload}; alert("Profil mis à jour"); }
+  }
 
-    const user = data.user;
-    if (!user) {
-        alert("Veuillez confirmer votre email avant de continuer.");
-        return;
-    }
+  async function executeAdminSubmit() {
+      const days = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(c => c.value);
+      const payload = { owner_id: currentUser.id, title: document.getElementById('admin-title').value, location: document.getElementById('admin-loc').value, date: document.getElementById('admin-date').value, start_time: document.getElementById('admin-start').value, end_time: document.getElementById('admin-end').value, max_participants: parseInt(document.getElementById('admin-max').value), is_recurring: days.length > 0, recurrence_days: days };
+      await sb.from('events').insert([payload]);
+      closeAdminPanel(); await fetchEvents();
+  }
 
-    // 🧾 CRÉATION DU PROFIL
-    const { error: profileError } = await sb.from('profiles').insert({
-        id: user.id,
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone,
-        role: 'user'
-    });
+  async function executeDeletion(id, all) { if(all) await sb.from('events').delete().eq('id', id); closeAdminPanel(); await fetchEvents(); }
 
-    if (profileError) {
-        alert("Compte créé mais erreur profil: " + profileError.message);
-        return;
-    }
+  function checkProfileChanges() { document.getElementById('btn-update-profile').classList.remove('bg-slate-100', 'text-slate-400'); document.getElementById('btn-update-profile').classList.add('bg-slate-900', 'text-white'); }
+  function closeMobilePip() { const z = document.getElementById('mobile-pip-zone'); z.style.pointerEvents = 'none'; z.innerHTML = ''; }
+  function openAdminFromPip(d) { closeMobilePip(); document.getElementById('admin-date').value = d; document.getElementById('admin-panel').style.display = 'flex'; }
+  function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
+  function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
+  function openAdminPanel() { document.getElementById('admin-panel').style.display = 'flex'; }
+  function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
+  function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
+  function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
+  function handleBodyClick(e) { if(!e.target.closest('.group-menu')) document.getElementById('user-menu').classList.add('hidden'); }
 
-    // Optionnel : settings par défaut
-    await sb.from('notification_settings').insert({
-        user_id: user.id,
-        notif_enable: false
-    });
+  let currentDate = new Date();
+  let currentUser = null;
+  let currentProfile = null;
+  let eventsCache = [];
+  const DAY_NAMES = {0:'sunday', 1:'monday', 2:'tuesday', 3:'wednesday', 4:'thursday', 5:'friday', 6:'saturday'};
 
-    // Connexion automatique
-    await sb.auth.signInWithPassword({ email, password });
-}
-    document.addEventListener('DOMContentLoaded', async () => {
-    const ok = await requireAuth();
-    if (!ok) return;
-
-    await loadProfile();
-    renderCalendar();
-  });
+  window.onload = async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) initApp(session.user);
+      else document.getElementById('auth-screen').style.display = 'flex';
+  };
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
