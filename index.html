@@ -451,67 +451,105 @@
 
   // --- CONFIRMATION ET CREATION FINALE ---
   // Partie ajoutée/modifiée commence ici
-  async function confirmProfile() {
-    const confirmPwd = document.getElementById('confirm-profile-password').value;
-    
-    if (!confirmPwd) return alert("Veuillez entrer votre mot de passe pour confirmer.");
-    if (confirmPwd !== pendingPassword) return alert("Le mot de passe de confirmation ne correspond pas.");
+async function confirmProfile() {
+  const confirmPwd = document.getElementById('confirm-profile-password').value;
 
-    // 1. Création du compte (SignUp)
-    // On passe aussi Phone (Majuscule) dans les metadata au cas où le trigger l'utilise
-    const { data, error } = await sb.auth.signUp({ 
-        email: pendingEmail, 
-        password: pendingPassword,
-        options: { 
-            data: {
-                first_name: pendingProfile.first_name,
-                last_name: pendingProfile.last_name,
-                Phone: pendingProfile.phone // Attention à la casse ici
-            }
+  if (!confirmPwd) {
+    return alert("Veuillez entrer votre mot de passe pour confirmer.");
+  }
+  if (confirmPwd !== pendingPassword) {
+    return alert("Le mot de passe de confirmation ne correspond pas.");
+  }
+
+  // Désactiver le bouton / indiquer chargement si nécessaire (optionnel)
+  try {
+    console.log("Tentative d'inscription pour", pendingEmail);
+
+    // 1) Inscription
+    const { data, error } = await sb.auth.signUp({
+      email: pendingEmail,
+      password: pendingPassword,
+      options: {
+        data: {
+          first_name: pendingProfile.first_name,
+          last_name: pendingProfile.last_name,
+          Phone: pendingProfile.phone
         }
+      }
     });
 
-    if (error) return alert("Erreur lors de l'inscription : " + error.message);
+    if (error) {
+      console.error("signUp error:", error);
+      throw error;
+    }
+    console.log("signUp data:", data);
 
-    // 2. Gestion Session & Profil
-    let session = data.session;
-    let user = data.user;
+    // signUp peut retourner session=user si la confirmation d'email n'est pas requise.
+    let user = data?.user;
+    let session = data?.session;
 
-    // Si signUp ne renvoie pas de session (ex: config email confirm), on tente un signIn forcé
-    if (!session) {
-        const { data: signInData } = await sb.auth.signInWithPassword({
-             email: pendingEmail,
-             password: pendingPassword
-        });
-        session = signInData.session;
-        user = signInData.user;
+    // 2) Si pas de session/user, tenter signIn (utile si signUp ne crée pas la session)
+    if (!user || !session) {
+      console.log("Aucune session renvoyée par signUp, tentative de connexion...");
+      const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({
+        email: pendingEmail,
+        password: pendingPassword
+      });
+
+      if (signInErr) {
+        // Ici, très probablement l'email confirmation est requis — informer l'utilisateur.
+        console.warn("signInWithPassword failed:", signInErr);
+        closeConfirmProfilePip();
+        toggleAuthMode(); // revenir à l'écran de connexion
+        alert("Compte créé. Vérifiez votre e‑mail pour confirmer votre compte avant de vous connecter.");
+        return;
+      }
+
+      user = signInData?.user;
+      session = signInData?.session;
+      console.log("signIn successful:", signInData);
     }
 
-    // Si on a une session, on peut écrire dans profiles (pour contourner RLS Anon)
-    if (session && user) {
-        const { error: pErr } = await sb.from('profiles').upsert([
-            { 
-                id: user.id, 
-                email: pendingEmail, 
-                first_name: pendingProfile.first_name,
-                last_name: pendingProfile.last_name,
-                Phone: pendingProfile.phone, // "Phone" avec majuscule (comme dans saveProfileInfo)
-                role: 'user' 
-            }
-        ]);
-        
-        if (pErr) console.error("Erreur insertion profil:", pErr);
-        
-        // 3. Redirection Réussie
-        closeConfirmProfilePip();
-        initApp(user);
-    } else {
-        // Cas où même le signIn échoue (ex: Email confirmation strict obligatoire avant login)
-        alert("Compte créé ! Veuillez vérifier vos emails pour valider le compte avant de vous connecter.");
-        closeConfirmProfilePip();
-        toggleAuthMode(); // Retour au login
+    // 3) Récupérer l'utilisateur authentifié via le client (sécurise la source de user)
+    const { data: getUserData, error: getUserErr } = await sb.auth.getUser();
+    if (getUserErr) {
+      console.warn("getUser warning:", getUserErr);
     }
+    const current = getUserData?.user || user;
+    if (!current) throw new Error("Impossible de récupérer l'utilisateur authentifié.");
+
+    // 4) Upsert dans profiles (vérifier et remonter l'erreur)
+    const profilePayload = {
+      id: current.id,
+      email: pendingEmail,
+      first_name: pendingProfile.first_name || '',
+      last_name: pendingProfile.last_name || '',
+      Phone: pendingProfile.phone || '',
+      role: 'user'
+    };
+
+    console.log("Upsert profile payload:", profilePayload);
+    const { error: pErr } = await sb.from('profiles').upsert([profilePayload]);
+
+    if (pErr) {
+      console.error("Erreur upsert profile:", pErr);
+      // Si une policy RLS bloque l'opération, pErr contiendra l'information — afficher à l'utilisateur.
+      alert("Erreur lors de la sauvegarde du profil : " + (pErr.message || JSON.stringify(pErr)));
+      return;
+    }
+
+    // 5) Tout OK : fermer pip et initialiser l'app
+    closeConfirmProfilePip();
+    initApp(current);
+  } catch (err) {
+    console.error("confirmProfile catch:", err);
+    alert("Une erreur est survenue : " + (err.message || JSON.stringify(err)));
+  } finally {
+    // réactiver bouton si désactivé
   }
+}
+
+    
   // Fin de la partie ajoutée/modifiée ici
 
   async function logout() { await sb.auth.signOut(); location.reload(); }
@@ -631,3 +669,4 @@
 </script>
 </body>
 </html>
+
