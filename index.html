@@ -774,20 +774,20 @@ function getSelectedDays() {
     return Array.from(checkboxes).map(cb => dayToNum[cb.value]);
 }
 async function requestAdminSubmit() {
+    const dateStr = document.getElementById('admin-date').value;
+    const startTime = document.getElementById('admin-start').value;
     const now = new Date();
     const selectedDateTime = new Date(`${dateStr}T${startTime}`);
+    const eventId = document.getElementById('admin-event-id').value;
+    const title = document.getElementById('admin-title').value;
+    const location = document.getElementById('admin-loc').value;
+    const endTime = document.getElementById('admin-end').value;
+    const maxParticipants = document.getElementById('admin-max').value || 99;
+    const selectedDays = getSelectedDays();
     if (selectedDateTime < now) {
         alert("L'heure choisie est déjà passée !");
         return;
     }
-    const eventId = document.getElementById('admin-event-id').value;
-    const title = document.getElementById('admin-title').value;
-    const location = document.getElementById('admin-loc').value;
-    const dateStr = document.getElementById('admin-date').value;
-    const startTime = document.getElementById('admin-start').value;
-    const endTime = document.getElementById('admin-end').value;
-    const maxParticipants = document.getElementById('admin-max').value || 99;
-    const selectedDays = getSelectedDays();
 
     // 1. VERIFICATION CHAMPS OBLIGATOIRES
     if (!title || !dateStr || !startTime || !endTime) {
@@ -945,86 +945,64 @@ async function loadEvents() {
     const grid = document.getElementById('calendar-grid');
     if (!grid) return;
 
-    // 1. Déterminer les dates du mois à afficher
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = (new Date(year, month, 1).getDay() || 7) - 1;
+    const lastDay = new Date(year, month + 1, 0).getDate();
     
-    // Ajustement pour que lundi soit le premier jour (si ton calendrier commence par Lundi)
-    let startOffset = firstDay.getDay() - 1;
-    if (startOffset === -1) startOffset = 6; 
-
-    // 2. Récupérer les données Supabase
+    // Récupérer les données
     const { data: events, error } = await sb
         .from('events')
-        .select('*')
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .select('*, registrations(id, user_id)')
+        .gte('date', new Date(year, month, 1).toISOString().split('T')[0])
+        .lte('date', new Date(year, month + 1, 0).toISOString().split('T')[0]);
 
-    if (error) {
-        console.error("Erreur chargement events:", error);
-        return;
-    }
+    if (error) return console.error("Erreur:", error);
 
     grid.innerHTML = '';
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    // 3. Créer les cases vides du début
-    for (let i = 0; i < startOffset; i++) {
-        grid.innerHTML += `<div class="calendar-day empty"></div>`;
-    }
+    // Cases vides
+    for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
 
-    // 4. Créer les cases des jours
-    for (let day = 1; day <= lastDay.getDate(); day++) {
+    // Cases des jours
+    for (let day = 1; day <= lastDay; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayEvents = events.filter(e => e.date === dateStr);
-        // À l'intérieur de la boucle for (let day = 1...) de loadEvents
-        const today = new Date();
-        today.setHours(0,0,0,0); 
-        const currentDayDate = new Date(dateStr);
-        const isPast = currentDayDate < today;
+        const isPast = dateStr < todayStr;
+        const isAdmin = currentProfile?.role === 'admin';
         
-        grid.innerHTML += `
-            <div class="calendar-day ${isPast ? 'bg-slate-100/50 cursor-not-allowed' : ''}">
-                <div class="flex justify-between items-start">
-                    <span class="text-xs font-bold ${isPast ? 'text-slate-300' : ''}">${day}</span>
-                    ${isAdmin ? `
-                        <button onclick="${isPast ? '' : `handleDayClick('${dateStr}')`}" 
-                                class="text-[10px] ${isPast ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white'} px-2 py-1 rounded-lg font-bold"
-                                ${isPast ? 'title="Date non sélectionnable."' : ''}>
-                            Ajouter
-                        </button>
-                    ` : ''}
-                </div>
-                <div class="overflow-y-auto flex-1">${eventsHtml}</div>
-            </div>
-        `;
+        // Filtrer les events du jour
+        const dayEvents = events.filter(e => e.date === dateStr);
+        
         let eventsHtml = '';
         dayEvents.forEach(ev => {
-            const isOwner = ev.owner_id === currentUser.id;
-            const isAdmin = profile?.role === 'admin';
-            
-            // Logique Point 6 : Icône différente si on est propriétaire ou non
+            const isOwner = ev.owner_id === currentUser?.id;
             eventsHtml += `
-                <div class="flex items-center gap-1 mb-1 group cursor-pointer" onclick="openEventDetails('${ev.id}')">
+                <div class="flex items-center gap-1 mb-1 cursor-pointer" onclick="event.stopPropagation(); openEventDetails('${ev.id}')">
                     <span class="event-dot dot-blue"></span>
                     <span class="text-[9px] font-bold truncate flex-1">${ev.title}</span>
-                    ${isAdmin ? `
-                        <span class="text-[10px] ${isOwner ? 'text-blue-500' : 'text-slate-300'}" 
-                              title="${isOwner ? 'Modifier' : 'Vous n\'êtes pas propriétaire'}">
-                            ${isOwner ? '✎' : '🔒'}
-                        </span>
-                    ` : ''}
+                    ${isAdmin ? `<span class="text-[10px] ${isOwner ? 'text-blue-500' : 'text-slate-300'}">${isOwner ? '✎' : '🔒'}</span>` : ''}
                 </div>
             `;
         });
 
-        grid.innerHTML += `
-            <div class="calendar-day" onclick="handleDayClick('${dateStr}')">
-                <span class="text-xs font-bold mb-1">${day}</span>
-                <div class="overflow-y-auto flex-1">${eventsHtml}</div>
+        const dayCell = document.createElement('div');
+        dayCell.className = `calendar-day ${isPast ? 'bg-slate-50/50' : ''}`;
+        dayCell.onclick = () => isPast ? null : handleDayClick(dateStr);
+
+        dayCell.innerHTML = `
+            <div class="flex justify-between items-start w-full">
+                <span class="text-xs font-bold ${isPast ? 'text-slate-300' : 'text-slate-400'}">${day}</span>
+                ${isAdmin ? `
+                    <button class="text-[9px] ${isPast ? 'bg-slate-100 text-slate-300' : 'bg-blue-600 text-white'} px-1.5 py-0.5 rounded font-bold" 
+                            ${isPast ? 'title="Date passée" disabled' : ''}>
+                        Ajouter
+                    </button>
+                ` : ''}
             </div>
+            <div class="overflow-y-auto flex-1 w-full mt-1">${eventsHtml}</div>
         `;
+        grid.appendChild(dayCell);
     }
 }
 // Quand on clique sur une case vide (pour créer un event)
@@ -1068,6 +1046,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
 
