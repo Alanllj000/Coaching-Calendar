@@ -1618,16 +1618,44 @@ async function confirmAdminUpdate() {
     cancelEditChoice();
 }
 function resetAdminForm() {
-    document.getElementById('admin-title').value = "";
-    document.getElementById('admin-event-id').value = "";
-    document.getElementById('admin-start').value = "";
-    document.getElementById('admin-end').value = "";
-    const desc = document.getElementById('admin-desc');
-    if (desc) desc.value = "";
+    // 1. ON VIDE L'ID (Indispensable pour débloquer la création)
+    const idField = document.getElementById('admin-event-id');
+    if (idField) idField.value = "";
+
+    // 2. ON VIDE VISUELLEMENT LES CHAMPS TEXTES
+    // On cible précisément les IDs que tu utilises dans requestAdminSubmit
+    const fieldsToClear = [
+        'admin-title',
+        'admin-start',
+        'admin-end',
+        'admin-loc', // <-- Ajout du lieu ici
+        'admin-max'  // On peut aussi reset le max à 99 par défaut
+    ];
+
+    fieldsToClear.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            // Pour le nombre de participants, on remet la valeur par défaut
+            if (id === 'admin-max') {
+                el.value = 99;
+            } else {
+                el.value = ""; // Vide le texte visuellement
+            }
+        }
+    });
+
+    // 3. ON DÉCOCHE LES JOURS (VISUEL)
     document.querySelectorAll('.day-checkbox').forEach(cb => {
         cb.checked = false;
+        // Si tu utilises un style CSS sur le parent (ex: bg-blue quand coché)
+        // assure-toi de retirer la classe ici si nécessaire.
     });
-    document.getElementById('admin-title').focus();
+
+    // 4. ON GARDE LA DATE
+    // On ne touche pas à document.getElementById('admin-date').value
+    // pour que l'admin garde son repère temporel.
+
+    console.log("Formulaire réinitialisé visuellement.");
 }
     
 
@@ -1649,4 +1677,5 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
