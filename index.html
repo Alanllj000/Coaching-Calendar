@@ -1021,10 +1021,9 @@ async function startEditing(eventId) {
     const delBtn = document.getElementById('admin-delete-btn');
     if (delBtn) delBtn.classList.remove('hidden');
 }
-
 async function requestAdminSubmit(isConfirmed = false) {
     const title = document.getElementById('admin-title').value;
-    const dateStr = document.getElementById('admin-date').value;
+    const dateStr = document.getElementById('admin-date').value; // Format YYYY-MM-DD
     const startTime = document.getElementById('admin-start').value;
     const endTime = document.getElementById('admin-end').value;
     const location = document.getElementById('admin-loc').value;
@@ -1033,18 +1032,25 @@ async function requestAdminSubmit(isConfirmed = false) {
 
     if (!title || !dateStr || !startTime) return alert("Champs obligatoires manquants");
 
-    // Sécurité ID
+    // Sécurité ID Propriétaire
     const ownerId = currentUser?.id || (await sb.auth.getUser()).data.user?.id;
     if (!ownerId) return alert("Session expirée.");
 
+    // --- CORRECTION TIMEZONE : On force Midi pour éviter le décalage de jour ---
     const [y, m, d_parts] = dateStr.split('-').map(Number);
-    const selectedDateTime = new Date(y, m - 1, d_parts);
+    const selectedDateTime = new Date(y, m - 1, d_parts, 12, 0, 0); 
+    
     const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
 
     // Vérification date passée
     const today = new Date();
-    today.setHours(0,0,0,0);
-    if (selectedDateTime < today && !isConfirmed) {
+    today.setHours(0, 0, 0, 0);
+    
+    // On compare minuit avec minuit
+    const comparisonDate = new Date(selectedDateTime);
+    comparisonDate.setHours(0,0,0,0);
+
+    if (comparisonDate < today && !isConfirmed) {
         openConfirmPastEventPip(dateStr, selectedDays.length > 0);
         return;
     }
@@ -1057,8 +1063,13 @@ async function requestAdminSubmit(isConfirmed = false) {
     try {
         // 1. CRÉATION DU PREMIER ÉVÉNEMENT (LE PARENT)
         const { data: createdEvents, error: pError } = await sb.from('events').insert([{ 
-            title, location, date: dateStr, start_time: startTime, end_time: endTime, 
-            max_participants: maxParticipants, owner_id: ownerId, 
+            title, 
+            location, 
+            date: dateStr, 
+            start_time: startTime, 
+            end_time: endTime, 
+            max_participants: maxParticipants, 
+            owner_id: ownerId, 
             is_recurring: (selectedDays.length > 0), 
             recurrence_days: (selectedDays.length > 0 ? selectedDays : null)
         }]).select();
@@ -1071,27 +1082,39 @@ async function requestAdminSubmit(isConfirmed = false) {
         // 2. CRÉATION DES OCCURRENCES SI SÉRIE
         if (selectedDays.length > 0) {
             const occs = [];
-            const startDateStr = parent.date; // On stocke la date du parent pour comparer
-
+            
+            // On boucle sur 365 jours pour créer la récurrence
             for (let i = 1; i <= 365; i++) {
-                let nextDate = new Date(y, m - 1, d_parts);
+                // On repart toujours de la date de base à Midi
+                let nextDate = new Date(y, m - 1, d_parts, 12, 0, 0);
                 nextDate.setDate(nextDate.getDate() + i);
                 
                 const dayName = DAY_NAMES[nextDate.getDay()];
-                const nextDateStr = nextDate.toISOString().split('T')[0];
+                
+                // Formatage manuel YYYY-MM-DD pour éviter le décalage de toISOString()
+                const nY = nextDate.getFullYear();
+                const nM = String(nextDate.getMonth() + 1).padStart(2, '0');
+                const nD = String(nextDate.getDate()).padStart(2, '0');
+                const nextDateStr = `${nY}-${nM}-${nD}`;
 
-                // SÉCURITÉ : On n'ajoute que si c'est un jour coché ET différent du parent
-                if (selectedDays.includes(dayName) && nextDateStr !== startDateStr) {
+                // SÉCURITÉ DOUBLON : La boucle commence à i=1, 
+                // donc nextDateStr sera forcément différent de dateStr.
+                if (selectedDays.includes(dayName)) {
                     occs.push({ 
-                        title, location, date: nextDateStr, 
-                        start_time: startTime, end_time: endTime, 
+                        title, 
+                        location, 
+                        date: nextDateStr, 
+                        start_time: startTime, 
+                        end_time: endTime, 
                         max_participants: maxParticipants, 
-                        owner_id: ownerId, is_recurring: true, 
+                        owner_id: ownerId, 
+                        is_recurring: true, 
                         parent_event_id: parent.id 
                     });
                 }
             }
 
+            // Insertion par lots (plus performant)
             if (occs.length > 0) {
                 const { error: occError } = await sb.from('events').insert(occs);
                 if (occError) throw occError;
@@ -1101,11 +1124,13 @@ async function requestAdminSubmit(isConfirmed = false) {
         alert("Succès !");
         closeAdminPanel();
         await fetchEvents();
+        
     } catch (err) {
         console.error("Détail de l'erreur :", err);
         alert("Erreur lors de la création : " + (err.message || "vérifiez la console"));
     }
 }
+
 async function handleUpdate(eventId) {
     // 1. On vérifie si l'événement est récurrent via le cache
     const event = eventsCache.find(e => e.id === eventId);
@@ -1611,12 +1636,3 @@ window.onload = async function() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
