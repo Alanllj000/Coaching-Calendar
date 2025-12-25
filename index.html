@@ -895,44 +895,88 @@ async function openEventDetails(eventId) {
     const event = eventsCache.find(e => e.id === eventId);
     if (!event) return;
 
-    // 1. Récupération du User ID actuel
-    const currentUserId = (await sb.auth.getUser()).data.user?.id;
+    // 1. Récupération du User ID actuel pour le contrôle propriétaire
+    const { data: { user } } = await sb.auth.getUser();
+    const currentUserId = user?.id;
     const isOwner = (event.owner_id === currentUserId);
 
-    // 2. On ouvre d'abord une PiP de détails (ou on injecte dans la zone existante)
-    // Ici, j'adapte pour que le bouton "Modifier" n'apparaisse que pour le propriétaire
     const detailZone = document.getElementById('mobile-pip-zone');
     if (!detailZone) return;
 
     detailZone.classList.add('modal-mode');
     detailZone.style.display = 'flex';
+    detailZone.style.pointerEvents = 'auto';
 
-    // On crée l'interface avec le bouton Modifier discret (icône + texte)
     detailZone.innerHTML = `
         <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
-            <div class="flex justify-between items-start mb-6">
-                <h3 class="text-2xl font-black text-slate-800 uppercase">${event.title}</h3>
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h3 class="text-2xl font-black text-slate-800 uppercase tracking-tight">${event.title}</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Détails de la séance</p>
+                </div>
                 
                 ${isOwner ? `
-                    <button onclick="startEditing('${event.id}')" class="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors group">
-                        <span class="text-xs font-bold uppercase tracking-widest">Modifier</span>
+                    <button onclick="startEditing('${event.id}')" class="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors group p-2">
+                        <span class="text-[10px] font-black uppercase tracking-widest">Modifier</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
-                ` : `<span class="text-[10px] text-slate-300 uppercase font-bold tracking-tighter">Lecture seule</span>`}
+                ` : `
+                    <div class="px-3 py-1 bg-slate-50 rounded-full">
+                         <span class="text-[9px] text-slate-400 uppercase font-black tracking-tighter">Consultation</span>
+                    </div>
+                `}
             </div>
 
-            <div class="space-y-4 text-slate-600 text-sm">
-                <p><strong>Lieu :</strong> ${event.location}</p>
-                <p><strong>Date :</strong> ${new Date(event.date).toLocaleDateString('fr-FR')}</p>
-                <p><strong>Horaire :</strong> ${event.start_time.substring(0, 5)} - ${event.end_time.substring(0, 5)}</p>
+            <div class="grid grid-cols-1 gap-6 mb-8 text-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Lieu</p>
+                        <p class="font-bold text-slate-700">${event.location}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 01-2-2V7a2 2 0 012-2H5a2 2 0 01-2 2v12a2 2 0 012 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Date & Horaire</p>
+                        <p class="font-bold text-slate-700">
+                            ${new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} | ${event.start_time.substring(0, 5)} - ${event.end_time.substring(0, 5)}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Capacité max.</p>
+                        <p class="font-bold text-slate-700">${event.max_participants} participants</p>
+                    </div>
+                </div>
             </div>
 
-            <button onclick="closeMobilePip()" class="w-full mt-8 py-4 bg-slate-100 text-slate-500 rounded-xl font-bold text-xs uppercase tracking-widest">Fermer</button>
+            <button onclick="closeMobilePip()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all">
+                Fermer
+            </button>
         </div>
     `;
 }
+    
 async function startEditing(eventId) {
     const event = eventsCache.find(e => e.id === eventId);
     const currentUserId = (await sb.auth.getUser()).data.user?.id;
@@ -1553,6 +1597,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
