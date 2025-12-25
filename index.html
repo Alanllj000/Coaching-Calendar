@@ -1687,43 +1687,61 @@ function closeDeleteAccountPip() {
 // Logique de suppression
 async function handleDeleteAccount() {
     const user = (await sb.auth.getUser()).data.user;
-    if (!user) return alert("Utilisateur non trouvé.");
+    if (!user) return alert("Session expirée.");
+
+    // Optionnel : Désactiver le bouton pour éviter les doubles clics
+    const btn = document.querySelector('#delete-account-pip button');
+    if(btn) btn.disabled = true;
 
     try {
-        // 1. Supprimer les inscriptions aux événements (registrations/participations)
-        // On nettoie la table où l'user est inscrit
-        const { error: errorInsc } = await sb
-            .from('event_registrations') // remplace par ton nom de table exact
-            .delete()
-            .eq('user_id', user.id);
+        // 1. Supprimer ses inscriptions aux événements (registrations)
+        await sb.from('registrations').delete().eq('user_id', user.id);
+
+        // 2. Supprimer ses rappels personnalisés
+        await sb.from('custom_reminders').delete().eq('user_id', user.id);
+
+        // 3. Supprimer ses réglages de notifications
+        await sb.from('notification_settings').delete().eq('user_id', user.id);
+
+        // 4. Supprimer le profil public
+        const { error: profError } = await sb.from('profiles').delete().eq('id', user.id);
+        if (profError) throw profError;
+
+        // NOTE : On ne touche pas à 'registre_events' comme demandé.
+
+        // 5. Supprimer définitivement l'utilisateur de l'Auth via la fonction SQL
+        const { error: rpcError } = await sb.rpc('delete_own_user');
         
-        if (errorInsc) console.warn("Erreur suppression inscriptions:", errorInsc);
+        if (rpcError) {
+            console.error("Erreur RPC Auth:", rpcError);
+            // Si le RPC échoue, on tente au moins de déconnecter
+            await sb.auth.signOut();
+        }
 
-        // 2. Supprimer le profil public (public.profiles)
-        const { error: errorProfile } = await sb
-            .from('profiles')
-            .delete()
-            .eq('id', user.id);
-
-        if (errorProfile) throw errorProfile;
-
-        // 3. Suppression de l'Auth (auth.users)
-        /* ATTENTION : Supabase interdit à un utilisateur de se supprimer lui-même 
-           via le client JS pour des raisons de sécurité. 
-           La méthode standard est d'appeler une Edge Function.
-           En attendant, on déconnecte l'utilisateur après avoir vidé ses données.
-        */
-        
-        // On déconnecte (cela nettoie le localstorage et invalide la session)
-        await sb.auth.signOut();
-
-        alert("Votre compte et vos données ont été supprimés.");
-        window.location.reload(); // Retour à l'accueil / login
+        alert("Votre compte et vos données personnelles ont été supprimés.");
+        window.location.href = "/"; // Redirection vers l'accueil
 
     } catch (err) {
-        console.error("Erreur suppression compte:", err);
-        alert("Une erreur est survenue lors de la suppression technique.");
+        console.error("Erreur lors de la suppression du compte:", err);
+        alert("Une erreur est survenue lors de la suppression.");
+        if(btn) btn.disabled = false;
     }
+}
+
+// Fonctions d'ouverture/fermeture
+function openDeleteAccountPip() {
+    // Ferme les réglages si ouverts
+    const settingsPip = document.getElementById('settings-pip');
+    if (settingsPip) settingsPip.classList.add('hidden');
+    
+    document.getElementById('delete-account-pip').classList.remove('hidden');
+}
+
+function closeDeleteAccountPip() {
+    document.getElementById('delete-account-pip').classList.add('hidden');
+    // On peut rouvrir les réglages ici
+    const settingsPip = document.getElementById('settings-pip');
+    if (settingsPip) settingsPip.classList.remove('hidden');
 }
 
 // --- INITIALISATION ---
@@ -1744,6 +1762,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
