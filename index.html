@@ -561,12 +561,17 @@ function renderCalendar() {
     const lastDate = new Date(y, m + 1, 0).getDate();
     const todayStr = new Date().toISOString().split('T')[0];
 
-    for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
+    // 1. Cases vides (début de mois) : on les rend invisibles
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="calendar-day opacity-0 pointer-events-none"></div>`;
+    }
 
+    // 2. Cases des jours réels
     for (let d = 1; d <= lastDate; d++) {
         const dateStr = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
         const loopD = new Date(y, m, d);
         const isPast = dateStr < todayStr;
+        const isToday = new Date().toDateString() === loopD.toDateString();
 
         const dayEvts = eventsCache.filter(function(e) {
             const isD = e.date === dateStr;
@@ -576,16 +581,30 @@ function renderCalendar() {
         });
 
         const cell = document.createElement('div');
-        cell.className = 'calendar-day' + (isPast ? ' bg-slate-50/50' : '');
-        cell.onclick = function() { if(!isPast) openDayPip(dateStr, dayEvts); };
+        
+        // --- STYLE DIFFÉRENCIÉ ---
+        // Passé : fond gris très léger / Futur : fond blanc + ombre légère
+        cell.className = `calendar-day border border-slate-100 transition-all ${isPast ? 'bg-slate-50/80' : 'bg-white shadow-sm'}`;
+        
+        // Mise en avant du jour actuel
+        if (isToday) cell.classList.add('ring-2', 'ring-blue-500', 'ring-inset');
+
+        // On réactive le clic sur TOUS les jours (passés inclus)
+        cell.onclick = function() { openDayPip(dateStr, dayEvts); };
 
         let dotsHtml = dayEvts.map(function(e) {
             const regCount = (e.registrations && e.registrations.length) || 0;
-            return `<span class="event-dot ${regCount >= e.max_participants ? 'dot-red' : 'dot-blue'}"></span>`;
+            const isFull = regCount >= e.max_participants;
+            
+            // Si c'est passé, on met les points en gris pour ne pas distraire l'oeil
+            if (isPast) return `<span class="event-dot bg-slate-300"></span>`;
+            
+            // Sinon, rouge si complet, bleu si dispo
+            return `<span class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
         }).join('');
 
         cell.innerHTML = `
-            <span class="text-[10px] font-black ${new Date().toDateString() === loopD.toDateString() ? 'text-blue-600' : 'text-slate-400'}">${d}</span>
+            <span class="text-[10px] font-black ${isPast ? 'text-slate-300' : (isToday ? 'text-blue-600' : 'text-slate-500')}">${d}</span>
             <div class="mt-auto flex flex-wrap gap-1">${dotsHtml}</div>
         `;
         grid.appendChild(cell);
@@ -873,6 +892,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
