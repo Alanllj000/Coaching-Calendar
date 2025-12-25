@@ -1076,17 +1076,45 @@ function openConfirmPastEventPip(selectedDate, isRecurring) {
     const zone = document.getElementById('mobile-pip-zone');
     if (!zone) return;
 
-    // On active le mode "Modale centrale"
+    // 1. On active le mode "Modale centrale" (flou + centrage)
     zone.classList.add('modal-mode');
     zone.style.display = 'flex';
+    zone.style.pointerEvents = 'auto';
 
-    // ... (le reste de ton code innerHTML est identique) ...
-    const message = isRecurring ? "..." : "..."; 
-    zone.innerHTML = `...`; // Garde le contenu précédent
+    // 2. Préparation du message personnalisé
+    const message = isRecurring 
+        ? `Vous avez sélectionné le <b>${selectedDate}</b> pour le départ de votre série d'évent. Tous les évents avant aujourd'hui ne seront pas accessibles pour les utilisateurs. Etes-vous sûr de votre date de départ ?`
+        : `Vous avez sélectionné le <b>${selectedDate}</b> pour votre évent alors que la date est déjà passée. Etes-vous sûr qu'il s'agit de la bonne date ?`;
 
+    // 3. Injection du HTML
+    zone.innerHTML = `
+        <div class="mobile-pip-card border-t-8 border-orange-500 bg-white p-6 rounded-3xl shadow-2xl">
+            <div class="flex flex-col items-center">
+                <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-black text-slate-800 mb-2 uppercase tracking-tight">Vérification</h3>
+                <p class="text-[13px] text-slate-500 text-center mb-8 leading-relaxed">${message}</p>
+                
+                <div class="flex flex-col w-full gap-2">
+                    <button id="btn-confirm-past"
+                            class="w-full p-4 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-colors cursor-pointer">
+                        Oui, Enregistrer
+                    </button>
+                    <button onclick="closeMobilePip()" 
+                            class="w-full p-4 bg-slate-100 text-slate-500 rounded-2xl font-bold text-xs uppercase tracking-widest cursor-pointer">
+                        Annuler
+                    </button>
+                </div>
+            </div>
+        </div>`;
+
+    // 4. Liaison de l'événement clic pour le bouton de confirmation
     document.getElementById('btn-confirm-past').onclick = function() {
-        closeMobilePip();
-        requestAdminSubmit(true);
+        closeMobilePip(); // Ferme la PiP et retire le flou
+        requestAdminSubmit(true); // Relance la sauvegarde avec l'autorisation (isConfirmed = true)
     };
 }
 
@@ -1105,6 +1133,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
