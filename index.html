@@ -757,8 +757,7 @@ async function handleUpdate(eventId) {
         alert("Erreur modification");
     }
 }
-
-async function requestAdminSubmit() {
+async function requestAdminSubmit(isConfirmed = false) {
     const eventId = document.getElementById('admin-event-id').value;
     const title = document.getElementById('admin-title').value;
     const dateStr = document.getElementById('admin-date').value;
@@ -769,29 +768,34 @@ async function requestAdminSubmit() {
 
     if (!title || !dateStr || !startTime) return alert("Champs obligatoires manquants");
 
+    // --- LOGIQUE DE VÉRIFICATION DATE PASSÉE ---
     const now = new Date();
-    if (new Date(dateStr + 'T' + startTime) < now) return alert("Date passée !");
+    const selectedDateTime = new Date(dateStr + 'T' + startTime);
+    const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
 
+    // Si c'est dans le passé et pas encore confirmé par la PiP
+    if (selectedDateTime < now && !isConfirmed) {
+        openConfirmPastEventPip(dateStr, selectedDays.length > 0);
+        return; // On stoppe ici, la PiP prend le relais
+    }
+
+    // --- REPRISE DE TA LOGIQUE INITIALE ---
     if (eventId) {
         await handleUpdate(eventId);
         return;
     }
 
-    const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(function(cb) { return cb.value; });
-    
     if (selectedDays.length === 0) {
         await sb.from('events').insert([{ 
             title: title, location: location, date: dateStr, start_time: startTime, end_time: endTime, 
             max_participants: maxParticipants, owner_id: currentUser.id, is_recurring: false 
         }]);
     } else {
-        // Logique récurrence simplifiée
         const { data: parent } = await sb.from('events').insert([{ 
             title: title, location: location, date: dateStr, start_time: startTime, end_time: endTime, 
             max_participants: maxParticipants, owner_id: currentUser.id, is_recurring: true, recurrence_days: selectedDays 
         }]).select().single();
 
-        // Génération simplifiée 10 occurrences pour l'exemple
         const occs = [];
         let d = new Date(dateStr);
         for(let i=0; i<30; i++) {
@@ -810,6 +814,7 @@ async function requestAdminSubmit() {
     closeAdminPanel();
     await fetchEvents();
 }
+
 
 // --- PARAMETRES PROFIL ---
 function checkProfileChanges() {
@@ -1090,6 +1095,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
