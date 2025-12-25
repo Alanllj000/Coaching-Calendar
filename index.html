@@ -49,63 +49,46 @@
         .dot-red { background-color: #ef4444; }
         .dot-gray { background-color: #94a3b8; }
 
-       /* --- 1. STYLE DE BASE (Pour tes Day PiP classiques) --- */
-#mobile-pip-zone {
-    position: fixed;
-    inset: 0;
-    z-index: 1500;
-    display: none;
-    pointer-events: none;
-    /* Alignement en bas pour les détails d'évent */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end; 
-    align-items: center;
-}
-
-/* --- 2. TES PARAMÈTRES EXACTS (Pour la Confirmation) --- */
-#mobile-pip-zone.modal-mode {
-    display: flex !important;
-    align-items: center !important;     /* Tes paramètres : centré */
-    justify-content: center !important;  /* Tes paramètres : centré */
-    background: rgba(15, 23, 42, 0.4);   /* Ton fond sombre */
-    backdrop-filter: blur(8px);          /* Ton flou */
-    -webkit-backdrop-filter: blur(8px);
-    pointer-events: auto !important;
-    z-index: 9999; 
-}
-
-/* --- 3. STYLE DE LA CARTE --- */
-/* Commun aux deux, mais on ajuste selon le mode */
-.mobile-pip-card {
-    background: white;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    pointer-events: auto;
-}
-
-/* Applique ton animation popIn seulement en mode confirmation */
-#mobile-pip-zone.modal-mode .mobile-pip-card {
-    width: 100%;
-    max-width: 340px;
-    border-radius: 24px;
-    padding: 24px;
-    transform: scale(0.9);
-    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* Style "Tiroir" pour tes Day PiP classiques */
-#mobile-pip-zone:not(.modal-mode) .mobile-pip-card {
-    width: 100%;
-    max-width: 100%;
-    border-radius: 24px 24px 0 0;
-    padding: 20px;
-    /* Ici pas d'animation popIn pour garder l'effet tiroir du bas */
-}
-
-@keyframes popIn {
-    to { transform: scale(1); opacity: 1; }
-}
+       #mobile-pip-zone {
+            position: fixed;
+            inset: 0;
+            z-index: 1500;
+            display: none;
+            align-items: flex-end; /* Aligné en bas par défaut */
+            pointer-events: none;
+            background: transparent;
+            transition: background 0.3s ease;
+        }
         
+        /* Quand on l'ouvre pour un jour (clic calendrier) */
+        #mobile-pip-zone:not(.modal-mode) {
+            background: transparent; /* PAS de fond sombre pour voir le calendrier */
+            backdrop-filter: none;    /* PAS de flou */
+        }
+        /* --- LE MODE MODALE (Pour la confirmation au centre) --- */
+        #mobile-pip-zone.modal-mode {
+            align-items: center; /* Centre verticalement */
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.6); /* Fond sombre */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            pointer-events: auto;
+            z-index: 9999;
+            display: flex;
+        }
+        
+        /* On s'assure que la carte est cliquable dans les deux cas */
+        .mobile-pip-card {
+            pointer-events: auto;
+            background: white;
+            width: 100%;
+            border-radius: 30px 30px 0 0; /* Look "tiroir" */
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+        }
+        @keyframes popIn {
+            to { transform: scale(1); opacity: 1; }
+        }
+
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
         .fullscreen-pip {
@@ -677,11 +660,16 @@ function renderCalendar() {
 }
 
 // --- PIP DETAILS JOUR ---
-function openDayPip(dateStr, events) {
+function openDayPip(dateStr, events = []) {
     const zone = document.getElementById('mobile-pip-zone');
+    if (!zone) return;
+
+    // --- SÉCURITÉ : On réinitialise l'état pour l'affichage "Tiroir du bas" ---
+    zone.classList.remove('modal-mode'); 
+    zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
     
-    // On compare avec la date du jour (YYYY-MM-DD)
+    // On compare avec la date du jour
     const todayStr = new Date().toISOString().split('T')[0];
     const isDatePast = dateStr < todayStr;
     const isAdmin = currentProfile && currentProfile.role === 'admin';
@@ -693,18 +681,18 @@ function openDayPip(dateStr, events) {
             <div class="flex items-center justify-between p-5 border-b border-slate-50">
                 <div>
                     <span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>
-                    ${isAdmin ? 
-                        (isDatePast ? 
-                            `<span class="text-slate-300 font-bold text-[10px] block mt-1 uppercase line-through cursor-not-allowed" title="Impossible d'ajouter dans le passé">Ajouter</span>` : 
-                            `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>`
-                        ) : ''
+                    ${isAdmin ? `
+                        <button onclick="openAdminFromPip('${dateStr}')" 
+                                class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">
+                            ${isDatePast ? '➕ Ajouter (Date passée)' : 'Ajouter'}
+                        </button>` : ''
                     }
                 </div>
-                <button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button>
+                <button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-xl">&times;</button>
             </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3">`;
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-10">`;
 
-    if(!events.length) {
+    if (!events || !events.length) {
         html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
     } else {
         events.forEach(function(e) {
@@ -715,10 +703,10 @@ function openDayPip(dateStr, events) {
 
             html += `
                 <div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between ${isDatePast ? 'opacity-60' : ''}">
-                    <div onclick="${isAdmin ? "openEventDetails('"+e.id+"')" : ""}" class="${isAdmin ? "cursor-pointer" : ""}">
-                        <h4 class="font-black text-slate-800">${e.title} ${isAdmin && isOwner ? '✎' : ''}</h4>
+                    <div onclick="${isAdmin ? "openEventDetails('" + e.id + "')" : ""}" class="${isAdmin ? "cursor-pointer" : ""}">
+                        <h4 class="font-black text-slate-800 text-sm">${e.title} ${isAdmin && isOwner ? '✎' : ''}</h4>
                         <div class="flex gap-2 text-[10px] font-bold text-blue-600">
-                            <span>${e.start_time.substring(0,5)}</span>
+                            <span>${e.start_time.substring(0, 5)}</span>
                             <span class="text-slate-400">${e.location}</span>
                         </div>
                     </div>
@@ -735,6 +723,7 @@ function openDayPip(dateStr, events) {
                 </div>`;
         });
     }
+
     zone.innerHTML = html + `</div></div>`;
 }
 
@@ -1160,6 +1149,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
