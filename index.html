@@ -1022,8 +1022,9 @@ async function startEditing(eventId) {
     if (delBtn) delBtn.classList.remove('hidden');
 }
 async function requestAdminSubmit(isConfirmed = false) {
-    const title = document.getElementById('admin-title').value;
-    const dateStr = document.getElementById('admin-date').value; // Format YYYY-MM-DD
+    resetAdminForm()
+    const dateStr = document.getElementById('admin-date').value;
+    const title = document.getElementById('admin-title').value; 
     const startTime = document.getElementById('admin-start').value;
     const endTime = document.getElementById('admin-end').value;
     const location = document.getElementById('admin-loc').value;
@@ -1616,7 +1617,19 @@ async function confirmAdminUpdate() {
     // On ferme la PiP de choix après succès
     cancelEditChoice();
 }
-
+function resetAdminForm() {
+    document.getElementById('admin-title').value = "";
+    document.getElementById('admin-event-id').value = "";
+    document.getElementById('admin-start').value = "";
+    document.getElementById('admin-end').value = "";
+    const desc = document.getElementById('admin-desc');
+    if (desc) desc.value = "";
+    document.querySelectorAll('.day-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+    document.getElementById('admin-title').focus();
+}
+    
 
 // --- INITIALISATION ---
 window.onload = async function() {
@@ -1636,3 +1649,4 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
