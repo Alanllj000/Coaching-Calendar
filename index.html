@@ -642,9 +642,8 @@ function renderCalendar() {
 
         const dayEvts = eventsCache.filter(function(e) {
             const isD = e.date === dateStr;
-            const isR = e.is_recurring && e.recurrence_days && e.recurrence_days.includes(DAY_NAMES[loopD.getDay()]) && new Date(e.date) <= loopD;
             const isNotExcluded = !e.excluded_dates || !e.excluded_dates.includes(dateStr);
-            return (isD || isR) && isNotExcluded;
+            return isD && isNotExcluded;
         });
 
         const cell = document.createElement('div');
@@ -1183,6 +1182,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
