@@ -895,37 +895,7 @@ async function openEventDetails(eventId) {
     if (delBtn) delBtn.classList.remove('hidden');
 }
 
-async function handleUpdate(eventId) {
-    const title = document.getElementById('admin-title').value;
-    const location = document.getElementById('admin-loc').value;
-    const dateStr = document.getElementById('admin-date').value;
-    const startTime = document.getElementById('admin-start').value;
-    const endTime = document.getElementById('admin-end').value;
-    const maxParticipants = document.getElementById('admin-max').value;
 
-    const changeAll = confirm("Modifier toute la série ? (Annuler pour cette séance uniquement)");
-
-    try {
-        if (changeAll) {
-            const event = eventsCache.find(function(e) { return e.id === eventId; });
-            const pId = event && event.parent_event_id ? event.parent_event_id : eventId;
-            
-            await sb.from('events').update({ 
-                title: title, location: location, start_time: startTime, end_time: endTime, max_participants: maxParticipants 
-            }).or('id.eq.' + pId + ',parent_event_id.eq.' + pId).gte('date', dateStr);
-        } else {
-            await sb.from('events').update({ 
-                title: title, location: location, date: dateStr, start_time: startTime, end_time: endTime, 
-                max_participants: maxParticipants, parent_event_id: null, is_recurring: false 
-            }).eq('id', eventId);
-        }
-        alert("Mis à jour !");
-        closeAdminPanel();
-        await fetchEvents();
-    } catch (err) {
-        alert("Erreur modification");
-    }
-}
 async function requestAdminSubmit(isConfirmed = false) {
     const title = document.getElementById('admin-title').value;
     const dateStr = document.getElementById('admin-date').value;
@@ -1010,7 +980,70 @@ async function requestAdminSubmit(isConfirmed = false) {
         alert("Erreur lors de la création : " + (err.message || "vérifiez la console"));
     }
 }
+async function handleUpdate(eventId) {
+    // 1. On vérifie si l'événement est récurrent via le cache
+    const event = eventsCache.find(e => e.id === eventId);
+    
+    if (event && event.is_recurring) {
+        // C'est une série : on ouvre la PiP de choix au lieu du confirm()
+        openConfirmUpdateSeriesPip(eventId);
+    } else {
+        // C'est un événement unique : on met à jour directement sans poser de question
+        await processUpdate(eventId, false);
+    }
+}
 
+async function processUpdate(eventId, changeAll) {
+    const title = document.getElementById('admin-title').value;
+    const location = document.getElementById('admin-loc').value;
+    const dateStr = document.getElementById('admin-date').value;
+    const startTime = document.getElementById('admin-start').value;
+    const endTime = document.getElementById('admin-end').value;
+    const maxParticipants = document.getElementById('admin-max').value;
+
+    try {
+        if (changeAll) {
+            // --- LOGIQUE SÉRIE ---
+            const event = eventsCache.find(e => e.id === eventId);
+            const pId = (event && event.parent_event_id) ? event.parent_event_id : eventId;
+            
+            // Mise à jour de tous les événements liés à partir de cette date
+            const { error } = await sb.from('events')
+                .update({ 
+                    title, location, start_time: startTime, end_time: endTime, max_participants: maxParticipants 
+                })
+                .or(`id.eq.${pId},parent_event_id.eq.${pId}`)
+                .gte('date', dateStr);
+
+            if (error) throw error;
+        } else {
+            // --- LOGIQUE UNIQUE ---
+            // On le détache de la série s'il en faisait partie (devient un événement indépendant)
+            const { error } = await sb.from('events')
+                .update({ 
+                    title, location, date: dateStr, start_time: startTime, end_time: endTime, 
+                    max_participants: maxParticipants, 
+                    parent_event_id: null, is_recurring: false 
+                })
+                .eq('id', eventId);
+
+            if (error) throw error;
+        }
+
+        alert("Mise à jour réussie !");
+        
+        // Fermeture des interfaces
+        closeMobilePip();
+        closeAdminPanel();
+        
+        // Rafraîchissement des données
+        await fetchEvents();
+        
+    } catch (err) {
+        console.error("Erreur modification:", err);
+        alert("Une erreur est survenue lors de la modification.");
+    }
+}
 
 // --- PARAMETRES PROFIL ---
 function checkProfileChanges() {
@@ -1299,6 +1332,48 @@ async function confirmPastSave() {
     closeMobilePip();
     await executeFinalSave(); 
 }
+function openConfirmUpdateSeriesPip(eventId) {
+    const zone = document.getElementById('mobile-pip-zone');
+    if (!zone) return;
+
+    zone.classList.add('modal-mode');
+    zone.style.display = 'flex';
+    zone.style.pointerEvents = 'auto';
+
+    zone.innerHTML = `
+        <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
+            <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-slate-100 text-slate-900 rounded-full flex items-center justify-center mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                </div>
+                
+                <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">Modifier la série</h3>
+                <p class="text-slate-500 mb-8 leading-relaxed">
+                    Cet événement fait partie d'une série.<br>
+                    Comment souhaitez-vous appliquer vos modifications ?
+                </p>
+                
+                <div class="flex flex-col w-full gap-3">
+                    <button onclick="processUpdate('${eventId}', false)" 
+                            class="w-full p-5 bg-slate-100 text-slate-700 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-200 transition-all cursor-pointer">
+                        Modifier cette séance UNIQUEMENT
+                    </button>
+                    
+                    <button onclick="processUpdate('${eventId}', true)" 
+                            class="w-full p-5 bg-slate-900 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-black shadow-lg transition-all cursor-pointer">
+                        Modifier toute la série (à venir)
+                    </button>
+                    
+                    <button onclick="closeMobilePip()" 
+                            class="w-full p-4 text-slate-400 font-bold text-xs uppercase tracking-widest mt-2 hover:text-slate-600 transition">
+                        Annuler
+                    </button>
+                </div>
+            </div>
+        </div>`;
+}
 
     
 // --- INITIALISATION ---
@@ -1319,6 +1394,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
