@@ -49,30 +49,32 @@
         .dot-red { background-color: #ef4444; }
         .dot-gray { background-color: #94a3b8; }
 
-        #mobile-pip-zone {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: none; 
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            /* On s'assure que rien ne passe à travers quand c'est affiché */
-        }
+        /* Style par défaut (pour les Day PiP qui arrivent du bas) */
+#mobile-pip-zone {
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    display: flex;
+    align-items: flex-end; /* Aligné en bas par défaut */
+    pointer-events: none;
+    background: transparent;
+    transition: background 0.3s ease;
+}
 
-        #mobile-pip-zone:not(:empty) {
-            display: flex !important;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            pointer-events: auto !important; /* CRUCIAL : bloque le fond */
-        }
-        
-        .mobile-pip-card {
-            pointer-events: auto; /* Force les boutons à être cliquables */
-            position: relative;
-            z-index: 10000;
-        }
+/* --- LE MODE MODALE (Pour la confirmation au centre) --- */
+#mobile-pip-zone.modal-mode {
+    align-items: center; /* Centre verticalement */
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.6); /* Fond sombre */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    pointer-events: auto;
+}
+
+/* On s'assure que la carte est cliquable dans les deux cas */
+.mobile-pip-card {
+    pointer-events: auto;
+}
         @keyframes popIn {
             to { transform: scale(1); opacity: 1; }
         }
@@ -915,7 +917,7 @@ function closeMobilePip() {
     if (zone) {
         zone.innerHTML = '';
         zone.style.display = 'none';
-        zone.style.pointerEvents = 'none'; // Très important
+        zone.classList.remove('modal-mode'); // On retire le mode centre/flou
     }
 }
 function openAdminFromPip(d) { 
@@ -1074,39 +1076,17 @@ function openConfirmPastEventPip(selectedDate, isRecurring) {
     const zone = document.getElementById('mobile-pip-zone');
     if (!zone) return;
 
-    const message = isRecurring 
-        ? `Vous avez sélectionné le <b>${selectedDate}</b> pour le départ de votre série d'évent. Tous les évents avant aujourd'hui ne seront pas accessibles pour les utilisateurs.`
-        : `Vous avez sélectionné le <b>${selectedDate}</b> alors que la date est déjà passée. Êtes-vous sûr qu'il s'agit de la bonne date ?`;
+    // On active le mode "Modale centrale"
+    zone.classList.add('modal-mode');
+    zone.style.display = 'flex';
 
-    zone.innerHTML = `
-        <div class="mobile-pip-card border-t-8 border-orange-500 bg-white p-6 rounded-3xl shadow-2xl">
-            <div class="flex flex-col items-center">
-                <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-black text-slate-800 mb-2 uppercase">Vérification</h3>
-                <p class="text-[13px] text-slate-500 text-center mb-8 leading-relaxed">${message}</p>
-                
-                <div class="flex flex-col w-full gap-2">
-                    <button id="btn-confirm-past"
-                            class="w-full p-4 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-colors cursor-pointer">
-                        Oui, Enregistrer
-                    </button>
-                    <button onclick="closeMobilePip()" 
-                            class="w-full p-4 bg-slate-100 text-slate-500 rounded-2xl font-bold text-xs uppercase tracking-widest cursor-pointer">
-                        Annuler
-                    </button>
-                </div>
-            </div>
-        </div>`;
+    // ... (le reste de ton code innerHTML est identique) ...
+    const message = isRecurring ? "..." : "..."; 
+    zone.innerHTML = `...`; // Garde le contenu précédent
 
-    // Attacher l'événement proprement au bouton pour éviter les soucis de scope
     document.getElementById('btn-confirm-past').onclick = function() {
-        console.log("Confirmation reçue, lancement de la sauvegarde...");
         closeMobilePip();
-        requestAdminSubmit(true); // Relance la fonction avec l'autorisation
+        requestAdminSubmit(true);
     };
 }
 
@@ -1125,6 +1105,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
