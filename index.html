@@ -118,6 +118,13 @@
         pointer-events: none;                /* Bloque physiquement le clic */
         border-color: transparent !important;
     }
+    /* Aspect grisé mais cliquable pour l'admin */
+    .input-field-past {
+        background-color: #f1f5f9 !important;
+        color: #94a3b8 !important;
+        border-style: dashed !important;
+    }
+        
     </style>
 </head>
 <body>
@@ -839,29 +846,44 @@ async function saveProfileInfo() {
     if (!error) { alert("Profil à jour !"); loadProfile(); }
 }
 
-// --- UTILITAIRES INTERFACE ---
+
 // --- UTILITAIRES INTERFACE ---
 function openAdminPanel() { 
-    // 1. Reset du formulaire
-    document.getElementById('admin-event-id').value = '';
-    
-    // 2. Griser les jours de récurrence (Lu, Ma, Me...)
-    const recurrenceContainer = document.getElementById('recurrence-days-container');
-    if (recurrenceContainer) {
-        const joursSemaine = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
-        recurrenceContainer.innerHTML = joursSemaine.map(j => `
-            <div class="flex-1 p-2 text-[10px] font-bold text-center rounded-lg 
-                        bg-slate-100 text-slate-300 border border-slate-200 
-                        cursor-not-allowed pointer-events-none uppercase opacity-60">
-                ${j}
-            </div>
-        `).join('');
+    const dateInput = document.getElementById('admin-date');
+    const today = new Date().toISOString().split('T')[0];
+
+    if (dateInput) {
+        // On n'utilise PAS .setAttribute('min') pour laisser le choix libre
+        dateInput.removeAttribute('min'); 
+
+        // On écoute le changement de date pour griser dynamiquement
+        dateInput.onchange = function() {
+            if (this.value < today) {
+                this.classList.add('input-field-past');
+            } else {
+                this.classList.remove('input-field-past');
+            }
+        };
+
+        // Initialisation si c'est un nouvel évent
+        const eventId = document.getElementById('admin-event-id').value;
+        if (!eventId) {
+            dateInput.value = today;
+            dateInput.classList.remove('input-field-past');
+        }
     }
 
+    document.getElementById('admin-panel').style.display = 'flex'; 
+    if(document.getElementById('admin-delete-btn')) document.getElementById('admin-delete-btn').classList.add('hidden');
+}
+
+    // 2. Reset de l'ID pour être sûr qu'on est en mode "Nouveau"
+    document.getElementById('admin-event-id').value = '';
+    
     // 3. Affichage du panel
     document.getElementById('admin-panel').style.display = 'flex'; 
     
-    // 4. Cacher le bouton supprimer (car c'est une création)
+    // 4. Masquer le bouton supprimer
     const delBtn = document.getElementById('admin-delete-btn');
     if(delBtn) delBtn.classList.add('hidden');
 }
@@ -1012,7 +1034,51 @@ async function updateEmail() {
     if (typeof logout === "function") await logout(); 
 }
     
+async function handleSaveClick() {
+    const date = document.getElementById('admin-date').value;
+    const isRecurring = document.getElementById('admin-recurring').checked;
+    const today = new Date().toISOString().split('T')[0];
 
+    if (date && date < today) {
+        // La date est passée -> On demande confirmation via la PiP
+        openConfirmPastEventPip(date, isRecurring);
+    } else {
+        // La date est future ou aujourd'hui -> On enregistre
+        await executeFinalSave();
+    }
+}
+
+function openConfirmPastEventPip(selectedDate, isRecurring) {
+    const zone = document.getElementById('mobile-pip-zone');
+    if (!zone) return;
+    
+    zone.style.pointerEvents = 'auto';
+
+    // Ton texte personnalisé
+    const message = isRecurring 
+        ? `Vous avez sélectionné le <b>${selectedDate}</b> pour le départ de votre série d'évent. Tous les évents avant aujourd'hui ne seront pas accessibles pour les utilisateurs. Êtes-vous sûr de votre date de départ ?`
+        : `Vous avez sélectionné le <b>${selectedDate}</b> pour votre évent alors que la date est déjà passée. Êtes-vous sûr qu'il s'agit de la bonne date ?`;
+
+    zone.innerHTML = `
+        <div class="mobile-pip-card p-6 text-center border-t-4 border-orange-500">
+            <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+            </div>
+            <h3 class="font-bold text-slate-800 text-sm mb-2">Confirmation de date</h3>
+            <p class="text-[11px] text-slate-500 mb-6 leading-relaxed">${message}</p>
+            <div class="flex gap-2">
+                <button onclick="closeMobilePip()" class="flex-1 p-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs">ANNULER</button>
+                <button onclick="confirmPastSave()" class="flex-1 p-3 bg-orange-600 text-white rounded-xl font-bold text-xs">OUI, ENREGISTRER</button>
+            </div>
+        </div>`;
+}
+
+async function confirmPastSave() {
+    closeMobilePip();
+    await executeFinalSave(); 
+}
 
     
 // --- INITIALISATION ---
@@ -1024,6 +1090,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
