@@ -112,7 +112,7 @@
     }
     </style>
 </head>
-<body onclick="handleBodyClick(event)">
+<body>
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
@@ -663,11 +663,13 @@
   function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
   function toggleUserMenu(e) { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('hidden'); }
   
-  // Correction de la fonction handleBodyClick qui manquait
-  function handleBodyClick(e) { 
+  document.addEventListener('click', (e) => {
     const menu = document.getElementById('user-menu');
-    if(menu && !e.target.closest('.group-menu')) menu.classList.add('hidden'); 
-  }
+    // On vérifie si le menu existe et si le clic n'est pas sur le bouton menu
+    if (menu && !e.target.closest('.group-menu')) {
+        menu.classList.add('hidden');
+    }
+});
 
   // --- PASSWORD & EMAIL PIPS ---
   function openPasswordPip() { document.getElementById('password-pip').style.display = 'flex'; }
@@ -1046,6 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
 
