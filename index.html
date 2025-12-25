@@ -67,6 +67,8 @@
         }
         /* --- LE MODE MODALE (Pour la confirmation au centre) --- */
         #mobile-pip-zone.modal-mode {
+            width: 90%;
+            max-width: 400px; /* <-- largeur max pour PC */
             align-items: center; /* Centre verticalement */
             justify-content: center;
             background: rgba(15, 23, 42, 0.6); /* Fond sombre */
@@ -75,6 +77,8 @@
             pointer-events: auto;
             z-index: 9999;
             display: flex;
+            border-radius: 28px;
+            margin: 0 auto;
         }
         
         /* On s'assure que la carte est cliquable dans les deux cas */
@@ -1149,6 +1153,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
