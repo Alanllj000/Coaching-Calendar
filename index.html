@@ -279,7 +279,12 @@
                 </div>
             </div>
             <button id="admin-save-btn" onclick="requestAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl">Enregistrer</button>
-            <button id="admin-delete-btn" onclick="triggerDeleteProcess()" class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition mt-2">Supprimer l'événement</button>
+           <button 
+                id="admin-delete-btn" 
+                onclick="handleDelete(document.getElementById('admin-event-id').value)" 
+                class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition mt-2">
+                    Supprimer l'événement
+        </button>
         </div>
     </div>
 </div>
@@ -1141,52 +1146,6 @@ function toggleUserMenu(e) {
 }
 function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
 
-async function triggerDeleteProcess() {
-    const eventId = document.getElementById('admin-event-id').value;
-    if (!eventId) return;
-
-    const event = eventsCache.find(function(e) { return e.id === eventId; });
-    if (!event) return;
-
-    // 1. Demander confirmation
-    const confirmMsg = event.is_recurring 
-        ? "Voulez-vous supprimer TOUTE la série ? (Annuler pour supprimer uniquement cette séance)" 
-        : "Confirmer la suppression de cet événement ?";
-    
-    const deleteAll = event.is_recurring ? confirm(confirmMsg) : true;
-    if (event.is_recurring && !deleteAll) {
-        // Si c'est une série mais qu'on ne veut supprimer QUE celui-là
-        const singleConfirm = confirm("Supprimer uniquement cette séance précise ?");
-        if (!singleConfirm) return;
-    } else if (!event.is_recurring) {
-        // Simple confirmation pour un event unique
-        if (!confirm("Supprimer cet événement ?")) return;
-    }
-
-    try {
-        if (deleteAll && event.is_recurring) {
-            // OPTION A : Supprimer toute la série
-            const pId = event.parent_event_id ? event.parent_event_id : event.id;
-            const { error } = await sb.from('events')
-                .delete()
-                .or('id.eq.' + pId + ',parent_event_id.eq.' + pId);
-            if (error) throw error;
-        } else {
-            // OPTION B : Supprimer uniquement l'instance actuelle
-            const { error } = await sb.from('events')
-                .delete()
-                .eq('id', eventId);
-            if (error) throw error;
-        }
-
-        alert("Suppression réussie !");
-        closeAdminPanel();
-        await fetchEvents();
-    } catch (err) {
-        console.error("Erreur suppression:", err);
-        alert("Erreur lors de la suppression.");
-    }
-}
 // --- PASSWORD & EMAIL PIPS ---
 function openPasswordPip() { 
     const pip = document.getElementById('password-pip');
@@ -1375,6 +1334,53 @@ function openConfirmUpdateSeriesPip(eventId) {
         </div>`;
 }
 
+async function handleDelete(eventId) {
+    const event = eventsCache.find(e => e.id === eventId);
+    
+    if (event && event.is_recurring) {
+        // Si c'est une série, on ouvre la PiP de choix
+        openConfirmDeleteSeriesPip(eventId);
+    } else {
+        // Si c'est unique, on demande une confirmation simple avant de supprimer
+        if (confirm("Supprimer cet événement ?")) {
+            await processDelete(eventId, false);
+        }
+    }
+}
+
+async function processDelete(eventId, deleteAll) {
+    try {
+        if (deleteAll) {
+            // --- SUPPRESSION SÉRIE ---
+            const event = eventsCache.find(e => e.id === eventId);
+            const pId = (event && event.parent_event_id) ? event.parent_event_id : eventId;
+            const dateStr = event.date; // Date de l'événement actuel pour ne supprimer que le futur
+
+            const { error } = await sb.from('events')
+                .delete()
+                .or(`id.eq.${pId},parent_event_id.eq.${pId}`)
+                .gte('date', dateStr); // Ne supprime pas le passé
+
+            if (error) throw error;
+        } else {
+            // --- SUPPRESSION UNIQUE ---
+            const { error } = await sb.from('events')
+                .delete()
+                .eq('id', eventId);
+
+            if (error) throw error;
+        }
+
+        alert("Supprimé avec succès !");
+        closeMobilePip();
+        closeAdminPanel(); // On ferme le panel si on était dedans
+        await fetchEvents(); // Rafraîchit le calendrier
+
+    } catch (err) {
+        console.error("Erreur suppression:", err);
+        alert("Une erreur est survenue lors de la suppression.");
+    }
+}
     
 // --- INITIALISATION ---
 window.onload = async function() {
@@ -1394,62 +1400,3 @@ window.onload = async function() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
