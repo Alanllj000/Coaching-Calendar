@@ -1022,7 +1022,6 @@ async function startEditing(eventId) {
     if (delBtn) delBtn.classList.remove('hidden');
 }
 async function requestAdminSubmit(isConfirmed = false) {
-    resetAdminForm()
     const dateStr = document.getElementById('admin-date').value;
     const title = document.getElementById('admin-title').value; 
     const startTime = document.getElementById('admin-start').value;
@@ -1121,8 +1120,7 @@ async function requestAdminSubmit(isConfirmed = false) {
                 if (occError) throw occError;
             }
         }
-
-        alert("Succès !");
+        resetAdminForm();
         closeAdminPanel();
         await fetchEvents();
         
@@ -1677,5 +1675,6 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
