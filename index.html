@@ -67,8 +67,8 @@
         }
         /* --- LE MODE MODALE (Pour la confirmation au centre) --- */
         #mobile-pip-zone.modal-mode {
-            width: 90%;
-            max-width: 400px; /* <-- largeur max pour PC */
+            width: 100vw;
+            height: 100vh;
             align-items: center; /* Centre verticalement */
             justify-content: center;
             background: rgba(15, 23, 42, 0.6); /* Fond sombre */
@@ -80,7 +80,18 @@
             border-radius: 28px;
             margin: 0 auto;
         }
-        
+
+        /* La carte de confirmation à 800px */
+        #mobile-pip-zone.modal-mode .mobile-pip-card {
+            width: 95%;           /* Marge de sécurité sur les petits écrans */
+            max-width: 800px;     /* Ta nouvelle limite sur PC */
+            background: white;
+            padding: 40px;        /* Un peu plus d'espace interne pour le format large */
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
         /* On s'assure que la carte est cliquable dans les deux cas */
         .mobile-pip-card {
             pointer-events: auto;
@@ -1153,6 +1164,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
