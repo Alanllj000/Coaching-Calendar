@@ -1350,16 +1350,21 @@ async function handleDelete(eventId) {
 
 async function processDelete(eventId, deleteAll) {
     try {
+        console.log("Démarrage de la suppression. ID:", eventId, "Série:", deleteAll);
+
         if (deleteAll) {
             // --- SUPPRESSION SÉRIE ---
             const event = eventsCache.find(e => e.id === eventId);
-            const pId = (event && event.parent_event_id) ? event.parent_event_id : eventId;
-            const dateStr = event.date; // Date de l'événement actuel pour ne supprimer que le futur
+            if (!event) throw new Error("Événement introuvable dans le cache");
+            
+            const pId = event.parent_event_id || event.id;
+            const dateStr = event.date; 
 
+            // Supprime l'original et toutes ses copies à partir de la date sélectionnée
             const { error } = await sb.from('events')
                 .delete()
                 .or(`id.eq.${pId},parent_event_id.eq.${pId}`)
-                .gte('date', dateStr); // Ne supprime pas le passé
+                .gte('date', dateStr);
 
             if (error) throw error;
         } else {
@@ -1371,14 +1376,21 @@ async function processDelete(eventId, deleteAll) {
             if (error) throw error;
         }
 
-        alert("Supprimé avec succès !");
+        // --- SUCCÈS ---
+        alert("Suppression effectuée.");
         closeMobilePip();
-        closeAdminPanel(); // On ferme le panel si on était dedans
-        await fetchEvents(); // Rafraîchit le calendrier
+        if (typeof closeAdminPanel === "function") closeAdminPanel();
+        
+        // Rafraîchissement impératif du calendrier
+        if (typeof fetchEvents === "function") {
+            await fetchEvents();
+        } else {
+            window.location.reload(); // Solution de secours si fetchEvents n'est pas accessible
+        }
 
     } catch (err) {
-        console.error("Erreur suppression:", err);
-        alert("Une erreur est survenue lors de la suppression.");
+        console.error("Erreur SQL suppression:", err);
+        alert("Erreur lors de la suppression : " + err.message);
     }
 }
 
@@ -1391,28 +1403,28 @@ function openConfirmDeleteSeriesPip(eventId) {
     zone.style.pointerEvents = 'auto';
 
     zone.innerHTML = `
-        <div class="mobile-pip-card border-t-8 border-red-600 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
+        <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
             <div class="flex flex-col items-center text-center">
-                <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
+                <div class="w-16 h-16 bg-slate-100 text-slate-900 rounded-full flex items-center justify-center mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                 </div>
                 
-                <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">Supprimer la série</h3>
+                <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">Supprimer l'événement</h3>
                 <p class="text-slate-500 mb-8 leading-relaxed">
-                    Attention, cette action est irréversible.<br>
+                    Cette action est irréversible.<br>
                     Souhaitez-vous supprimer uniquement cette séance ou toute la série ?
                 </p>
                 
                 <div class="flex flex-col w-full gap-3">
                     <button onclick="processDelete('${eventId}', false)" 
-                            class="w-full p-5 bg-slate-100 text-slate-700 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-200 transition-all cursor-pointer">
+                            class="w-full p-5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer">
                         Supprimer cette séance UNIQUEMENT
                     </button>
                     
                     <button onclick="processDelete('${eventId}', true)" 
-                            class="w-full p-5 bg-red-600 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-red-700 shadow-lg shadow-red-200 transition-all cursor-pointer">
+                            class="w-full p-5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer">
                         Supprimer TOUTE LA SÉRIE (à venir)
                     </button>
                     
@@ -1442,4 +1454,5 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
