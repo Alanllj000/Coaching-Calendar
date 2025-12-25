@@ -521,7 +521,6 @@ async function handleRegisterStep1() {
     const firstName = document.getElementById('register-firstname').value;
     const lastName = document.getElementById('register-lastname').value;
     const phone = document.getElementById('register-phone').value;
-
     // 2. Vérification rapide
     if (!email || !password || !firstName || !lastName || !phone) {
         return alert("Veuillez remplir tous les champs obligatoires.");
@@ -590,7 +589,7 @@ function handleRegisterStep1() {
                 </div>
                 
                 <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase">Confirmez votre profil</h3>
-                <p class="text-slate-500 mb-8">Veuillez retaper votre mot de passe pour finaliser la création du compte <b>${email}</b>.</p>
+                <p class="text-slate-500 mb-8">Veuillez retaper votre mot de passe pour finaliser la création du compte <b class="text-slate-900">${pendingEmail} || "votre compte"}</b>.</p>
 
                 <div class="mb-6">
                     <input type="password" id="confirm-profile-password" 
@@ -615,18 +614,22 @@ function handleRegisterStep1() {
 
 async function handleSignUp() {
     const confirmPwd = document.getElementById('confirm-profile-password').value;
+    const btn = document.getElementById('confirm-profile-btn'); // On récupère le bouton
     
-    // Debug pour voir si les variables sont bien remplies
-    console.log("Données envoyées à l'Edge Function :", {
-        email: pendingEmail,
-        profile: pendingProfile
-    });
-
+    // 1. Vérifications de base
     if (!confirmPwd) return alert("Veuillez entrer votre mot de passe.");
     if (confirmPwd !== pendingPassword) return alert("Le mot de passe ne correspond pas.");
 
+    // 2. Verrouillage du bouton pour éviter les doubles clics
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "CRÉATION EN COURS...";
+        btn.style.opacity = "0.5";
+    }
+
     try {
-        // Utilise uniquement le NOM de la fonction, pas l'URL complète
+        console.log("Envoi des données à l'Edge Function...");
+
         const { data, error } = await sb.functions.invoke('gestion-des-users--update--registration-and-connexion-', {
             body: { 
                 action: 'signup', 
@@ -636,27 +639,41 @@ async function handleSignUp() {
             }
         });
 
+        // Gestion de l'erreur réseau ou Supabase
         if (error) throw error;
         
-        // Ta fonction Edge renvoie { success: true }
-        if (data.error) throw new Error(data.error);
+        // Gestion de l'erreur renvoyée par TA fonction Edge
+        if (data && data.error) throw new Error(data.error);
 
-        alert("Compte créé avec succès !");
-        closeConfirmProfilePip();
+        // 3. Succès !
+        alert("Compte créé avec succès ! Connectez-vous dès maintenant.");
         
-        // On pré-remplit l'email pour la connexion
-        toggleAuthMode();
+        closeMobilePip(); // Ferme la modale
+        
+        // On repasse en mode connexion et on remplit l'email
+        if (isRegisterMode) toggleAuthMode();
+        
         setTimeout(() => {
             const emailField = document.getElementById('auth-email');
-            if(emailField) emailField.value = pendingEmail;
-        }, 100);
+            const pwdField = document.getElementById('auth-password');
+            if (emailField) emailField.value = pendingEmail;
+            if (pwdField) pwdField.value = ""; // On vide le champ password par sécurité
+        }, 200);
 
     } catch (err) {
         console.error("Erreur détaillée:", err);
-        alert("Erreur lors de l'inscription : " + err.message);
+        alert("Erreur lors de l'inscription : " + (err.message || "Problème serveur"));
+        
+        // En cas d'erreur, on réactive le bouton pour permettre de réessayer
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Confirmer et Accéder";
+            btn.style.opacity = "1";
+        }
     }
 }
 
+// Alias pour la compatibilité
 const confirmProfile = handleSignUp;
 
 async function logout() { 
@@ -1302,6 +1319,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
