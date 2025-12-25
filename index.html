@@ -49,35 +49,62 @@
         .dot-red { background-color: #ef4444; }
         .dot-gray { background-color: #94a3b8; }
 
-        /* Style par défaut (pour les Day PiP qui arrivent du bas) */
+       /* --- 1. STYLE DE BASE (Pour tes Day PiP classiques) --- */
 #mobile-pip-zone {
     position: fixed;
     inset: 0;
     z-index: 1500;
-    display: flex;
-    align-items: flex-end; /* Aligné en bas par défaut */
+    display: none;
     pointer-events: none;
-    background: transparent;
-    transition: background 0.3s ease;
+    /* Alignement en bas pour les détails d'évent */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; 
+    align-items: center;
 }
 
-/* --- LE MODE MODALE (Pour la confirmation au centre) --- */
+/* --- 2. TES PARAMÈTRES EXACTS (Pour la Confirmation) --- */
 #mobile-pip-zone.modal-mode {
-    align-items: center; /* Centre verticalement */
-    justify-content: center;
-    background: rgba(15, 23, 42, 0.6); /* Fond sombre */
-    backdrop-filter: blur(8px);
+    display: flex !important;
+    align-items: center !important;     /* Tes paramètres : centré */
+    justify-content: center !important;  /* Tes paramètres : centré */
+    background: rgba(15, 23, 42, 0.4);   /* Ton fond sombre */
+    backdrop-filter: blur(8px);          /* Ton flou */
     -webkit-backdrop-filter: blur(8px);
+    pointer-events: auto !important;
+    z-index: 9999; 
+}
+
+/* --- 3. STYLE DE LA CARTE --- */
+/* Commun aux deux, mais on ajuste selon le mode */
+.mobile-pip-card {
+    background: white;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     pointer-events: auto;
 }
 
-/* On s'assure que la carte est cliquable dans les deux cas */
-.mobile-pip-card {
-    pointer-events: auto;
+/* Applique ton animation popIn seulement en mode confirmation */
+#mobile-pip-zone.modal-mode .mobile-pip-card {
+    width: 100%;
+    max-width: 340px;
+    border-radius: 24px;
+    padding: 24px;
+    transform: scale(0.9);
+    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
-        @keyframes popIn {
-            to { transform: scale(1); opacity: 1; }
-        }
+
+/* Style "Tiroir" pour tes Day PiP classiques */
+#mobile-pip-zone:not(.modal-mode) .mobile-pip-card {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    padding: 20px;
+    /* Ici pas d'animation popIn pour garder l'effet tiroir du bas */
+}
+
+@keyframes popIn {
+    to { transform: scale(1); opacity: 1; }
+}
         
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
@@ -914,11 +941,9 @@ function openSettingsPanel() { document.getElementById('settings-panel').style.d
 function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
 function closeMobilePip() {
     const zone = document.getElementById('mobile-pip-zone');
-    if (zone) {
-        zone.innerHTML = '';
-        zone.style.display = 'none';
-        zone.classList.remove('modal-mode'); // On retire le mode centre/flou
-    }
+    zone.classList.remove('modal-mode'); // <--- Désactive tes paramètres
+    zone.innerHTML = '';
+    zone.style.display = 'none';
 }
 function openAdminFromPip(d) { 
     closeMobilePip(); 
@@ -1074,6 +1099,8 @@ async function handleSaveClick() {
 }
 function openConfirmPastEventPip(selectedDate, isRecurring) {
     const zone = document.getElementById('mobile-pip-zone');
+    zone.classList.add('modal-mode'); // <--- Active tes paramètres
+    zone.style.display = 'flex';
     if (!zone) return;
 
     // 1. On active le mode "Modale centrale" (flou + centrage)
@@ -1133,6 +1160,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
