@@ -53,6 +53,11 @@
             position: fixed; bottom: 0; left: 0; width: 100%; height: 50vh; 
             z-index: 10000; pointer-events: none;
         }
+        #mobile-pip-zone:not(:empty) {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            pointer-events: auto;
+        }
         .mobile-pip-card {
             pointer-events: auto;
             width: 100%; height: 100%; background: white;
@@ -1088,6 +1093,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
