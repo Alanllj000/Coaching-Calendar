@@ -347,22 +347,37 @@
     </div>
 </div>
 
-<!-- PiP CHOIX MODIFICATION -->
-<div id="edit-choice-pip" class="overlay-pip">
+    <!-- Day PiP et modification  -->
+<div id="edit-choice-pip" class="overlay-pip" style="display:none;">
     <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-        <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fas fa-layer-group text-2xl"></i></div>
-        <h3 class="text-xl font-black text-center text-slate-900 mb-2">Modifier l'événement</h3>
-        <p class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed">Cet événement fait partie d'une série. À quel niveau les modifications doivent-elles être appliquées ?</p>
-        <div class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between">
-            <span id="edit-mode-text" class="text-[10px] font-black text-slate-700">Modifier spécifiquement cet évent</span>
+        <div class="w-16 h-16 bg-slate-50 text-slate-900 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-layer-group text-2xl"></i>
+        </div>
+        
+        <h3 class="text-xl font-black text-center text-slate-900 mb-2 uppercase tracking-tight">Modifier l'événement</h3>
+        <p class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed uppercase font-bold tracking-widest">
+            Cet événement fait partie d'une série.
+        </p>
+        
+        <div class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between border border-slate-100">
+            <span id="edit-mode-text" class="text-[10px] font-black text-slate-700 uppercase tracking-tighter">
+                Modifier cette séance uniquement
+            </span>
             <label class="switch">
                 <input type="checkbox" id="edit-series-toggle" onchange="updateEditModeText()">
                 <span class="slider"></span>
             </label>
         </div>
+        
         <div class="flex flex-col gap-3">
-            <button onclick="executeAdminSubmit()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
-            <button onclick="cancelEditChoice()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+            <button onclick="confirmAdminUpdate()" 
+                    class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition uppercase text-xs tracking-widest">
+                Confirmer la modification
+            </button>
+            <button onclick="cancelEditChoice()" 
+                    class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl text-xs uppercase tracking-widest hover:text-slate-600 transition">
+                Annuler
+            </button>
         </div>
     </div>
 </div>
@@ -877,12 +892,61 @@ async function toggleReg(eid, isR) {
 
 // --- ADMINISTRATION & MODIFICATION ---
 async function openEventDetails(eventId) {
-    const event = eventsCache.find(function(e) { return e.id === eventId; });
+    const event = eventsCache.find(e => e.id === eventId);
     if (!event) return;
 
+    // 1. Récupération du User ID actuel
+    const currentUserId = (await sb.auth.getUser()).data.user?.id;
+    const isOwner = (event.owner_id === currentUserId);
+
+    // 2. On ouvre d'abord une PiP de détails (ou on injecte dans la zone existante)
+    // Ici, j'adapte pour que le bouton "Modifier" n'apparaisse que pour le propriétaire
+    const detailZone = document.getElementById('mobile-pip-zone');
+    if (!detailZone) return;
+
+    detailZone.classList.add('modal-mode');
+    detailZone.style.display = 'flex';
+
+    // On crée l'interface avec le bouton Modifier discret (icône + texte)
+    detailZone.innerHTML = `
+        <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
+            <div class="flex justify-between items-start mb-6">
+                <h3 class="text-2xl font-black text-slate-800 uppercase">${event.title}</h3>
+                
+                ${isOwner ? `
+                    <button onclick="startEditing('${event.id}')" class="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors group">
+                        <span class="text-xs font-bold uppercase tracking-widest">Modifier</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                ` : `<span class="text-[10px] text-slate-300 uppercase font-bold tracking-tighter">Lecture seule</span>`}
+            </div>
+
+            <div class="space-y-4 text-slate-600 text-sm">
+                <p><strong>Lieu :</strong> ${event.location}</p>
+                <p><strong>Date :</strong> ${new Date(event.date).toLocaleDateString('fr-FR')}</p>
+                <p><strong>Horaire :</strong> ${event.start_time.substring(0, 5)} - ${event.end_time.substring(0, 5)}</p>
+            </div>
+
+            <button onclick="closeMobilePip()" class="w-full mt-8 py-4 bg-slate-100 text-slate-500 rounded-xl font-bold text-xs uppercase tracking-widest">Fermer</button>
+        </div>
+    `;
+}
+async function startEditing(eventId) {
+    const event = eventsCache.find(e => e.id === eventId);
+    const currentUserId = (await sb.auth.getUser()).data.user?.id;
+
+    if (!event || event.owner_id !== currentUserId) {
+        alert("Vous n'avez pas les droits pour modifier cet événement.");
+        return;
+    }
+
+    // On ferme la PiP de détails et on ouvre le panel admin
     closeMobilePip();
-    openAdminPanel();
+    openAdminPanel(); // Ta fonction qui affiche le tiroir/panel de modif
     
+    // Remplissage du formulaire
     document.getElementById('admin-event-id').value = event.id;
     document.getElementById('admin-title').value = event.title;
     document.getElementById('admin-loc').value = event.location;
@@ -892,14 +956,13 @@ async function openEventDetails(eventId) {
     document.getElementById('admin-max').value = event.max_participants;
 
     const checkboxes = document.querySelectorAll('.day-checkbox');
-    checkboxes.forEach(function(cb) {
+    checkboxes.forEach(cb => {
         cb.checked = event.recurrence_days && event.recurrence_days.includes(cb.value);
     });
 
     const delBtn = document.getElementById('admin-delete-btn');
     if (delBtn) delBtn.classList.remove('hidden');
 }
-
 
 async function requestAdminSubmit(isConfirmed = false) {
     const title = document.getElementById('admin-title').value;
@@ -1446,6 +1509,32 @@ function openConfirmDeleteSeriesPip(eventId) {
             </div>
         </div>`;
 }
+
+// Change le texte dynamiquement selon la position du toggle
+function updateEditModeText() {
+    const isSeries = document.getElementById('edit-series-toggle').checked;
+    const textEl = document.getElementById('edit-mode-text');
+    textEl.innerText = isSeries ? "Modifier toute la série (à venir)" : "Modifier cette séance uniquement";
+}
+
+// Ferme la PiP de choix
+function cancelEditChoice() {
+    document.getElementById('edit-choice-pip').style.display = 'none';
+}
+
+// Fonction "Pont" qui fait le lien entre ton UI Toggle et ton moteur SQL
+async function confirmAdminUpdate() {
+    const eventId = document.getElementById('admin-event-id').value;
+    const isSeries = document.getElementById('edit-series-toggle').checked;
+    
+    // On appelle ta fonction SQL processUpdate(id, true/false)
+    await processUpdate(eventId, isSeries);
+    
+    // On ferme la PiP de choix après succès
+    cancelEditChoice();
+}
+
+
 // --- INITIALISATION ---
 window.onload = async function() {
     // 1. Cacher physiquement les éléments avant même de vérifier la session
@@ -1464,6 +1553,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
