@@ -581,25 +581,31 @@ function renderCalendar() {
         });
 
         const cell = document.createElement('div');
+        const isAdmin = currentProfile && currentProfile.role === 'admin';
         
         // --- STYLE DIFFÉRENCIÉ ---
-        // Passé : fond gris très léger / Futur : fond blanc + ombre légère
         cell.className = `calendar-day border border-slate-100 transition-all ${isPast ? 'bg-slate-50/80' : 'bg-white shadow-sm'}`;
         
-        // Mise en avant du jour actuel
         if (isToday) cell.classList.add('ring-2', 'ring-blue-500', 'ring-inset');
 
-        // On réactive le clic sur TOUS les jours (passés inclus)
-        cell.onclick = function() { openDayPip(dateStr, dayEvts); };
-
+        // --- LOGIQUE DE CLIC ---
+        // Seuls les admins peuvent cliquer sur le passé. Les users sont bloqués.
+        if (isPast) {
+            if (isAdmin) {
+                cell.onclick = function() { openDayPip(dateStr, dayEvts); };
+                cell.style.cursor = 'pointer';
+            } else {
+                cell.style.cursor = 'not-allowed'; // Curseur bloqué pour les users
+            }
+        } else {
+            // Dans le futur, tout le monde peut cliquer
+            cell.onclick = function() { openDayPip(dateStr, dayEvts); };
+            cell.style.cursor = 'pointer';
+        }
         let dotsHtml = dayEvts.map(function(e) {
             const regCount = (e.registrations && e.registrations.length) || 0;
             const isFull = regCount >= e.max_participants;
-            
-            // Si c'est passé, on met les points en gris pour ne pas distraire l'oeil
             if (isPast) return `<span class="event-dot bg-slate-300"></span>`;
-            
-            // Sinon, rouge si complet, bleu si dispo
             return `<span class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
         }).join('');
 
@@ -615,6 +621,12 @@ function renderCalendar() {
 function openDayPip(dateStr, events) {
     const zone = document.getElementById('mobile-pip-zone');
     zone.style.pointerEvents = 'auto';
+    
+    // On compare avec la date du jour (YYYY-MM-DD)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isDatePast = dateStr < todayStr;
+    const isAdmin = currentProfile && currentProfile.role === 'admin';
+
     const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     
     let html = `
@@ -622,7 +634,12 @@ function openDayPip(dateStr, events) {
             <div class="flex items-center justify-between p-5 border-b border-slate-50">
                 <div>
                     <span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>
-                    ${(currentProfile && currentProfile.role === 'admin') ? `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>` : ''}
+                    ${isAdmin ? 
+                        (isDatePast ? 
+                            `<span class="text-slate-300 font-bold text-[10px] block mt-1 uppercase line-through cursor-not-allowed" title="Impossible d'ajouter dans le passé">Ajouter</span>` : 
+                            `<button onclick="openAdminFromPip('${dateStr}')" class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">Ajouter</button>`
+                        ) : ''
+                    }
                 </div>
                 <button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold">&times;</button>
             </div>
@@ -635,11 +652,10 @@ function openDayPip(dateStr, events) {
             const isReg = e.registrations && e.registrations.some(function(r) { return r.user_id === currentUser.id; });
             const regCount = (e.registrations && e.registrations.length) || 0;
             const isFull = regCount >= e.max_participants;
-            const isAdmin = currentProfile && currentProfile.role === 'admin';
             const isOwner = e.owner_id === (currentUser && currentUser.id);
 
             html += `
-                <div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between">
+                <div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between ${isDatePast ? 'opacity-60' : ''}">
                     <div onclick="${isAdmin ? "openEventDetails('"+e.id+"')" : ""}" class="${isAdmin ? "cursor-pointer" : ""}">
                         <h4 class="font-black text-slate-800">${e.title} ${isAdmin && isOwner ? '✎' : ''}</h4>
                         <div class="flex gap-2 text-[10px] font-bold text-blue-600">
@@ -649,9 +665,13 @@ function openDayPip(dateStr, events) {
                     </div>
                     <div class="text-right">
                         <div class="text-[9px] font-black ${isFull ? 'text-red-500' : 'text-slate-400'}">${regCount}/${e.max_participants}</div>
-                        <button onclick="toggleReg('${e.id}', ${isReg})" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">
-                            ${isReg ? 'Inscrit' : 'S\'inscrire'}
-                        </button>
+                        
+                        ${isDatePast ? 
+                            `<span class="px-2 py-1 text-[9px] font-bold text-slate-400 uppercase border border-slate-100 rounded-lg">Terminé</span>` : 
+                            `<button onclick="toggleReg('${e.id}', ${isReg})" class="px-3 py-2 rounded-lg text-[9px] font-bold ${isReg ? 'bg-slate-100 text-slate-500' : isFull ? 'bg-slate-50 text-slate-300' : 'bg-slate-900 text-white'}">
+                                ${isReg ? 'Inscrit' : 'S\'inscrire'}
+                            </button>`
+                        }
                     </div>
                 </div>`;
         });
@@ -892,6 +912,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
