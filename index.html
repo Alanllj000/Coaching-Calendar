@@ -110,6 +110,14 @@
     .cursor-not-allowed {
         cursor: not-allowed !important;
     }
+
+    .day-locked {
+        background-color: #f1f5f9 !important; /* slate-100 */
+        color: #cbd5e1 !important;           /* slate-300 */
+        cursor: not-allowed !important;
+        pointer-events: none;                /* Bloque physiquement le clic */
+        border-color: transparent !important;
+    }
     </style>
 </head>
 <body>
@@ -832,10 +840,30 @@ async function saveProfileInfo() {
 }
 
 // --- UTILITAIRES INTERFACE ---
+// --- UTILITAIRES INTERFACE ---
 function openAdminPanel() { 
+    // 1. Reset du formulaire
     document.getElementById('admin-event-id').value = '';
+    
+    // 2. Griser les jours de récurrence (Lu, Ma, Me...)
+    const recurrenceContainer = document.getElementById('recurrence-days-container');
+    if (recurrenceContainer) {
+        const joursSemaine = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
+        recurrenceContainer.innerHTML = joursSemaine.map(j => `
+            <div class="flex-1 p-2 text-[10px] font-bold text-center rounded-lg 
+                        bg-slate-100 text-slate-300 border border-slate-200 
+                        cursor-not-allowed pointer-events-none uppercase opacity-60">
+                ${j}
+            </div>
+        `).join('');
+    }
+
+    // 3. Affichage du panel
     document.getElementById('admin-panel').style.display = 'flex'; 
-    if(document.getElementById('admin-delete-btn')) document.getElementById('admin-delete-btn').classList.add('hidden');
+    
+    // 4. Cacher le bouton supprimer (car c'est une création)
+    const delBtn = document.getElementById('admin-delete-btn');
+    if(delBtn) delBtn.classList.add('hidden');
 }
 function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
 function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
@@ -996,6 +1024,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
