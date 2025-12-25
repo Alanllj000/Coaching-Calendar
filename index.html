@@ -447,15 +447,25 @@
     </div>
 </div>
 
-<!-- Delete Account Pip -->
-<div id="delete-account-pip" class="overlay-pip">
-    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
-        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl"><i class="fas fa-exclamation-triangle"></i></div>
-        <h3 class="text-xl font-black text-slate-900 mb-2">Supprimer le compte ?</h3>
-        <p class="text-sm text-slate-400 mb-8 px-4">Cette action est irréversible. Toutes vos données seront supprimées définitivement.</p>
-        <div class="flex flex-col gap-3">
-            <button onclick="confirmAccountDeletion()" class="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer la suppression</button>
-            <button onclick="closeDeleteAccountPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
+<div id="delete-account-pip" class="pip-overlay hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Supprimer le Compte ?</h3>
+        <p class="text-gray-500 text-sm mb-6">
+            Cette action va définitivement supprimer votre compte ainsi que toutes vos données. <br><b>Êtes-vous sûr de vouloir continuer ?</b>
+        </p>
+        
+        <div class="space-y-3">
+            <button onclick="handleDeleteAccount()" class="w-full py-4 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition shadow-lg shadow-red-200">
+                Oui, Supprimer
+            </button>
+            <button onclick="closeDeleteAccountPip()" class="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">
+                Non, Annuler
+            </button>
         </div>
     </div>
 </div>
@@ -1657,6 +1667,64 @@ function resetAdminForm() {
     console.log("Formulaire réinitialisé visuellement.");
 }
     
+// Ouverture de la PiP
+function openDeleteAccountPip() {
+    // On ferme d'abord la PiP réglages si elle est ouverte
+    const settingsPip = document.getElementById('settings-pip'); // remplace par l'ID exact de ta PiP réglages
+    if (settingsPip) settingsPip.classList.add('hidden');
+    
+    document.getElementById('delete-account-pip').classList.remove('hidden');
+}
+
+// Fermeture et retour aux réglages
+function closeDeleteAccountPip() {
+    document.getElementById('delete-account-pip').classList.add('hidden');
+    // On peut rouvrir les réglages ici si nécessaire
+    const settingsPip = document.getElementById('settings-pip');
+    if (settingsPip) settingsPip.classList.remove('hidden');
+}
+
+// Logique de suppression
+async function handleDeleteAccount() {
+    const user = (await sb.auth.getUser()).data.user;
+    if (!user) return alert("Utilisateur non trouvé.");
+
+    try {
+        // 1. Supprimer les inscriptions aux événements (registrations/participations)
+        // On nettoie la table où l'user est inscrit
+        const { error: errorInsc } = await sb
+            .from('event_registrations') // remplace par ton nom de table exact
+            .delete()
+            .eq('user_id', user.id);
+        
+        if (errorInsc) console.warn("Erreur suppression inscriptions:", errorInsc);
+
+        // 2. Supprimer le profil public (public.profiles)
+        const { error: errorProfile } = await sb
+            .from('profiles')
+            .delete()
+            .eq('id', user.id);
+
+        if (errorProfile) throw errorProfile;
+
+        // 3. Suppression de l'Auth (auth.users)
+        /* ATTENTION : Supabase interdit à un utilisateur de se supprimer lui-même 
+           via le client JS pour des raisons de sécurité. 
+           La méthode standard est d'appeler une Edge Function.
+           En attendant, on déconnecte l'utilisateur après avoir vidé ses données.
+        */
+        
+        // On déconnecte (cela nettoie le localstorage et invalide la session)
+        await sb.auth.signOut();
+
+        alert("Votre compte et vos données ont été supprimés.");
+        window.location.reload(); // Retour à l'accueil / login
+
+    } catch (err) {
+        console.error("Erreur suppression compte:", err);
+        alert("Une erreur est survenue lors de la suppression technique.");
+    }
+}
 
 // --- INITIALISATION ---
 window.onload = async function() {
@@ -1676,6 +1744,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
