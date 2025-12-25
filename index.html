@@ -1167,13 +1167,23 @@ async function confirmPastSave() {
     
 // --- INITIALISATION ---
 window.onload = async function() {
+    // 1. Cacher physiquement les éléments avant même de vérifier la session
+    document.getElementById('admin-panel').style.display = 'none';
+    const pipZone = document.getElementById('mobile-pip-zone');
+    if(pipZone) pipZone.style.display = 'none';
+
+    // 2. Vérification de la session
     const { data: { session } } = await sb.auth.getSession();
-    if (session) initApp(session.user);
-    else document.getElementById('auth-screen').style.display = 'flex';
+    if (session) {
+        initApp(session.user);
+    } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+    }
 };
 </script>
 </body>
 </html>
+
 
 
 
