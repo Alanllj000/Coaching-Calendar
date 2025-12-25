@@ -1741,6 +1741,29 @@ function closeDeleteAccountPip() {
     if (settingsPip) settingsPip.classList.remove('hidden');
 }
 
+let inactivityTimer;
+const INACTIVITY_LIMIT = 600000; // 10 minutes en millisecondes
+
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(forceLogout, INACTIVITY_LIMIT);
+}
+
+async function forceLogout() {
+    console.log("Session expirée pour inactivité.");
+    if (window.sb) await sb.auth.signOut();
+    localStorage.clear();
+    sessionStorage.clear();
+    alert("Votre session a expiré après 10 minutes d'inactivité pour votre sécurité.");
+    window.location.replace("https://alanllj000.github.io/Coaching-Calendar/");
+}
+
+// Surveillance des interactions
+['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(event => {
+    document.addEventListener(event, resetInactivityTimer, true);
+});
+
+resetInactivityTimer();
 // --- INITIALISATION ---
 window.onload = async function() {
     // 1. Cacher physiquement les éléments avant même de vérifier la session
@@ -1759,6 +1782,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
