@@ -514,6 +514,35 @@ function toggleAuthMode() {
     document.getElementById('auth-btn').classList.toggle('hidden', isRegisterMode);
     document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
 }
+async function handleRegisterStep1() {
+    // 1. Récupération des valeurs du formulaire
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const firstName = document.getElementById('register-firstname').value;
+    const lastName = document.getElementById('register-lastname').value;
+    const phone = document.getElementById('register-phone').value;
+
+    // 2. Vérification rapide
+    if (!email || !password || !firstName || !lastName || !phone) {
+        return alert("Veuillez remplir tous les champs obligatoires.");
+    }
+
+    if (password.length < 8) {
+        return alert("Le mot de passe doit contenir au moins 8 caractères.");
+    }
+
+    // 3. Stockage dans les variables globales (celles au début du script)
+    pendingEmail = email;
+    pendingPassword = password;
+    pendingProfile = {
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone
+    };
+
+    // 4. Ouverture de la PiP de confirmation
+    openConfirmProfilePip(email);
+}
 
 async function handleAuth() {
     const email = document.getElementById('auth-email').value.trim();
@@ -543,22 +572,88 @@ function handleRegisterStep1() {
     openConfirmProfilePip();
 }
 
+    function openConfirmProfilePip(email) {
+    const zone = document.getElementById('mobile-pip-zone');
+    if (!zone) return;
+
+    zone.classList.add('modal-mode');
+    zone.style.display = 'flex';
+    zone.style.pointerEvents = 'auto';
+
+    zone.innerHTML = `
+        <div class="mobile-pip-card border-t-8 border-slate-900">
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 bg-slate-100 text-slate-900 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                
+                <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase">Confirmez votre profil</h3>
+                <p class="text-slate-500 mb-8">Veuillez retaper votre mot de passe pour finaliser la création du compte <b>${email}</b>.</p>
+
+                <div class="mb-6">
+                    <input type="password" id="confirm-profile-password" 
+                           placeholder="Mot de passe" 
+                           class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-center text-lg">
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <button onclick="handleSignUp()" 
+                            class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">
+                        Confirmer et Accéder
+                    </button>
+                    <button onclick="closeMobilePip()" 
+                            class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition">
+                        Annuler
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 async function handleSignUp() {
     const confirmPwd = document.getElementById('confirm-profile-password').value;
-    if (!confirmPwd) return alert("Veuillez entrer votre mot de passe pour confirmer.");
+    
+    // Debug pour voir si les variables sont bien remplies
+    console.log("Données envoyées à l'Edge Function :", {
+        email: pendingEmail,
+        profile: pendingProfile
+    });
+
+    if (!confirmPwd) return alert("Veuillez entrer votre mot de passe.");
     if (confirmPwd !== pendingPassword) return alert("Le mot de passe ne correspond pas.");
 
     try {
+        // Utilise uniquement le NOM de la fonction, pas l'URL complète
         const { data, error } = await sb.functions.invoke('gestion-des-users--update--registration-and-connexion-', {
-            body: { action: 'signup', email: pendingEmail, password: pendingPassword, userData: pendingProfile }
+            body: { 
+                action: 'signup', 
+                email: pendingEmail, 
+                password: pendingPassword, 
+                userData: pendingProfile 
+            }
         });
+
         if (error) throw error;
-        alert("Compte créé ! Connectez-vous.");
+        
+        // Ta fonction Edge renvoie { success: true }
+        if (data.error) throw new Error(data.error);
+
+        alert("Compte créé avec succès !");
         closeConfirmProfilePip();
+        
+        // On pré-remplit l'email pour la connexion
         toggleAuthMode();
-        document.getElementById('auth-email').value = pendingEmail;
+        setTimeout(() => {
+            const emailField = document.getElementById('auth-email');
+            if(emailField) emailField.value = pendingEmail;
+        }, 100);
+
     } catch (err) {
-        alert("Erreur : " + err.message);
+        console.error("Erreur détaillée:", err);
+        alert("Erreur lors de l'inscription : " + err.message);
     }
 }
 
@@ -1207,6 +1302,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
