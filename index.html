@@ -1350,47 +1350,57 @@ async function handleDelete(eventId) {
 
 async function processDelete(eventId, deleteAll) {
     try {
-        console.log("Démarrage de la suppression. ID:", eventId, "Série:", deleteAll);
+        console.log("Exécution suppression...", { eventId, deleteAll });
 
         if (deleteAll) {
-            // --- SUPPRESSION SÉRIE ---
+            // --- LOGIQUE SÉRIE ---
             const event = eventsCache.find(e => e.id === eventId);
             if (!event) throw new Error("Événement introuvable dans le cache");
             
             const pId = event.parent_event_id || event.id;
-            const dateStr = event.date; 
+            const dateStr = event.date;
 
-            // Supprime l'original et toutes ses copies à partir de la date sélectionnée
-            const { error } = await sb.from('events')
-                .delete()
+            // 1. On récupère tous les IDs de la série à partir de cette date
+            const { data: relatedEvents, error: fetchError } = await sb.from('events')
+                .select('id')
                 .or(`id.eq.${pId},parent_event_id.eq.${pId}`)
                 .gte('date', dateStr);
+            
+            if (fetchError) throw fetchError;
+            const idsToDelete = relatedEvents.map(e => e.id);
 
-            if (error) throw error;
-        } else {
-            // --- SUPPRESSION UNIQUE ---
-            const { error } = await sb.from('events')
+            // 2. IMPORTANT : On supprime d'abord les inscriptions liées à ces IDs
+            // Sinon Supabase bloque la suppression des events (Foreign Key Constraint)
+            await sb.from('registrations').delete().in('event_id', idsToDelete);
+
+            // 3. On supprime enfin les événements
+            const { error: deleteError } = await sb.from('events')
                 .delete()
-                .eq('id', eventId);
+                .in('id', idsToDelete);
 
-            if (error) throw error;
+            if (deleteError) throw deleteError;
+
+        } else {
+            // --- LOGIQUE UNIQUE ---
+            // 1. Supprimer les inscriptions de cet event précis
+            await sb.from('registrations').delete().eq('event_id', eventId);
+
+            // 2. Supprimer l'event
+            const { error: deleteError } = await sb.from('events').delete().eq('id', eventId);
+            if (deleteError) throw deleteError;
         }
 
-        // --- SUCCÈS ---
-        alert("Suppression effectuée.");
+        // --- FINALISATION ---
+        alert("Suppression réussie.");
         closeMobilePip();
         if (typeof closeAdminPanel === "function") closeAdminPanel();
         
-        // Rafraîchissement impératif du calendrier
-        if (typeof fetchEvents === "function") {
-            await fetchEvents();
-        } else {
-            window.location.reload(); // Solution de secours si fetchEvents n'est pas accessible
-        }
+        // Rafraîchir les données
+        await fetchEvents();
 
     } catch (err) {
-        console.error("Erreur SQL suppression:", err);
-        alert("Erreur lors de la suppression : " + err.message);
+        console.error("Erreur détaillée lors de la suppression:", err);
+        alert("Erreur : " + err.message);
     }
 }
 
@@ -1454,5 +1464,6 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
