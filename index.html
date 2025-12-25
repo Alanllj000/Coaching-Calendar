@@ -769,13 +769,16 @@ function checkProfileChanges() {
                        currentData.phone !== initialProfileData.phone;
 
     const btn = document.getElementById('btn-update-profile');
+    if (!btn) return;
+
     btn.disabled = !hasChanged;
+    
     if (hasChanged) {
-        btn.classList.remove('bg-slate-100', 'text-slate-400');
-        btn.classList.add('bg-slate-900', 'text-white');
+        btn.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.add('bg-slate-900', 'text-white', 'cursor-pointer');
     } else {
-        btn.classList.add('bg-slate-100', 'text-slate-400');
-        btn.classList.remove('bg-slate-900', 'text-white');
+        btn.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.remove('bg-slate-900', 'text-white', 'cursor-pointer');
     }
 }
 
@@ -823,6 +826,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
