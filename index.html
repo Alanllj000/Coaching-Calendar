@@ -1716,7 +1716,7 @@ async function handleDeleteAccount() {
         }
 
         alert("Votre compte et vos données personnelles ont été supprimés.");
-        window.location.href = "/"; // Redirection vers l'accueil
+        window.location.reload();
 
     } catch (err) {
         console.error("Erreur lors de la suppression du compte:", err);
@@ -1759,6 +1759,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
