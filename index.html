@@ -447,20 +447,17 @@
     </div>
 </div>
 
-<div id="delete-account-pip" class="pip-overlay hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+    <!-- PiP SUPPRESSION DE COMPTE -->
+<div id="delete-account-pip" class="pip-overlay hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[110] p-4">
     <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
-        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-        </div>
         <h3 class="text-xl font-bold text-gray-900 mb-2">Supprimer le Compte ?</h3>
         <p class="text-gray-500 text-sm mb-6">
-            Cette action va définitivement supprimer votre compte ainsi que toutes vos données. <br><b>Êtes-vous sûr de vouloir continuer ?</b>
+            Cette action va définitivement supprimer votre compte ainsi que toutes vos données. Cette action est irréverssible.
+            <br><b>Veuillez confirmer l'action.</b>
         </p>
         
         <div class="space-y-3">
-            <button onclick="handleDeleteAccount()" class="w-full py-4 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition shadow-lg shadow-red-200">
+            <button onclick="handleDeleteAccount()" class="w-full py-4 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition">
                 Oui, Supprimer
             </button>
             <button onclick="closeDeleteAccountPip()" class="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">
@@ -1762,6 +1759,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
