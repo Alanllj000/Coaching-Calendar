@@ -902,20 +902,34 @@ async function triggerDeleteProcess() {
         alert("Erreur lors de la suppression.");
     }
 }
+// --- PASSWORD & EMAIL PIPS ---
+function openPasswordPip() { 
+    const pip = document.getElementById('password-pip');
+    if (pip) pip.style.display = 'flex'; 
+}
 
-    // --- PASSWORD & EMAIL PIPS ---
-function openPasswordPip() { document.getElementById('password-pip').style.display = 'flex'; }
-function closePasswordPip() { document.getElementById('password-pip').style.display = 'none'; }
+function closePasswordPip() { 
+    const pip = document.getElementById('password-pip');
+    if (pip) pip.style.display = 'none'; 
+}
+
 function openEmailPip() {
     const emailInput = document.getElementById('email-current-display');
-    if (currentUser?.email) emailInput.value = currentUser.email;
-    document.getElementById('email-pip').style.display = 'flex';
-  }
-function closeEmailPip() { document.getElementById('email-pip').style.display = 'none'; }
+    // Correction du ?. ici pour éviter le crash
+    if (currentUser && currentUser.email && emailInput) {
+        emailInput.value = currentUser.email;
+    }
+    const pip = document.getElementById('email-pip');
+    if (pip) pip.style.display = 'flex';
+}
 
+function closeEmailPip() { 
+    const pip = document.getElementById('email-pip');
+    if (pip) pip.style.display = 'none'; 
+}
 
-    // --- CHANGE PASSWORD ---
-  async function validateAndChangePassword() {
+// --- CHANGE PASSWORD ---
+async function validateAndChangePassword() {
     const currentPwd = document.getElementById('pwd-current').value;
     const newPwd = document.getElementById('pwd-new').value;
     const confirmPwd = document.getElementById('pwd-confirm').value;
@@ -923,7 +937,10 @@ function closeEmailPip() { document.getElementById('email-pip').style.display = 
     if (!currentPwd || !newPwd || !confirmPwd) return alert('Tous les champs sont requis.');
     if (newPwd !== confirmPwd) return alert('Les nouveaux mots de passe ne correspondent pas.');
 
-    const { error: signInErr } = await sb.auth.signInWithPassword({ email: currentUser.email, password: currentPwd });
+    const { error: signInErr } = await sb.auth.signInWithPassword({ 
+        email: currentUser.email, 
+        password: currentPwd 
+    });
     if (signInErr) return alert('Mot de passe actuel incorrect.');
 
     const { error: updateErr } = await sb.auth.updateUser({ password: newPwd });
@@ -931,40 +948,42 @@ function closeEmailPip() { document.getElementById('email-pip').style.display = 
 
     alert('Mot de passe mis à jour !');
     closePasswordPip();
-  }
-
-    // --- CHANGE EMAIL (MODIFIÉ POUR EDGE FUNCTION) ---
- async function updateEmail() {
-  const newEmail = document.getElementById('email-new').value.trim();
-  const pwd = document.getElementById('email-pwd-verif').value;
-
-  if (!newEmail || !pwd) return alert("Tous les champs sont requis.");
-
-  // 1. Vérification du mot de passe (Re-authentification)
-  const { error: loginErr } = await sb.auth.signInWithPassword({ 
-    email: currentUser.email, 
-    password: pwd 
-  });
-  
-  if (loginErr) return alert("Mot de passe incorrect.");
-
-  // 2. Appel de la fonction avec le NOM EXACT du dashboard
-  const { data, error: functionErr } = await sb.functions.invoke('gestion-des-users--update--registration-and-connexion-', {
-    body: { 
-      action: 'updateEmail', 
-      userId: currentUser.id, 
-      email: newEmail 
-    }
-  });
-     if (functionErr) {
-    console.error(functionErr);
-    return alert("Erreur lors de la mise à jour : " + functionErr.message);
-  }
-     // 3. Succès
-  alert("Email mis à jour avec succès ! Veuillez vous reconnecter avec votre nouvelle adresse.");
-  await logout(); 
 }
-let initialProfileData = {};
+
+// --- CHANGE EMAIL (EDGE FUNCTION) ---
+async function updateEmail() {
+    const newEmail = document.getElementById('email-new').value.trim();
+    const pwd = document.getElementById('email-pwd-verif').value;
+
+    if (!newEmail || !pwd) return alert("Tous les champs sont requis.");
+
+    // 1. Vérification du mot de passe
+    const { error: loginErr } = await sb.auth.signInWithPassword({ 
+        email: currentUser.email, 
+        password: pwd 
+    });
+    
+    if (loginErr) return alert("Mot de passe incorrect.");
+
+    // 2. Appel Edge Function
+    const { data, error: functionErr } = await sb.functions.invoke('gestion-des-users--update--registration-and-connexion-', {
+        body: { 
+            action: 'updateEmail', 
+            userId: currentUser.id, 
+            email: newEmail 
+        }
+    });
+
+    if (functionErr) {
+        console.error(functionErr);
+        return alert("Erreur lors de la mise à jour : " + functionErr.message);
+    }
+
+    // 3. Succès
+    alert("Email mis à jour avec succès ! Veuillez vous reconnecter.");
+    if (typeof logout === "function") await logout(); 
+}
+    
 
 
     
@@ -977,6 +996,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
