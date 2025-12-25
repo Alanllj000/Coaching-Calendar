@@ -774,6 +774,12 @@ function getSelectedDays() {
     return Array.from(checkboxes).map(cb => dayToNum[cb.value]);
 }
 async function requestAdminSubmit() {
+    const now = new Date();
+    const selectedDateTime = new Date(`${dateStr}T${startTime}`);
+    if (selectedDateTime < now) {
+        alert("L'heure choisie est déjà passée !");
+        return;
+    }
     const eventId = document.getElementById('admin-event-id').value;
     const title = document.getElementById('admin-title').value;
     const location = document.getElementById('admin-loc').value;
@@ -1062,6 +1068,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
 
