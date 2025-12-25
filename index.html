@@ -817,6 +817,53 @@ function toggleUserMenu(e) {
 }
 function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); renderCalendar(); }
 
+async function triggerDeleteProcess() {
+    const eventId = document.getElementById('admin-event-id').value;
+    if (!eventId) return;
+
+    const event = eventsCache.find(function(e) { return e.id === eventId; });
+    if (!event) return;
+
+    // 1. Demander confirmation
+    const confirmMsg = event.is_recurring 
+        ? "Voulez-vous supprimer TOUTE la série ? (Annuler pour supprimer uniquement cette séance)" 
+        : "Confirmer la suppression de cet événement ?";
+    
+    const deleteAll = event.is_recurring ? confirm(confirmMsg) : true;
+    if (event.is_recurring && !deleteAll) {
+        // Si c'est une série mais qu'on ne veut supprimer QUE celui-là
+        const singleConfirm = confirm("Supprimer uniquement cette séance précise ?");
+        if (!singleConfirm) return;
+    } else if (!event.is_recurring) {
+        // Simple confirmation pour un event unique
+        if (!confirm("Supprimer cet événement ?")) return;
+    }
+
+    try {
+        if (deleteAll && event.is_recurring) {
+            // OPTION A : Supprimer toute la série
+            const pId = event.parent_event_id ? event.parent_event_id : event.id;
+            const { error } = await sb.from('events')
+                .delete()
+                .or('id.eq.' + pId + ',parent_event_id.eq.' + pId);
+            if (error) throw error;
+        } else {
+            // OPTION B : Supprimer uniquement l'instance actuelle
+            const { error } = await sb.from('events')
+                .delete()
+                .eq('id', eventId);
+            if (error) throw error;
+        }
+
+        alert("Suppression réussie !");
+        closeAdminPanel();
+        await fetchEvents();
+    } catch (err) {
+        console.error("Erreur suppression:", err);
+        alert("Erreur lors de la suppression.");
+    }
+}
+    
 // --- INITIALISATION ---
 window.onload = async function() {
     const { data: { session } } = await sb.auth.getSession();
@@ -826,6 +873,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
