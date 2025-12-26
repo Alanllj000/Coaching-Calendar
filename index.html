@@ -568,31 +568,53 @@ document.addEventListener('click', function(e) {
     if (e.target === mobilePip) closeMobilePip();
 });
 
+console.log("Check DOM:", document.getElementById('auth-container-inner'));
 // --- AUTHENTIFICATION ---
 function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
     
-    const authContainer = document.getElementById('auth-container'); // Vérifie cet ID !
-    const authToggle = document.getElementById('auth-toggle');
+    // On récupère tous les éléments nécessaires
+    const container = document.getElementById('auth-container-inner');
+    const regFields = document.getElementById('register-fields');
+    const pip = document.getElementById('gdpr-step-pip');
+    const btnSubmit = document.getElementById('auth-submit-btn');
+    const btnLogin = document.getElementById('auth-btn');
+    const toggleTxt = document.getElementById('auth-toggle');
+
+    // SÉCURITÉ : Si l'élément principal n'est pas trouvé, on arrête avant de planter
+    if (!container) {
+        console.error("ERREUR : 'auth-container-inner' introuvable dans le DOM.");
+        return;
+    }
 
     if (isRegisterMode) {
-        // 1. On prépare l'affichage des champs
-        document.getElementById('register-fields').classList.remove('hidden');
-        document.getElementById('auth-submit-btn').classList.remove('hidden');
-        document.getElementById('auth-btn').classList.add('hidden');
+        // 1. On affiche les champs d'inscription
+        if (regFields) regFields.classList.remove('hidden');
+        if (btnSubmit) btnSubmit.classList.remove('hidden');
+        if (btnLogin) btnLogin.classList.add('hidden');
         
-        // 2. On floute tout et on ouvre la PiP de consentement
-        authContainer.classList.add('auth-blur');
-        document.getElementById('gdpr-step-pip').classList.remove('hidden');
+        // 2. On floute l'arrière-plan
+        container.classList.add('auth-blur');
         
-        authToggle.textContent = "Déjà un compte ? Se connecter";
+        // 3. On affiche la PiP des conditions
+        if (pip) {
+            pip.classList.remove('hidden');
+        } else {
+            console.error("ERREUR : 'gdpr-step-pip' introuvable.");
+        }
+        
+        if (toggleTxt) toggleTxt.textContent = "Déjà un compte ? Se connecter";
     } else {
-        // Mode connexion
-        document.getElementById('register-fields').classList.add('hidden');
-        document.getElementById('auth-submit-btn').classList.add('hidden');
-        document.getElementById('auth-btn').classList.remove('hidden');
-        authContainer.classList.remove('auth-blur');
-        authToggle.textContent = "Créer un compte";
+        // Retour au mode connexion
+        if (regFields) regFields.classList.add('hidden');
+        if (btnSubmit) btnSubmit.classList.add('hidden');
+        if (btnLogin) btnLogin.classList.remove('hidden');
+        
+        // ON RETIRE LE FLOU (C'est ici que ça plantait)
+        container.classList.remove('auth-blur');
+        if (pip) pip.classList.add('hidden');
+        
+        if (toggleTxt) toggleTxt.textContent = "Créer un compte";
     }
 }
     
@@ -1849,6 +1871,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
