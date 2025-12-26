@@ -219,9 +219,13 @@
 </div>
 
 <!-- PiP Conditions d'utilisation  -->
-<div id="gdpr-step-pip" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-[10000] hidden">
-    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+<div id="gdpr-step-pip" 
+     onclick="closeGdprOnOutsideClick(event)" 
+     class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-[10000] hidden">
+    
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl" onclick="event.stopPropagation()">
         <h2 class="text-xl font-bold mb-4">Avant de commencer...</h2>
+        
         <div class="bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 h-64 overflow-y-auto mb-6 border border-gray-100">
             <h4 class="font-bold text-gray-900 mb-2">Conditions d'Utilisation</h4>
             <p>En utilisant Coaching Calendar, vous acceptez les points suivants :</p>
@@ -234,17 +238,25 @@
         </div>
 
         <div class="flex items-center gap-3 mb-6">
-            <input type="checkbox" id="check-consent-initial" class="h-6 w-6 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500">
+            <input type="checkbox" id="check-consent-initial" class="h-6 w-6 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
             <label for="check-consent-initial" class="text-xs text-gray-500 font-medium cursor-pointer">
                 J'ai lu et j'accepte les conditions d'utilisation et la politique de confidentialité.
             </label>
         </div>
 
-        <button onclick="proceedToSignupForm()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-100">
-            Poursuivre vers l'inscription
-        </button>
+        <div class="flex gap-3">
+            <button onclick="cancelSignupConsent()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition active:scale-95">
+                Annuler
+            </button>
+            <button onclick="proceedToSignupForm()" class="flex-[2] py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-100 active:scale-95">
+                Poursuivre
+            </button>
+        </div>
     </div>
 </div>
+
+
+    
 <!-- MAIN APP -->
 <div id="main-content" class="hidden h-full flex flex-col">
     <!-- Header -->
@@ -1871,6 +1883,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
