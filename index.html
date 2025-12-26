@@ -928,7 +928,21 @@ function renderCalendar() {
     for (let d = 1; d <= lastDate; d++) {
         const dateStr = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
         const loopD = new Date(y, m, d);
-        const isPast = dateStr < todayStr;
+        let isPast = dateStr < todayStr;
+        if (dateStr === todayStr) {
+            const lastEventOfToday = dayEvts.reduce((latest, e) => {
+                return (!latest || e.end_time > latest) ? e.end_time : latest;
+            }, null);
+        
+            if (lastEventOfToday) {
+                const [h, m] = lastEventOfToday.split(':');
+                const endDateTime = new Date(y, m, d, parseInt(h), parseInt(m));
+                if (now > endDateTime) {
+                    // Optionnel : tu peux décider de griser la case seulement si TOUT est fini
+                    // isPast = true; 
+                }
+            }
+        }
         const isToday = new Date().toDateString() === loopD.toDateString();
 
         const dayEvts = eventsCache.filter(function(e) {
@@ -947,7 +961,7 @@ function renderCalendar() {
 
         // --- LOGIQUE DE CLIC ---
         // Seuls les admins peuvent cliquer sur le passé. Les users sont bloqués.
-        if (isPast) {
+        if (dateStr < todayStr) {
             if (isAdmin) {
                 cell.onclick = function() { openDayPip(dateStr, dayEvts); };
                 cell.style.cursor = 'pointer';
@@ -962,8 +976,12 @@ function renderCalendar() {
         let dotsHtml = dayEvts.map(function(e) {
             const regCount = (e.registrations && e.registrations.length) || 0;
             const isFull = regCount >= e.max_participants;
-            if (isPast) return `<span class="event-dot bg-slate-300"></span>`;
-            return `<span class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
+            const [endH, endM] = (e.end_time || "23:59").split(':');
+            const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endM));
+            const isThisEventPast = now > eFullDate;
+
+if (isThisEventPast) return `<span class="event-dot bg-slate-300"></span>`;
+return `<span class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
         }).join('');
 
         cell.innerHTML = `
@@ -982,7 +1000,8 @@ function openDayPip(dateStr, events = []) {
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
     
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date(); // On garde l'objet complet avec l'heure
+    const todayStr = now.toISOString().split('T')[0];
     const isDatePast = dateStr < todayStr;
     const isAdmin = currentProfile && currentProfile.role === 'admin';
     const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1934,6 +1953,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
