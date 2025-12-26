@@ -177,6 +177,14 @@
         border-style: dashed !important;
     }
         
+    /* Classe pour flouter le formulaire en arrière-plan */
+    .auth-blur {
+        filter: blur(8px);
+        pointer-events: none; /* Empêche de cliquer à travers le flou */
+        user-select: none;
+    }
+        
+        
     </style>
 </head>
 <body>
@@ -210,6 +218,33 @@
   </div>
 </div>
 
+<!-- PiP Conditions d'utilisation  -->
+<div id="gdpr-step-pip" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-[150] hidden">
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+        <h2 class="text-xl font-bold mb-4">Avant de commencer...</h2>
+        <div class="bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 h-64 overflow-y-auto mb-6 border border-gray-100">
+            <h4 class="font-bold text-gray-900 mb-2">Conditions d'Utilisation</h4>
+            <p>En utilisant Coaching Calendar, vous acceptez les points suivants :</p>
+            <ul class="list-disc ml-4 mt-2 space-y-3">
+                <li><strong>Données :</strong> Nous collectons votre nom, email et téléphone pour gérer vos réservations.</li>
+                <li><strong>Sécurité :</strong> Votre session expire automatiquement après 10 minutes d'inactivité.</li>
+                <li><strong>Droit à l'oubli :</strong> Vous pouvez supprimer votre compte à tout moment. Vos données personnelles seront effacées (hors archives de sécurité des événements passés).</li>
+                <li><strong>Hébergement :</strong> Les données sont sécurisées via Supabase.</li>
+            </ul>
+        </div>
+
+        <div class="flex items-center gap-3 mb-6">
+            <input type="checkbox" id="check-consent-initial" class="h-6 w-6 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500">
+            <label for="check-consent-initial" class="text-xs text-gray-500 font-medium cursor-pointer">
+                J'ai lu et j'accepte les conditions d'utilisation et la politique de confidentialité.
+            </label>
+        </div>
+
+        <button onclick="proceedToSignupForm()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+            Poursuivre vers l'inscription
+        </button>
+    </div>
+</div>
 <!-- MAIN APP -->
 <div id="main-content" class="hidden h-full flex flex-col">
     <!-- Header -->
@@ -536,38 +571,41 @@ document.addEventListener('click', function(e) {
 // --- AUTHENTIFICATION ---
 function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
-    document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
-    document.getElementById('auth-submit-btn').classList.toggle('hidden', !isRegisterMode);
-    document.getElementById('auth-btn').classList.toggle('hidden', isRegisterMode);
-    document.getElementById('auth-toggle').textContent = isRegisterMode ? "Déjà un compte ? Se connecter" : "Créer un compte";
+    
+    const authContainer = document.getElementById('auth-container'); // Vérifie cet ID !
+    const authToggle = document.getElementById('auth-toggle');
+
+    if (isRegisterMode) {
+        // 1. On prépare l'affichage des champs
+        document.getElementById('register-fields').classList.remove('hidden');
+        document.getElementById('auth-submit-btn').classList.remove('hidden');
+        document.getElementById('auth-btn').classList.add('hidden');
+        
+        // 2. On floute tout et on ouvre la PiP de consentement
+        authContainer.classList.add('auth-blur');
+        document.getElementById('gdpr-step-pip').classList.remove('hidden');
+        
+        authToggle.textContent = "Déjà un compte ? Se connecter";
+    } else {
+        // Mode connexion
+        document.getElementById('register-fields').classList.add('hidden');
+        document.getElementById('auth-submit-btn').classList.add('hidden');
+        document.getElementById('auth-btn').classList.remove('hidden');
+        authContainer.classList.remove('auth-blur');
+        authToggle.textContent = "Créer un compte";
+    }
 }
-async function handleRegisterStep1() {
-    // 1. Récupération des valeurs du formulaire
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    const firstName = document.getElementById('register-firstname').value;
-    const lastName = document.getElementById('register-lastname').value;
-    const phone = document.getElementById('register-phone').value;
-    // 2. Vérification rapide
-    if (!email || !password || !firstName || !lastName || !phone) {
-        return alert("Veuillez remplir tous les champs obligatoires.");
+
+function proceedToSignupForm() {
+    if (!document.getElementById('check-consent-initial').checked) {
+        return alert("Veuillez accepter les conditions pour continuer.");
     }
-
-    if (password.length < 8) {
-        return alert("Le mot de passe doit contenir au moins 8 caractères.");
-    }
-
-    // 3. Stockage dans les variables globales (celles au début du script)
-    pendingEmail = email;
-    pendingPassword = password;
-    pendingProfile = {
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone
-    };
-
-    // 4. Ouverture de la PiP de confirmation
-    openConfirmProfilePip(email);
+    document.getElementById('gdpr-step-pip').classList.add('hidden');
+    document.getElementById('auth-container').classList.remove('auth-blur');
+}
+function cancelSignupConsent() {
+    document.getElementById('gdpr-step-pip').classList.add('hidden');
+    toggleAuthMode(); // Repasse en mode login
 }
 
 async function handleAuth() {
@@ -580,7 +618,7 @@ async function handleAuth() {
     initApp(data.user);
 }
 
-function handleRegisterStep1() {
+async function handleRegisterStep1() {
     const emailVal = document.getElementById('auth-email').value.trim();
     const passwordVal = document.getElementById('auth-password').value;
     const fn = document.getElementById('auth-firstname').value.trim();
@@ -592,11 +630,19 @@ function handleRegisterStep1() {
         return;
     }
 
+    if (passwordVal.length < 8) {
+        alert("Le mot de passe doit contenir au moins 8 caractères.");
+        return;
+    }
+
     pendingProfile = { first_name: fn, last_name: ln, phone: ph };
     pendingEmail = emailVal;
     pendingPassword = passwordVal;
-    openConfirmProfilePip();
+    
+    // On passe à l'étape suivante (ton étape 5 : la PiP de confirmation)
+    openConfirmProfilePip(email);
 }
+
 
     function openConfirmProfilePip(email) {
     const zone = document.getElementById('mobile-pip-zone');
@@ -1782,6 +1828,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
