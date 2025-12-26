@@ -595,14 +595,25 @@ function toggleAuthMode() {
         authToggle.textContent = "Créer un compte";
     }
 }
-
+    
 function proceedToSignupForm() {
-    if (!document.getElementById('check-consent-initial').checked) {
-        return alert("Veuillez accepter les conditions pour continuer.");
+    const isChecked = document.getElementById('check-consent-initial').checked;
+    
+    if (!isChecked) {
+        alert("Veuillez cocher la case pour accepter les conditions.");
+        return;
     }
+
+    // 1. Fermer la PiP
     document.getElementById('gdpr-step-pip').classList.add('hidden');
-    document.getElementById('auth-container').classList.remove('auth-blur');
+    
+    // 2. Retirer le flou de l'élément que tu viens de me montrer
+    const inner = document.getElementById('auth-container-inner');
+    if (inner) {
+        inner.classList.remove('auth-blur');
+    }
 }
+
 function cancelSignupConsent() {
     document.getElementById('gdpr-step-pip').classList.add('hidden');
     toggleAuthMode(); // Repasse en mode login
@@ -1838,6 +1849,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
