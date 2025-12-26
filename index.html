@@ -653,6 +653,13 @@ function cancelSignupConsent() {
     toggleAuthMode(); // Repasse en mode login
 }
 
+function closeGdprOnOutsideClick(event) {
+    if (event.target.id === 'gdpr-step-pip') {
+        cancelSignupConsent();
+    }
+}
+
+
 async function handleAuth() {
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
@@ -1883,6 +1890,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
