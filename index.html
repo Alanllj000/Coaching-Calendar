@@ -911,77 +911,92 @@ function renderCalendar() {
     if (!grid) return;
     grid.innerHTML = '';
     
+    // 1. Initialisation du temps
+    const now = new Date(); // Définition de 'now' pour toute la fonction
     const y = currentDate.getFullYear();
-    const m = currentDate.getMonth();
-    document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate);
+    const m = currentDate.getMonth(); // m = mois du calendrier (0-11)
+    
+    document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { 
+        month: 'long', 
+        year: 'numeric' 
+    }).format(currentDate);
 
     const firstDay = (new Date(y, m, 1).getDay() || 7) - 1;
     const lastDate = new Date(y, m + 1, 0).getDate();
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = now.toISOString().split('T')[0];
 
-    // 1. Cases vides (début de mois) : on les rend invisibles
+    // Cases vides (début de mois)
     for (let i = 0; i < firstDay; i++) {
         grid.innerHTML += `<div class="calendar-day opacity-0 pointer-events-none"></div>`;
     }
 
-    // 2. Cases des jours réels
+    // 2. Boucle des jours réels
     for (let d = 1; d <= lastDate; d++) {
-        const dateStr = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+        const dateStr = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
         const loopD = new Date(y, m, d);
-        let isPast = dateStr < todayStr;
-        if (dateStr === todayStr) {
-            const lastEventOfToday = dayEvts.reduce((latest, e) => {
-                return (!latest || e.end_time > latest) ? e.end_time : latest;
-            }, null);
+        const isToday = now.toDateString() === loopD.toDateString();
         
-            if (lastEventOfToday) {
-                const [h, m] = lastEventOfToday.split(':');
-                const endDateTime = new Date(y, m, d, parseInt(h), parseInt(m));
-                if (now > endDateTime) {
-                    // Optionnel : tu peux décider de griser la case seulement si TOUT est fini
-                    // isPast = true; 
-                }
-            }
-        }
-        const isToday = new Date().toDateString() === loopD.toDateString();
-
+        // --- FILTRAGE DES EVENTS DU JOUR ---
+        // (On le déplace ici pour pouvoir l'utiliser dans le calcul de isPast)
         const dayEvts = eventsCache.filter(function(e) {
             const isD = e.date === dateStr;
             const isNotExcluded = !e.excluded_dates || !e.excluded_dates.includes(dateStr);
             return isD && isNotExcluded;
         });
 
+        // --- CALCUL IS_PAST PRÉCIS ---
+        // Par défaut, un jour est "passé" s'il est avant aujourd'hui
+        let isPast = dateStr < todayStr;
+
+        // Si c'est aujourd'hui, on vérifie si le dernier événement est fini
+        if (dateStr === todayStr && dayEvts.length > 0) {
+            const lastEventEndTime = dayEvts.reduce((latest, e) => {
+                return (!latest || e.end_time > latest) ? e.end_time : latest;
+            }, null);
+
+            if (lastEventEndTime) {
+                const [h, mins] = lastEventEndTime.split(':');
+                const endDateTime = new Date(y, m, d, parseInt(h), parseInt(mins));
+                if (now > endDateTime) {
+                    // Si tu veux griser la case quand tout est fini :
+                    // isPast = true; 
+                }
+            }
+        }
+
         const cell = document.createElement('div');
         const isAdmin = currentProfile && currentProfile.role === 'admin';
         
-        // --- STYLE DIFFÉRENCIÉ ---
+        // --- STYLE ---
         cell.className = `calendar-day border border-slate-100 transition-all ${isPast ? 'bg-slate-50/80' : 'bg-white shadow-sm'}`;
-        
         if (isToday) cell.classList.add('ring-2', 'ring-blue-500', 'ring-inset');
 
         // --- LOGIQUE DE CLIC ---
-        // Seuls les admins peuvent cliquer sur le passé. Les users sont bloqués.
+        // On bloque le clic SEULEMENT si la date est strictement passée (hier ou avant)
         if (dateStr < todayStr) {
             if (isAdmin) {
                 cell.onclick = function() { openDayPip(dateStr, dayEvts); };
                 cell.style.cursor = 'pointer';
             } else {
-                cell.style.cursor = 'not-allowed'; // Curseur bloqué pour les users
+                cell.style.cursor = 'not-allowed';
             }
         } else {
-            // Dans le futur, tout le monde peut cliquer
             cell.onclick = function() { openDayPip(dateStr, dayEvts); };
             cell.style.cursor = 'pointer';
         }
+
+        // --- POINTS (DOTS) ---
         let dotsHtml = dayEvts.map(function(e) {
             const regCount = (e.registrations && e.registrations.length) || 0;
             const isFull = regCount >= e.max_participants;
-            const [endH, endM] = (e.end_time || "23:59").split(':');
-            const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endM));
+            
+            // Calcul individuel par point
+            const [endH, endMins] = (e.end_time || "23:59").split(':');
+            const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endMins));
             const isThisEventPast = now > eFullDate;
 
-if (isThisEventPast) return `<span class="event-dot bg-slate-300"></span>`;
-return `<span class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
+            if (isThisEventPast) return `<span class="event-dot bg-slate-300"></span>`;
+            return `<span class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
         }).join('');
 
         cell.innerHTML = `
@@ -1953,6 +1968,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
