@@ -618,31 +618,41 @@ async function handleAuth() {
     initApp(data.user);
 }
 
+
 async function handleRegisterStep1() {
+    // 1. Récupération précise des valeurs
     const emailVal = document.getElementById('auth-email').value.trim();
     const passwordVal = document.getElementById('auth-password').value;
+    // Vérifie bien que ces 3 IDs existent dans ton HTML (auth-firstname, auth-lastname, auth-phone)
     const fn = document.getElementById('auth-firstname').value.trim();
     const ln = document.getElementById('auth-lastname').value.trim();
     const ph = document.getElementById('auth-phone').value.trim();
 
-    if (!emailVal || !passwordVal || !fn || !ln) {
-        alert("Tous les champs obligatoires sont requis !");
+    // 2. Vérification des champs vides
+    if (!emailVal || !passwordVal || !fn || !ln || !ph) {
+        alert("Veuillez remplir tous les champs obligatoires (Email, Password, Nom, Prénom, Tel).");
         return;
     }
 
+    // 3. Sécurité mot de passe
     if (passwordVal.length < 8) {
         alert("Le mot de passe doit contenir au moins 8 caractères.");
         return;
     }
 
-    pendingProfile = { first_name: fn, last_name: ln, phone: ph };
+    // 4. Stockage dans tes variables globales pour l'étape suivante
     pendingEmail = emailVal;
     pendingPassword = passwordVal;
-    
-    // On passe à l'étape suivante (ton étape 5 : la PiP de confirmation)
-    openConfirmProfilePip(email);
-}
+    pendingProfile = { 
+        first_name: fn, 
+        last_name: ln, 
+        phone: ph 
+    };
 
+    // 5. Passage à la PiP de confirmation (Étape 5 de ton flux)
+    // On passe bien emailVal en argument pour éviter le "email is not defined"
+    openConfirmProfilePip(emailVal); 
+}
 
     function openConfirmProfilePip(email) {
     const zone = document.getElementById('mobile-pip-zone');
@@ -1828,6 +1838,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
