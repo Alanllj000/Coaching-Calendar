@@ -554,7 +554,7 @@
     </div>
 </div>
 
-<!-- PiP Modal Generic -->
+<!-- PiP confirmation de mot de passe-->
 <div id="pip-confirm" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[10000]">
   <div class="bg-white rounded-2xl shadow-lg p-6 w-80 max-w-full">
     <h3 class="text-xl font-bold mb-4">Confirmer le mot de passe</h3>
@@ -746,16 +746,20 @@ async function handleRegisterStep1() {
     openConfirmProfilePip(emailVal); 
 }
 
-    function openConfirmProfilePip(email) {
+function openConfirmProfilePip(email) {
     const zone = document.getElementById('mobile-pip-zone');
     if (!zone) return;
 
+    // On prépare l'overlay (le fond flou)
     zone.classList.add('modal-mode');
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
+    
+    // CORRECTION : On s'assure que l'overlay n'a PAS d'arrondi lui-même
+    zone.style.borderRadius = '0'; 
 
     zone.innerHTML = `
-        <div class="mobile-pip-card border-t-8 border-slate-900">
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border-t-8 border-slate-900 mx-4 w-full max-w-md">
             <div class="p-8 text-center">
                 <div class="w-16 h-16 bg-slate-100 text-slate-900 rounded-full flex items-center justify-center mx-auto mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -764,7 +768,7 @@ async function handleRegisterStep1() {
                 </div>
                 
                 <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase">Confirmez votre profil</h3>
-                <p class="text-slate-500 mb-8">Veuillez retaper votre mot de passe pour finaliser la création du compte <b class="text-slate-900">${pendingEmail}</b>.</p>
+                <p class="text-slate-500 mb-8 text-sm">Veuillez retaper votre mot de passe pour finaliser la création du compte <br><b class="text-slate-900">${email}</b>.</p>
 
                 <div class="mb-6">
                     <input type="password" id="confirm-profile-password" 
@@ -1930,6 +1934,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
