@@ -2441,38 +2441,84 @@ function checkChanges() {
 }
 
 // 6. SAUVEGARDE DANS SUPABASE
-async function saveNotificationPrefs() {
-    const userId = currentUser?.id;
-    if (!userId) return;
+let initialSettings = null;
 
-    try {
-        const settings = {
-            user_id: userId,
-            notif_enabled: document.getElementById('notif-master').checked,
-            remind_1w: document.getElementById('notif-1s').checked,
-            remind_1d: document.getElementById('notif-1j').checked,
-            remind_1h: document.getElementById('notif-1h').checked,
-            custom_reminders: currentCustomReminders // Supabase stockera ça en JSONB
-        };
+async function loadNotificationSettings() {
+    const user = (await sb.auth.getUser()).data.user;
+    if (!user) return;
 
-        const { error } = await sb
-            .from('notification_settings')
-            .upsert(settings);
+    const { data, error } = await sb
+        .from('profiles')
+        .select('notif_enable, notif_week, notif_day, notif_hour, notif_custom')
+        .eq('id', user.id)
+        .single();
 
-        if (error) throw error;
-
-        alert("Préférences enregistrées !");
+    if (data) {
+        // On mappe tes colonnes de la DB vers ton UI
+        initialSettings = data;
+        document.getElementById('notif-master').checked = data.notif_enable;
+        document.getElementById('notif-1s').checked = data.notif_week;
+        document.getElementById('notif-1j').checked = data.notif_day;
+        document.getElementById('notif-1h').checked = data.notif_hour;
         
-        // Reset l'aspect du bouton
-        const btn = document.getElementById('btn-save-notif');
-        btn.disabled = true;
-        btn.classList.replace('bg-blue-600', 'bg-slate-200');
-        btn.classList.replace('text-white', 'text-slate-400');
-        btn.style.cursor = "not-allowed";
+        // On récupère tes rappels personnalisés (notif_custom dans ton schéma)
+        currentCustomReminders = data.notif_custom || [];
+        
+        renderCustomReminders();
+        toggleNotifUI();
+    }
+    checkChanges();
+}
 
-    } catch (err) {
-        console.error(err);
-        alert("Erreur lors de la sauvegarde.");
+async function saveNotificationPrefs() {
+    const user = (await sb.auth.getUser()).data.user;
+    if (!user) return;
+
+    const settings = {
+        notif_enable: document.getElementById('notif-master').checked,
+        notif_week: document.getElementById('notif-1s').checked,
+        notif_day: document.getElementById('notif-1j').checked,
+        notif_hour: document.getElementById('notif-1h').checked,
+        notif_custom: currentCustomReminders // On sauve le tableau JSON ici
+    };
+
+    const { error } = await sb
+        .from('profiles')
+        .update(settings)
+        .eq('id', user.id);
+
+    if (error) {
+        console.error(error);
+        alert("Erreur : " + error.message);
+    } else {
+        alert("Préférences enregistrées !");
+        initialSettings = settings;
+        checkChanges();
+    }
+}
+
+function checkChanges() {
+    const btn = document.getElementById('btn-save-notif');
+    if (!initialSettings) return;
+
+    const currentUI = {
+        notif_enable: document.getElementById('notif-master').checked,
+        notif_week: document.getElementById('notif-1s').checked,
+        notif_day: document.getElementById('notif-1j').checked,
+        notif_hour: document.getElementById('notif-1h').checked,
+        notif_custom: currentCustomReminders
+    };
+
+    const hasChanged = JSON.stringify(currentUI) !== JSON.stringify(initialSettings);
+
+    if (hasChanged) {
+        btn.disabled = false;
+        btn.classList.remove('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.add('bg-slate-900', 'text-white', 'cursor-pointer', 'shadow-md');
+    } else {
+        btn.disabled = true;
+        btn.classList.add('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.remove('bg-slate-900', 'text-white', 'cursor-pointer', 'shadow-md');
     }
 }
 
@@ -2510,6 +2556,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
