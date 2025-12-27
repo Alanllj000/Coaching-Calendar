@@ -2197,7 +2197,6 @@ async function submitInscription(eventId, isEditing, registrationId) {
     }
 }
 
-
 async function handleUnsubscribe(registrationId, eventId) {
     if (!confirm("Voulez-vous vraiment annuler votre inscription à cet événement ?")) return;
 
@@ -2205,45 +2204,45 @@ async function handleUnsubscribe(registrationId, eventId) {
     const userId = currentUser?.id;
 
     try {
-        // 1. RÉCUPÉRATION DES INFOS POUR LE LOG (Avant suppression)
-        // On récupère les notes dans le cache avant qu'elles ne soient supprimées
-        const oldNotes = registrationDetailsCache[eventId]?.notes || null;
+        // 1. RÉCUPÉRATION DES INFOS (AVANT suppression et AVANT vidage du cache)
+        // On récupère les données actuelles dans le cache pour les mettre dans le log
+        const oldData = registrationDetailsCache[eventId] || null;
+        const oldNotes = oldData?.notes || null;
+        const oldIsPrivate = oldData?.is_private_request ?? null;
 
-        // 2. SUPPRESSION DANS SUPABASE
-        const { error } = await sb
+        // 2. SUPPRESSION DANS SUPABASE (Table registrations)
+        const { error: delError } = await sb
             .from('registrations')
             .delete()
             .eq('id', registrationId);
 
-        if (error) throw error;
+        if (delError) throw delError;
 
         // 3. 📝 LOG DANS LE REGISTRE
-        // On enregistre l'action 'DESINSCRIPTION'
+        // On insère l'action 'DESINSCRIPTION' avec les dernières valeurs connues
         const { error: logError } = await sb
-            .from('Registre_inscription_modification_suppression')
+            .from('registre_inscription_modification_suppression')
             .insert([{
                 user_id: userId,
                 event_id: eventId,
                 action_type: 'DESINSCRIPTION',
                 old_notes: oldNotes,
-                new_notes: null, // Pas de nouvelles notes lors d'une suppression
-                old_is_private: registrationDetailsCache[eventId]?.is_private_request || null, // <--- Ajouté
+                new_notes: null,
+                old_is_private: oldIsPrivate,
                 new_is_private: null,
                 event_title: eventData?.title || 'Événement inconnu'
             }]);
 
-        if (logError) console.warn("Erreur log désinscription :", logError);
+        if (logError) console.error("Erreur log désinscription :", logError);
 
-        // 4. GESTION DU CACHE
-        // Très important : on vide le cache pour cet event pour qu'il soit "propre"
+        // 4. NETTOYAGE DU CACHE
+        // On ne le fait qu'après avoir envoyé le log pour être sûr d'avoir eu les infos
         if (typeof registrationDetailsCache !== 'undefined') {
             delete registrationDetailsCache[eventId];
         }
 
-        // 5. SUCCÈS
+        // 5. MISE À JOUR UI
         closeMobilePip();
-        
-        // Rafraîchit le calendrier (le point redevient bleu ou disparaît)
         await fetchEvents(); 
         
         alert("Désinscription réussie.");
@@ -2253,6 +2252,7 @@ async function handleUnsubscribe(registrationId, eventId) {
         alert("Impossible de se désinscrire : " + err.message);
     }
 }
+
 // Fonction utilitaire pour le bouton "Annuler"
 // Elle ferme la modale actuelle et réouvre celle du jour
 function closeInscriptionAndReturnToDay(dateStr) {
@@ -2299,6 +2299,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
