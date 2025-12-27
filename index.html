@@ -49,12 +49,13 @@
         .dot-red { background-color: #ef4444; }
         .dot-gray { background-color: #94a3b8; }
 
-       #mobile-pip-zone {
+
+        #mobile-pip-zone {
             position: fixed;
-            inset: 0;
+            inset: 0;           /* Couvre tout l'écran (Haut/Bas/Gauche/Droite = 0) */
             z-index: 1500;
             display: none;
-            align-items: flex-end; /* Aligné en bas par défaut */
+            align-items: flex-end; /* Aligné en bas par défaut (mode calendrier) */
             pointer-events: none;
             background: transparent;
             transition: background 0.3s ease;
@@ -62,24 +63,44 @@
         
         /* Quand on l'ouvre pour un jour (clic calendrier) */
         #mobile-pip-zone:not(.modal-mode) {
-            background: transparent; /* PAS de fond sombre pour voir le calendrier */
-            backdrop-filter: none;    /* PAS de flou */
+            background: transparent; /* PAS de fond sombre */
+            backdrop-filter: none;   /* PAS de flou */
         }
+        
         /* --- LE MODE MODALE (Pour la confirmation au centre) --- */
         #mobile-pip-zone.modal-mode {
-            width: 100vw;
-            height: 100vh;
-            align-items: center; /* Centre verticalement */
-            justify-content: center;
+            /* inset: 0 hérité suffit pour la taille */
+            align-items: center;      /* Centre verticalement */
+            justify-content: center;  /* Centre horizontalement */
+            
             background: rgba(15, 23, 42, 0.6); /* Fond sombre */
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
+            
             pointer-events: auto;
             z-index: 9999;
-            display: flex;  
-            border-radius: 28px;
-            margin: 0 auto;
+            display: flex;
+            
+            /* CORRECTION ICI : On force les coins carrés pour que le flou touche les bords de l'écran */
+            border-radius: 0; 
+            margin: 0;
         }
+        
+        /* La carte blanche à l'intérieur */
+        #mobile-pip-zone.modal-mode .mobile-pip-card {
+            width: 95%;             /* Marge de sécurité mobile */
+            max-width: 800px;       /* Limite PC */
+            background: white;
+            padding: 40px;
+            
+            /* C'est ICI qu'on garde l'arrondi */
+            border-radius: 32px;    
+            
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        
         #admin-panel {
             display: none; /* FORCE le panneau à être caché au démarrage */
         }
@@ -91,18 +112,6 @@
             overflow-y: auto;
             /* Ne pas mettre de display ici pour ne pas créer de conflit */
         }
-        /* La carte de confirmation à 800px */
-        #mobile-pip-zone.modal-mode .mobile-pip-card {
-            width: 95%;           /* Marge de sécurité sur les petits écrans */
-            max-width: 800px;     /* Ta nouvelle limite sur PC */
-            background: white;
-            padding: 40px;        /* Un peu plus d'espace interne pour le format large */
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transform: scale(0.9);
-            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        /* On s'assure que la carte est cliquable dans les deux cas */
         .mobile-pip-card {
             pointer-events: auto;
             background: white;
@@ -1968,6 +1977,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
