@@ -2113,13 +2113,20 @@ async function handleInscriptionPiPstep2(eventId) {
     zone.style.pointerEvents = 'auto';
 }
 
-
 async function submitInscription(eventId, isEditing, registrationId) {
     const notes = document.getElementById('reg-notes').value;
     const isPrivate = document.getElementById('reg-private-toggle').checked;
     const userId = currentUser?.id;
 
+    // Sécurité : ID utilisateur manquant
     if (!userId) return alert("Session expirée, veuillez vous reconnecter.");
+
+    // Sécurité visuelle : Désactiver le bouton pour éviter le double-envoi
+    const btn = event?.target; 
+    if (btn && btn.tagName === 'BUTTON') {
+        btn.disabled = true;
+        btn.innerText = "Enregistrement...";
+    }
 
     try {
         let error = null;
@@ -2129,10 +2136,10 @@ async function submitInscription(eventId, isEditing, registrationId) {
             const { error: upError } = await sb
                 .from('registrations')
                 .update({ 
-                    notes: notesValue,
-                    is_private_request: isPrivateValue 
+                    notes: notes,
+                    is_private_request: isPrivate
                 })
-                .eq('id', registrationId); // On cible la ligne précise
+                .eq('id', registrationId); // Cible la ligne précise
             error = upError;
 
         } else {
@@ -2150,14 +2157,30 @@ async function submitInscription(eventId, isEditing, registrationId) {
 
         if (error) throw error;
 
+        // --- GESTION DU CACHE (Trés important pour la fluidité) ---
+        // On supprime l'ancienne version du cache pour que le prochain clic 
+        // force un re-chargement des nouvelles données.
+        if (typeof registrationDetailsCache !== 'undefined') {
+            delete registrationDetailsCache[eventId];
+        }
+
         // Succès !
         closeMobilePip(); // Ferme la modale
-        await fetchEvents(); // Recharge les données pour voir le point bleu/rouge à jour
+        
+        // Optionnel : un petit délai ou un rafraîchissement silencieux
+        await fetchEvents(); 
+        
         alert(isEditing ? "Inscription modifiée !" : "Inscription validée !");
 
     } catch (err) {
         console.error("Erreur inscription :", err);
         alert("Une erreur est survenue : " + err.message);
+        
+        // Réactiver le bouton en cas d'erreur pour permettre de réessayer
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = isEditing ? "Enregistrer les modifications" : "Finaliser l'inscription";
+        }
     }
 }
 
@@ -2230,6 +2253,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
