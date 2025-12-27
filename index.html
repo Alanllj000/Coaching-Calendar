@@ -1947,35 +1947,34 @@ function resetInactivityTimer() {
 }
 
 function handleInscriptionPiPstep1(eventId) {
-    // 1. On récupère l'événement complet depuis ton cache
-    // (Assure-toi que eventsCache est bien accessible ici)
     const event = eventsCache.find(e => e.id === eventId);
-    if (!event) return alert("Événement introuvable");
+    if (!event) return;
+
+    // --- DETECTION DU MODE MODIFICATION ---
+    const myId = currentUser?.id;
+    const isEditing = event.registrations && event.registrations.some(r => r.user_id === myId);
 
     const zone = document.getElementById('mobile-pip-zone');
-    
-    // Configuration de l'overlay (Rappel : CSS gère les bords carrés sur .modal-mode)
     zone.classList.add('modal-mode');
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
 
-    // Formatage des dates pour l'affichage
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const dateReadable = new Date(event.date).toLocaleDateString('fr-FR', dateOptions);
 
     zone.innerHTML = `
         <div class="mobile-pip-card flex flex-col gap-6 relative">
-            
-            <h3 class="text-xl font-black text-slate-900 uppercase text-center">Confirmation</h3>
+            <h3 class="text-xl font-black text-slate-900 uppercase text-center">Détails de l'événement</h3>
 
             <div class="text-sm text-slate-600 leading-relaxed text-center">
+                ${isEditing ? '<span class="text-blue-600 font-bold uppercase text-[10px] block mb-2">Vous êtes déjà inscrit</span>' : ''}
                 Souhaitez-vous confirmer votre inscription à l'événement 
                 <strong class="text-slate-900">${event.title}</strong> 
                 qui aura lieu le <strong class="text-slate-900">${dateReadable}</strong> 
                 de <strong class="text-slate-900">${event.start_time}</strong> 
                 à <strong class="text-slate-900">${event.end_time}</strong> ?
                 <br><br>
-                Le lieu du cour est : <strong class="text-slate-900">${event.location || 'Non défini'}</strong>.
+                Le lieu est : <strong class="text-slate-900">${event.location || 'Non défini'}</strong>.
             </div>
 
             <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex gap-3 items-start">
@@ -1983,14 +1982,14 @@ function handleInscriptionPiPstep1(eventId) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <p class="text-xs text-orange-800 font-medium leading-snug">
-                    Une avance d'au minimum <strong>15 minutes</strong> avant le début de toute activité physique, dédiée à un échauffement, est nécessaire afin d'éviter les blessures !
+                    Une avance d'au minimum <strong>15 minutes</strong> dédiée à un échauffement est nécessaire !
                 </p>
             </div>
 
             <div class="flex flex-col gap-3 mt-2">
                 <button onclick="handleInscriptionPiPstep2('${eventId}')" 
                         class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-                    Poursuivre l'inscription
+                    ${isEditing ? 'Retourner au formulaire de modification' : 'Poursuivre l\'inscription'}
                 </button>
 
                 <button onclick="closeInscriptionAndReturnToDay('${event.date}')" 
@@ -2213,6 +2212,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
