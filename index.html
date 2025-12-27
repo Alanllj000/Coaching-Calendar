@@ -2470,37 +2470,58 @@ async function loadNotificationSettings() {
     checkChanges();
 }
 
-async function saveNotificationPrefs() {
-    const user = (await sb.auth.getUser()).data.user;
-    if (!user) return;
+let initialSettings = { // Valeurs par défaut pour éviter le blocage
+    notif_enable: false,
+    notif_week: false,
+    notif_day: false,
+    notif_hour: false,
+    notif_custom: []
+};
 
-    const settings = {
-        notif_enable: document.getElementById('notif-master').checked,
-        notif_week: document.getElementById('notif-1s').checked,
-        notif_day: document.getElementById('notif-1j').checked,
-        notif_hour: document.getElementById('notif-1h').checked,
-        notif_custom: currentCustomReminders // On sauve le tableau JSON ici
-    };
+// --- CHARGEMENT ---
+async function loadNotificationSettings() {
+    try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) return;
 
-    const { error } = await sb
-        .from('profiles')
-        .update(settings)
-        .eq('id', user.id);
+        const { data, error } = await sb
+            .from('profiles')
+            .select('notif_enable, notif_week, notif_day, notif_hour, notif_custom')
+            .eq('id', user.id)
+            .single();
 
-    if (error) {
-        console.error(error);
-        alert("Erreur : " + error.message);
-    } else {
-        alert("Préférences enregistrées !");
-        initialSettings = settings;
-        checkChanges();
+        if (error) throw error;
+
+        if (data) {
+            // On s'assure que notif_custom est au moins un tableau vide
+            const cleanedData = {
+                ...data,
+                notif_custom: data.notif_custom || []
+            };
+            
+            initialSettings = JSON.parse(JSON.stringify(cleanedData)); // Copie propre
+            
+            // Mise à jour UI
+            document.getElementById('notif-master').checked = cleanedData.notif_enable;
+            document.getElementById('notif-1s').checked = cleanedData.notif_week;
+            document.getElementById('notif-1j').checked = cleanedData.notif_day;
+            document.getElementById('notif-1h').checked = cleanedData.notif_hour;
+            currentCustomReminders = [...cleanedData.notif_custom];
+            
+            renderCustomReminders();
+            toggleNotifUI();
+            console.log("Paramètres chargés :", initialSettings);
+        }
+    } catch (err) {
+        console.error("Erreur chargement :", err);
     }
+    checkChanges();
 }
 
+// --- COMPARAISON (Le coeur du problème) ---
 function checkChanges() {
     const btn = document.getElementById('btn-save-notif');
-    if (!initialSettings) return;
-
+    
     const currentUI = {
         notif_enable: document.getElementById('notif-master').checked,
         notif_week: document.getElementById('notif-1s').checked,
@@ -2509,16 +2530,23 @@ function checkChanges() {
         notif_custom: currentCustomReminders
     };
 
+    // Comparaison stricte via Stringify
     const hasChanged = JSON.stringify(currentUI) !== JSON.stringify(initialSettings);
+    
+    console.log("Changement détecté ?", hasChanged);
 
     if (hasChanged) {
+        // ACTIVER
         btn.disabled = false;
-        btn.classList.remove('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
-        btn.classList.add('bg-slate-900', 'text-white', 'cursor-pointer', 'shadow-md');
+        btn.style.cursor = "pointer";
+        btn.classList.remove('bg-slate-200', 'text-slate-400');
+        btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
     } else {
+        // DESACTIVER
         btn.disabled = true;
-        btn.classList.add('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
-        btn.classList.remove('bg-slate-900', 'text-white', 'cursor-pointer', 'shadow-md');
+        btn.style.cursor = "not-allowed";
+        btn.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
+        btn.classList.add('bg-slate-200', 'text-slate-400');
     }
 }
 
@@ -2556,6 +2584,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
