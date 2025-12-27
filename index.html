@@ -2032,16 +2032,17 @@ async function handleInscriptionPiPstep2(eventId) {
     const zone = document.getElementById('mobile-pip-zone');
     const template = document.getElementById('pip-step2-template');
 
-    // 1. On injecte la structure HTML fixe immédiatement (si pas déjà là)
-    // Cela évite de recréer la PiP à chaque fois
-    zone.innerHTML = template.innerHTML;
+    // --- CORRECTION CLÉ : On injecte le HTML AVANT l'appel Supabase ---
+    zone.innerHTML = template.innerHTML; 
     zone.classList.add('modal-mode');
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
 
-    // 2. Appel Supabase en arrière-plan
+    // Affichage d'un titre temporaire pour montrer que ça charge
+    document.getElementById('step2-title').innerText = "Chargement...";
+
     const myId = currentUser?.id;
-    const { data: myReg } = await sb
+    const { data: myReg } = await sb // Assure-toi que c'est bien 'sb' ou 'supabase'
         .from('registrations')
         .select('id, notes, is_private_request')
         .eq('event_id', eventId)
@@ -2051,16 +2052,16 @@ async function handleInscriptionPiPstep2(eventId) {
     const isEditing = !!myReg;
     const regId = myReg?.id || '';
 
-    // 3. REMPLISSAGE DES CHAMPS (Directement via le DOM)
+    // Remplissage des champs
     document.getElementById('step2-title').innerText = isEditing ? 'Modifier mon inscription' : 'Avant de valider...';
-    document.getElementById('step2-label').innerText = isEditing ? 'Mettre à jour vos notes :' : 'Souhaitez-vous travailler quelque chose de spécial ?';
+    document.getElementById('step2-label').innerText = isEditing ? 'Mettre à jour vos notes :' : 'Un souhait particulier ?';
     document.getElementById('reg-notes').value = myReg?.notes || '';
     document.getElementById('reg-private-toggle').checked = myReg?.is_private_request || false;
 
     // Gestion de l'option privée
     let totalOthers = (event.registrations?.length || 0);
     if (isEditing) totalOthers -= 1;
-    const canBePrivate = totalOthers === 0;
+    const canBePrivate = totalOthers <= 0;
 
     const toggle = document.getElementById('reg-private-toggle');
     const warning = document.getElementById('private-warning');
@@ -2070,24 +2071,16 @@ async function handleInscriptionPiPstep2(eventId) {
         toggle.disabled = true;
         container.classList.add('opacity-50', 'cursor-not-allowed');
         warning.classList.remove('hidden');
-    } else {
-        toggle.disabled = false;
-        container.classList.remove('opacity-50', 'cursor-not-allowed');
-        warning.classList.add('hidden');
     }
 
-    // 4. INJECTION DES BOUTONS (car ils ont besoin des IDs dynamiques)
+    // Injection des boutons avec les ID dynamiques
     document.getElementById('step2-buttons-zone').innerHTML = `
         <button onclick="submitInscription('${eventId}', ${isEditing}, '${regId}')" 
                 class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-            ${isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription'}
+            ${isEditing ? 'Enregistrer' : 'Finaliser l\'inscription'}
         </button>
-        ${isEditing ? `
-            <button onclick="handleUnsubscribe('${regId}', '${eventId}')" class="w-full py-4 bg-red-50 text-red-600 font-bold rounded-2xl border border-red-100 active:scale-95 transition">Se désinscrire</button>
-        ` : ''}
-        <button onclick="handleInscriptionPiPstep1('${eventId}')" class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition text-xs uppercase tracking-widest">
-            ${isEditing ? 'Voir détails précédents' : 'Retour'}
-        </button>
+        ${isEditing ? `<button onclick="handleUnsubscribe('${regId}', '${eventId}')" class="w-full py-4 text-red-500 font-bold text-xs uppercase tracking-widest">Se désinscrire</button>` : ''}
+        <button onclick="handleInscriptionPiPstep1('${eventId}')" class="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest">Retour</button>
     `;
 }
 
@@ -2208,6 +2201,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
