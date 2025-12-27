@@ -1257,25 +1257,22 @@ async function requestAdminSubmit(isConfirmed = false) {
     const endTime = document.getElementById('admin-end').value;
     const location = document.getElementById('admin-loc').value;
     const maxParticipants = document.getElementById('admin-max').value || 99;
+    
+    // Cet ID est la clé : s'il existe, on est en mode UPDATE
     const eventId = document.getElementById('admin-event-id').value;
 
     if (!title || !dateStr || !startTime) return alert("Champs obligatoires manquants");
 
-    // Sécurité ID Propriétaire
     const ownerId = currentUser?.id || (await sb.auth.getUser()).data.user?.id;
     if (!ownerId) return alert("Session expirée.");
 
-    // --- CORRECTION TIMEZONE : On force Midi pour éviter le décalage de jour ---
+    // --- GESTION DES DATES ---
     const [y, m, d_parts] = dateStr.split('-').map(Number);
     const selectedDateTime = new Date(y, m - 1, d_parts, 12, 0, 0); 
-    
     const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
 
-    // Vérification date passée
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    // On compare minuit avec minuit
     const comparisonDate = new Date(selectedDateTime);
     comparisonDate.setHours(0,0,0,0);
 
@@ -1284,11 +1281,14 @@ async function requestAdminSubmit(isConfirmed = false) {
         return;
     }
 
-    if (eventId) {
+    // --- LOGIQUE UPDATE ---
+    if (eventId && eventId !== "" && eventId !== "null") {
+        // Si un ID existe, on délègue à handleUpdate
         await handleUpdate(eventId);
         return;
     }
 
+    // --- LOGIQUE CRÉATION (INSERT) ---
     try {
         // 1. CRÉATION DU PREMIER ÉVÉNEMENT (LE PARENT)
         const { data: createdEvents, error: pError } = await sb.from('events').insert([{ 
@@ -1308,26 +1308,33 @@ async function requestAdminSubmit(isConfirmed = false) {
 
         const parent = createdEvents[0];
 
+        // --- OPTIONNEL : LOG DE CRÉATION DANS LE REGISTRE ---
+        await sb.from('registre_events').insert([{
+            original_event_id: parent.id,
+            owner_id: ownerId,
+            title: title,
+            location: location,
+            date: dateStr,
+            start_time: startTime,
+            end_time: endTime,
+            max_participants: maxParticipants,
+            status: 'CREATION'
+        }]);
+
         // 2. CRÉATION DES OCCURRENCES SI SÉRIE
         if (selectedDays.length > 0) {
             const occs = [];
-            
-            // On boucle sur 365 jours pour créer la récurrence
             for (let i = 1; i <= 365; i++) {
-                // On repart toujours de la date de base à Midi
                 let nextDate = new Date(y, m - 1, d_parts, 12, 0, 0);
                 nextDate.setDate(nextDate.getDate() + i);
                 
                 const dayName = DAY_NAMES[nextDate.getDay()];
                 
-                // Formatage manuel YYYY-MM-DD pour éviter le décalage de toISOString()
                 const nY = nextDate.getFullYear();
                 const nM = String(nextDate.getMonth() + 1).padStart(2, '0');
                 const nD = String(nextDate.getDate()).padStart(2, '0');
                 const nextDateStr = `${nY}-${nM}-${nD}`;
 
-                // SÉCURITÉ DOUBLON : La boucle commence à i=1, 
-                // donc nextDateStr sera forcément différent de dateStr.
                 if (selectedDays.includes(dayName)) {
                     occs.push({ 
                         title, 
@@ -1343,14 +1350,14 @@ async function requestAdminSubmit(isConfirmed = false) {
                 }
             }
 
-            // Insertion par lots (plus performant)
             if (occs.length > 0) {
                 const { error: occError } = await sb.from('events').insert(occs);
                 if (occError) throw occError;
             }
         }
-        alert("Succès !");
-        resetAdminForm();
+
+        alert("Événement créé avec succès !");
+        resetAdminForm(); // <--- TRÈS IMPORTANT : Doit vider admin-event-id
         closeAdminPanel();
         await fetchEvents();
         
@@ -1463,6 +1470,7 @@ async function saveProfileInfo() {
 
 // --- UTILITAIRES INTERFACE ---
 function openAdminPanel() { 
+    resetAdminForm();
     const dateInput = document.getElementById('admin-date');
     const today = new Date().toISOString().split('T')[0];
 
@@ -2338,6 +2346,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
