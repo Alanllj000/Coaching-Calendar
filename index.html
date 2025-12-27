@@ -1727,28 +1727,49 @@ async function processDelete(eventId, deleteAll) {
     try {
         console.log("Exécution suppression...", { eventId, deleteAll });
 
+        // On récupère les infos de l'événement actuel depuis le cache pour l'archivage
+        const eventData = eventsCache.find(e => e.id === eventId);
+        if (!eventData) throw new Error("Événement introuvable dans le cache");
+
         if (deleteAll) {
             // --- LOGIQUE SÉRIE ---
-            const event = eventsCache.find(e => e.id === eventId);
-            if (!event) throw new Error("Événement introuvable dans le cache");
-            
-            const pId = event.parent_event_id || event.id;
-            const dateStr = event.date;
+            const pId = eventData.parent_event_id || eventData.id;
+            const dateStr = eventData.date;
 
             // 1. On récupère tous les IDs de la série à partir de cette date
             const { data: relatedEvents, error: fetchError } = await sb.from('events')
-                .select('id')
+                .select('*') // On prend tout pour pouvoir archiver
                 .or(`id.eq.${pId},parent_event_id.eq.${pId}`)
                 .gte('date', dateStr);
             
             if (fetchError) throw fetchError;
+            if (!relatedEvents || relatedEvents.length === 0) return;
+
             const idsToDelete = relatedEvents.map(e => e.id);
 
-            // 2. IMPORTANT : On supprime d'abord les inscriptions liées à ces IDs
-            // Sinon Supabase bloque la suppression des events (Foreign Key Constraint)
+            // 2. ARCHIVAGE DE LA SÉRIE (Avant suppression)
+            // On prépare les lignes pour registre_events
+            const archiveLines = relatedEvents.map(ev => ({
+                original_event_id: ev.id,
+                owner_id: ev.owner_id,
+                title: ev.title,
+                location: ev.location,
+                date: ev.date,
+                start_time: ev.start_time,
+                end_time: ev.end_time,
+                max_participants: ev.max_participants,
+                participants_json: ev.registrations || [], // Inscrits actuels
+                series_id: pId,
+                status: 'SUPPRIME_SERIE'
+            }));
+
+            const { error: logError } = await sb.from('registre_events').insert(archiveLines);
+            if (logError) console.warn("Erreur archivage série :", logError);
+
+            // 3. Supprimer d'abord les inscriptions liées (pour éviter l'erreur 409)
             await sb.from('registrations').delete().in('event_id', idsToDelete);
 
-            // 3. On supprime enfin les événements
+            // 4. Supprimer enfin les événements
             const { error: deleteError } = await sb.from('events')
                 .delete()
                 .in('id', idsToDelete);
@@ -1757,16 +1778,34 @@ async function processDelete(eventId, deleteAll) {
 
         } else {
             // --- LOGIQUE UNIQUE ---
-            // 1. Supprimer les inscriptions de cet event précis
+            
+            // 1. ARCHIVAGE DE L'ÉVÉNEMENT UNIQUE
+            const { error: logError } = await sb.from('registre_events').insert([{
+                original_event_id: eventId,
+                owner_id: eventData.owner_id,
+                title: eventData.title,
+                location: eventData.location,
+                date: eventData.date,
+                start_time: eventData.start_time,
+                end_time: eventData.end_time,
+                max_participants: eventData.max_participants,
+                participants_json: eventData.registrations || [],
+                series_id: eventData.parent_event_id || null,
+                status: 'SUPPRIME_UNIQUE'
+            }]);
+
+            if (logError) console.warn("Erreur archivage unique :", logError);
+
+            // 2. Supprimer les inscriptions de cet event précis
             await sb.from('registrations').delete().eq('event_id', eventId);
 
-            // 2. Supprimer l'event
+            // 3. Supprimer l'event
             const { error: deleteError } = await sb.from('events').delete().eq('id', eventId);
             if (deleteError) throw deleteError;
         }
 
         // --- FINALISATION ---
-        alert("Suppression réussie.");
+        alert("Suppression et archivage réussis.");
         closeMobilePip();
         if (typeof closeAdminPanel === "function") closeAdminPanel();
         
@@ -2299,6 +2338,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
