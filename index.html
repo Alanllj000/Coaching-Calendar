@@ -2002,6 +2002,8 @@ function handleInscriptionPiPstep1(eventId) {
 }
 
 function handleInscriptionPiPstep2(eventId) {
+    console.log("Recherche des notes pour l'event:", eventId);
+    console.log("Contenu de l'event sélectionné:", event);
     const event = eventsCache.find(e => e.id === eventId);
     if (!event) return;
     const zone = document.getElementById('mobile-pip-zone');
@@ -2212,6 +2214,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
