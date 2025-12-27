@@ -2117,6 +2117,7 @@ async function submitInscription(eventId, isEditing, registrationId) {
     const notes = document.getElementById('reg-notes').value;
     const isPrivate = document.getElementById('reg-private-toggle').checked;
     const userId = currentUser?.id;
+    const eventData = eventsCache.find(e => e.id === eventId);
 
     // Sécurité : ID utilisateur manquant
     if (!userId) return alert("Session expirée, veuillez vous reconnecter.");
@@ -2130,6 +2131,10 @@ async function submitInscription(eventId, isEditing, registrationId) {
 
     try {
         let error = null;
+        let actionType = isEditing ? 'MODIFICATION' : 'INSCRIPTION';
+        
+        // Récupération des anciennes notes depuis le cache pour le log
+        const oldNotes = registrationDetailsCache[eventId]?.notes || null;
 
         if (isEditing && registrationId) {
             // --- CAS 1 : MISE À JOUR (UPDATE) ---
@@ -2157,17 +2162,31 @@ async function submitInscription(eventId, isEditing, registrationId) {
 
         if (error) throw error;
 
-        // --- GESTION DU CACHE (Trés important pour la fluidité) ---
-        // On supprime l'ancienne version du cache pour que le prochain clic 
-        // force un re-chargement des nouvelles données.
+        // --- 📝 LOG DANS LE REGISTRE ---
+        // On enregistre l'action dans la table d'audit
+        const { error: logError } = await sb
+            .from('Registre_inscription_modification_suppression')
+            .insert([{
+                user_id: userId,
+                event_id: eventId,
+                action_type: actionType,
+                old_notes: oldNotes,
+                new_notes: notes,
+                event_title: eventData?.title || 'Événement inconnu'
+            }]);
+            
+        if (logError) console.warn("Erreur lors de la création du log :", logError);
+
+        // --- GESTION DU CACHE ---
+        // On supprime l'ancienne version du cache pour forcer le re-chargement
         if (typeof registrationDetailsCache !== 'undefined') {
             delete registrationDetailsCache[eventId];
         }
 
         // Succès !
-        closeMobilePip(); // Ferme la modale
+        closeMobilePip(); 
         
-        // Optionnel : un petit délai ou un rafraîchissement silencieux
+        // Rafraîchissement des données du calendrier
         await fetchEvents(); 
         
         alert(isEditing ? "Inscription modifiée !" : "Inscription validée !");
@@ -2176,7 +2195,7 @@ async function submitInscription(eventId, isEditing, registrationId) {
         console.error("Erreur inscription :", err);
         alert("Une erreur est survenue : " + err.message);
         
-        // Réactiver le bouton en cas d'erreur pour permettre de réessayer
+        // Réactiver le bouton en cas d'erreur
         if (btn) {
             btn.disabled = false;
             btn.innerText = isEditing ? "Enregistrer les modifications" : "Finaliser l'inscription";
@@ -2187,7 +2206,15 @@ async function submitInscription(eventId, isEditing, registrationId) {
 async function handleUnsubscribe(registrationId, eventId) {
     if (!confirm("Voulez-vous vraiment annuler votre inscription à cet événement ?")) return;
 
+    const eventData = eventsCache.find(e => e.id === eventId);
+    const userId = currentUser?.id;
+
     try {
+        // 1. RÉCUPÉRATION DES INFOS POUR LE LOG (Avant suppression)
+        // On récupère les notes dans le cache avant qu'elles ne soient supprimées
+        const oldNotes = registrationDetailsCache[eventId]?.notes || null;
+
+        // 2. SUPPRESSION DANS SUPABASE
         const { error } = await sb
             .from('registrations')
             .delete()
@@ -2195,12 +2222,34 @@ async function handleUnsubscribe(registrationId, eventId) {
 
         if (error) throw error;
 
-        // Succès
+        // 3. 📝 LOG DANS LE REGISTRE
+        // On enregistre l'action 'DESINSCRIPTION'
+        const { error: logError } = await sb
+            .from('Registre_inscription_modification_suppression')
+            .insert([{
+                user_id: userId,
+                event_id: eventId,
+                action_type: 'DESINSCRIPTION',
+                old_notes: oldNotes,
+                new_notes: null, // Pas de nouvelles notes lors d'une suppression
+                event_title: eventData?.title || 'Événement inconnu'
+            }]);
+
+        if (logError) console.warn("Erreur log désinscription :", logError);
+
+        // 4. GESTION DU CACHE
+        // Très important : on vide le cache pour cet event pour qu'il soit "propre"
+        if (typeof registrationDetailsCache !== 'undefined') {
+            delete registrationDetailsCache[eventId];
+        }
+
+        // 5. SUCCÈS
         closeMobilePip();
-        await fetchEvents(); // Rafraîchit le calendrier (le point redevient bleu/disparaît)
         
-        // Optionnel : Message toast
-        // alert("Désinscription réussie."); 
+        // Rafraîchit le calendrier (le point redevient bleu ou disparaît)
+        await fetchEvents(); 
+        
+        alert("Désinscription réussie.");
 
     } catch (err) {
         console.error("Erreur désinscription :", err);
@@ -2253,6 +2302,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
