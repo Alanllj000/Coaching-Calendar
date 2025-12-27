@@ -598,35 +598,29 @@
   </div>
 </div>
 
-<div id="pip-step2-template" style="display: none;" class="mobile-pip-card flex flex-col gap-6 relative">
-    <button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">
-        &times;
-    </button>
-    
-    <h3 id="step2-title" class="text-xl font-bold text-slate-900 mb-2">Chargement...</h3>
 
-    <div>
-        <label id="step2-label" class="block text-xs font-bold text-slate-500 uppercase mb-2"></label>
-        <textarea id="reg-notes" maxlength="999" placeholder="Ex: Travailler les sauts..." class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-sm h-32 resize-none"></textarea>
+<!-- PiP Inscription et modification d'inscription -->
+<div id="pip-step2-template" class="hidden"> 
+    <div class="mobile-pip-card flex flex-col gap-6 relative shadow-2xl">
+        <button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">&times;</button>
+        <h3 id="step2-title" class="text-xl font-bold text-slate-900 mb-2 uppercase"></h3>
+        <div>
+            <label id="step2-label" class="block text-xs font-bold text-slate-500 uppercase mb-2"></label>
+            <textarea id="reg-notes" maxlength="999" placeholder="Ex: Travailler les sauts..." class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-sm h-32 resize-none"></textarea>
+        </div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-bold text-slate-900 text-sm">Session Privée</span>
+                <label id="toggle-container" class="relative inline-flex items-center">
+                    <input type="checkbox" id="reg-private-toggle" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-slate-900 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                </label>
+            </div>
+            <div id="private-warning" class="mt-2 p-2 bg-red-50 rounded-lg text-[10px] text-red-600 font-medium hidden">Option bloquée.</div>
+        </div>
+        <div id="step2-buttons-zone" class="flex flex-col gap-3"></div>
     </div>
-
-    <div id="private-option-zone" class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm mb-4">
-        <div class="flex items-center justify-between mb-2">
-            <span class="font-bold text-slate-900 text-sm">Session Privée</span>
-            <label id="toggle-container" class="relative inline-flex items-center">
-                <input type="checkbox" id="reg-private-toggle" class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-            </label>
-        </div>
-        <div id="private-warning" class="mt-2 p-2 bg-red-50 rounded-lg text-[10px] text-red-600 font-medium hidden">
-            Option bloquée (déjà des inscrits).
-        </div>
-    </div>
-
-    <div class="flex flex-col gap-3" id="step2-buttons-zone">
-        </div>
 </div>
-    
       
 <script>
     const SUPABASE_URL = 'https://krkyfycmmnpshbvlcxnf.supabase.co';
@@ -2214,6 +2208,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
