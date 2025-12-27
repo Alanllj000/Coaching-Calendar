@@ -2001,42 +2001,46 @@ function handleInscriptionPiPstep1(eventId) {
     `;
 }
 
-function handleInscriptionPiPstep2(eventId) {
-    console.log("Recherche des notes pour l'event:", eventId);
-    console.log("Contenu de l'event sélectionné:", event);
+async function handleInscriptionPiPstep2(eventId) {
     const event = eventsCache.find(e => e.id === eventId);
     if (!event) return;
     const zone = document.getElementById('mobile-pip-zone');
 
+    // Forçage du rafraîchissement visuel pour le mode Modal
     zone.style.display = 'none';
     zone.classList.remove('modal-mode');
-    void zone.offsetWidth;
+    void zone.offsetWidth; // Force le recalcul
     zone.classList.add('modal-mode'); 
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
 
-    // 1. On cherche si l'utilisateur est déjà inscrit
-    // (Suppose que tu as chargé currentUser globalement au démarrage de l'app)
     const myId = currentUser?.id; 
-    const myRegistration = event.registrations?.find(r => r.user_id === myId);
-    const isEditing = !!myRegistration; // true si déjà inscrit
 
-    // 2. Logique pour le bouton Privé (inchangée)
-    // On compte les autres (total - moi si je suis compté dedans)
+    // --- RÉCUPÉRATION DIRECTE DES DONNÉES DEPUIS LA TABLE REGISTRATIONS ---
+    const { data: myReg, error } = await supabase
+        .from('registrations')
+        .select('id, notes, is_private_request')
+        .eq('event_id', eventId)
+        .eq('user_id', myId)
+        .maybeSingle();
+
+    const isEditing = !!myReg; // true si une ligne existe
+    const registrationId = myReg?.id || '';
+    const existingNotes = myReg?.notes || '';
+    const existingPrivate = myReg?.is_private_request || false;
+
+    // Logique pour le bouton Privé
+    // On compte les inscrits via le cache (pour la rapidité)
     let totalOthers = (event.registrations?.length || 0);
     if (isEditing) totalOthers -= 1; 
 
     const canBePrivate = totalOthers === 0;
 
-    // 3. Pré-remplissage des valeurs (si mode édition)
-    const existingNotes = myRegistration?.notes || '';
-    const existingPrivate = myRegistration?.is_private_request || false;
-
     zone.innerHTML = `
         <div class="mobile-pip-card flex flex-col gap-6 relative">
             <button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">
                 &times;
-        </button>
+            </button>
             
             <h3 class="text-xl font-bold text-slate-900 mb-2">
                 ${isEditing ? 'Modifier mon inscription' : 'Avant de valider...'}
@@ -2067,13 +2071,13 @@ function handleInscriptionPiPstep2(eventId) {
             </div>
 
             <div class="flex flex-col gap-3 mt-4">
-                <button onclick="submitInscription('${eventId}', ${isEditing}, '${myRegistration?.id || ''}')" 
+                <button onclick="submitInscription('${eventId}', ${isEditing}, '${registrationId}')" 
                         class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition">
                     ${isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription'}
                 </button>
 
                 ${isEditing ? `
-                    <button onclick="handleUnsubscribe('${myRegistration.id}', '${eventId}')" 
+                    <button onclick="handleUnsubscribe('${registrationId}', '${eventId}')" 
                             class="w-full py-4 bg-red-50 text-red-600 font-bold rounded-2xl border border-red-100 active:scale-95 transition">
                         Se désinscrire
                     </button>
@@ -2087,7 +2091,7 @@ function handleInscriptionPiPstep2(eventId) {
         </div>
     `;
     
-    // Hack pour le toggle disabled (comme avant)
+    // Désactivation du clic sur le toggle si l'option est bloquée
     if (!canBePrivate) {
         setTimeout(() => {
             const toggleZone = document.getElementById('reg-private-toggle')?.parentElement;
@@ -2214,6 +2218,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
