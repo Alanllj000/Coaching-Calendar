@@ -2004,38 +2004,47 @@ function handleInscriptionPiPstep1(eventId) {
 async function handleInscriptionPiPstep2(eventId) {
     const event = eventsCache.find(e => e.id === eventId);
     if (!event) return;
+
     const zone = document.getElementById('mobile-pip-zone');
 
-    // Forçage du rafraîchissement visuel pour le mode Modal
-    zone.style.display = 'none';
-    zone.classList.remove('modal-mode');
-    void zone.offsetWidth; // Force le recalcul
-    zone.classList.add('modal-mode'); 
+    // 1. OUVERTURE IMMÉDIATE DE LA STRUCTURE (Skeleton UI)
+    // On affiche la carte tout de suite avec des placeholders
+    zone.classList.add('modal-mode');
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
 
-    const myId = currentUser?.id; 
+    zone.innerHTML = `
+        <div class="mobile-pip-card flex flex-col gap-6 relative">
+            <h3 class="text-xl font-bold text-slate-900 mb-2">Chargement...</h3>
+            <div class="animate-pulse space-y-4">
+                <div class="h-32 bg-slate-100 rounded-2xl"></div>
+                <div class="h-16 bg-slate-100 rounded-2xl"></div>
+                <div class="h-12 bg-slate-200 rounded-2xl"></div>
+            </div>
+        </div>
+    `;
 
-    // --- RÉCUPÉRATION DIRECTE DES DONNÉES DEPUIS LA TABLE REGISTRATIONS ---
-    const { data: myReg, error } = await sb
+    // 2. APPEL SUPABASE EN ARRIÈRE-PLAN
+    const myId = currentUser?.id;
+    const { data: myReg } = await sb
         .from('registrations')
         .select('id, notes, is_private_request')
         .eq('event_id', eventId)
         .eq('user_id', myId)
         .maybeSingle();
 
-    const isEditing = !!myReg; // true si une ligne existe
+    const isEditing = !!myReg;
     const registrationId = myReg?.id || '';
     const existingNotes = myReg?.notes || '';
     const existingPrivate = myReg?.is_private_request || false;
 
-    // Logique pour le bouton Privé
-    // On compte les inscrits via le cache (pour la rapidité)
+    // Calcul de l'option privée
     let totalOthers = (event.registrations?.length || 0);
-    if (isEditing) totalOthers -= 1; 
-
+    if (isEditing) totalOthers -= 1;
     const canBePrivate = totalOthers === 0;
 
+    // 3. MISE À JOUR DU CONTENU SANS FERMER LA PIP
+    // On remplace le "Chargement..." par le vrai formulaire
     zone.innerHTML = `
         <div class="mobile-pip-card flex flex-col gap-6 relative">
             <button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">
@@ -2052,7 +2061,6 @@ async function handleInscriptionPiPstep2(eventId) {
                 </label>
                 <textarea id="reg-notes" 
                           maxlength="999"
-                          placeholder="Ex: J'ai envie de bosser mes sauts à l'aide de la perche 💪"
                           class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-sm h-32 resize-none">${existingNotes}</textarea>
             </div>
 
@@ -2066,37 +2074,30 @@ async function handleInscriptionPiPstep2(eventId) {
                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
                     </label>
                 </div>
-                <p class="text-xs text-slate-500 leading-snug">Si coché, l'inscription se bloquera pour les autres.</p>
-                ${!canBePrivate ? `<div class="mt-2 p-2 bg-red-50 rounded-lg border border-red-100 text-[10px] text-red-600 font-medium">L'option est bloquée car d'autres membres sont inscrits.</div>` : ''}
+                ${!canBePrivate ? `<div class="mt-2 p-2 bg-red-50 rounded-lg text-[10px] text-red-600 font-medium italic">Option bloquée (déjà des inscrits).</div>` : ''}
             </div>
 
             <div class="flex flex-col gap-3 mt-4">
                 <button onclick="submitInscription('${eventId}', ${isEditing}, '${registrationId}')" 
-                        class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition">
+                        class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
                     ${isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription'}
                 </button>
-
                 ${isEditing ? `
-                    <button onclick="handleUnsubscribe('${registrationId}', '${eventId}')" 
-                            class="w-full py-4 bg-red-50 text-red-600 font-bold rounded-2xl border border-red-100 active:scale-95 transition">
-                        Se désinscrire
-                    </button>
+                    <button onclick="handleUnsubscribe('${registrationId}', '${eventId}')" class="w-full py-4 bg-red-50 text-red-600 font-bold rounded-2xl border border-red-100 active:scale-95 transition">Se désinscrire</button>
                 ` : ''}
-
-                <button onclick="handleInscriptionPiPstep1('${eventId}')" 
-                        class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition text-xs uppercase tracking-widest">
+                <button onclick="handleInscriptionPiPstep1('${eventId}')" class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition text-xs uppercase tracking-widest">
                     ${isEditing ? 'Voir détails précédents' : 'Retour'}
                 </button>
             </div>
         </div>
     `;
-    
-    // Désactivation du clic sur le toggle si l'option est bloquée
+
+    // Hack pour le toggle disabled
     if (!canBePrivate) {
         setTimeout(() => {
             const toggleZone = document.getElementById('reg-private-toggle')?.parentElement;
             if(toggleZone) toggleZone.onclick = (e) => { e.preventDefault(); };
-        }, 100);
+        }, 50);
     }
 }
 
@@ -2218,6 +2219,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
