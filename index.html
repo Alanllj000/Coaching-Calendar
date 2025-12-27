@@ -2006,6 +2006,14 @@ function handleInscriptionPiPstep2(eventId) {
     const event = eventsCache.find(e => e.id === eventId);
     if (!event) return;
     const zone = document.getElementById('mobile-pip-zone');
+
+    zone.style.display = 'none';
+    zone.classList.remove('modal-mode');
+    void zone.offsetWidth;
+    zone.classList.add('modal-mode'); 
+    zone.style.display = 'flex';
+    zone.style.pointerEvents = 'auto';
+
     // 1. On cherche si l'utilisateur est déjà inscrit
     // (Suppose que tu as chargé currentUser globalement au démarrage de l'app)
     const myId = currentUser?.id; 
@@ -2205,6 +2213,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
