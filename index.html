@@ -637,7 +637,8 @@ let currentProfile = null;
 let eventsCache = [];
 let initialProfileData = {};
 const DAY_NAMES = {0:'sunday', 1:'monday', 2:'tuesday', 3:'wednesday', 4:'thursday', 5:'friday', 6:'saturday'};
-
+const registrationDetailsCache = {};
+    
 // --- GESTION DES CLICS GLOBAUX (REMPLACE HANDLEBODYCLICK) ---
 document.addEventListener('click', function(e) {
     const menu = document.getElementById('user-menu');
@@ -1974,7 +1975,24 @@ function handleInscriptionPiPstep1(eventId) {
     const event = eventsCache.find(e => e.id === eventId);
     if (!event) return;
 
-    // --- DETECTION DU MODE MODIFICATION ---
+    // --- 1. PRE-FETCHING (CHARGEMENT ANTICIPÉ) ---
+    // On lance la requête immédiatement en arrière-plan sans 'await'
+    // pour que la Step 2 soit instantanée plus tard.
+    if (!registrationDetailsCache[eventId]) {
+        sb.from('registrations')
+            .select('id, notes, is_private_request')
+            .eq('event_id', eventId)
+            .eq('user_id', currentUser?.id)
+            .maybeSingle()
+            .then(({ data, error }) => {
+                if (!error && data) {
+                    registrationDetailsCache[eventId] = data;
+                    console.log("🚀 Step 2 mise en cache anticipée");
+                }
+            });
+    }
+
+    // --- 2. DETECTION DU MODE MODIFICATION ---
     const myId = currentUser?.id;
     const isEditing = event.registrations && event.registrations.some(r => r.user_id === myId);
 
@@ -2032,27 +2050,32 @@ async function handleInscriptionPiPstep2(eventId) {
     const zone = document.getElementById('mobile-pip-zone');
     const template = document.getElementById('pip-step2-template');
 
-    // --- CORRECTION CLÉ : On injecte le HTML AVANT l'appel Supabase ---
-    zone.innerHTML = template.innerHTML; 
-    zone.classList.add('modal-mode');
-    zone.style.display = 'flex';
-    zone.style.pointerEvents = 'auto';
+    // 1. RÉCUPÉRATION DE LA DONNÉE (Cache d'abord, sinon Supabase)
+    // On attend d'avoir la donnée AVANT d'afficher quoi que ce soit pour éviter le saut visuel
+    let myReg = registrationDetailsCache[eventId];
 
-    // Affichage d'un titre temporaire pour montrer que ça charge
-    document.getElementById('step2-title').innerText = "Chargement...";
+    if (!myReg) {
+        document.body.style.cursor = 'wait'; // Petit indicateur discret
+        const { data } = await sb // Assure-toi que c'est bien 'sb'
+            .from('registrations')
+            .select('id, notes, is_private_request')
+            .eq('event_id', eventId)
+            .eq('user_id', currentUser?.id)
+            .maybeSingle();
+            
+        myReg = data;
+        if (data) registrationDetailsCache[eventId] = data;
+        document.body.style.cursor = 'default';
+    }
 
-    const myId = currentUser?.id;
-    const { data: myReg } = await sb // Assure-toi que c'est bien 'sb' ou 'supabase'
-        .from('registrations')
-        .select('id, notes, is_private_request')
-        .eq('event_id', eventId)
-        .eq('user_id', myId)
-        .maybeSingle();
-
+    // 2. PRÉPARATION DES VARIABLES
     const isEditing = !!myReg;
     const regId = myReg?.id || '';
 
-    // Remplissage des champs
+    // 3. INJECTION ET REMPLISSAGE (Toujours invisible pour l'instant)
+    zone.innerHTML = template.innerHTML;
+
+    // On remplit les IDs directement dans le DOM
     document.getElementById('step2-title').innerText = isEditing ? 'Modifier mon inscription' : 'Avant de valider...';
     document.getElementById('step2-label').innerText = isEditing ? 'Mettre à jour vos notes :' : 'Un souhait particulier ?';
     document.getElementById('reg-notes').value = myReg?.notes || '';
@@ -2071,17 +2094,23 @@ async function handleInscriptionPiPstep2(eventId) {
         toggle.disabled = true;
         container.classList.add('opacity-50', 'cursor-not-allowed');
         warning.classList.remove('hidden');
+        container.onclick = (e) => e.preventDefault();
     }
 
-    // Injection des boutons avec les ID dynamiques
+    // Injection des boutons
     document.getElementById('step2-buttons-zone').innerHTML = `
         <button onclick="submitInscription('${eventId}', ${isEditing}, '${regId}')" 
                 class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-            ${isEditing ? 'Enregistrer' : 'Finaliser l\'inscription'}
+            ${isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription'}
         </button>
-        ${isEditing ? `<button onclick="handleUnsubscribe('${regId}', '${eventId}')" class="w-full py-4 text-red-500 font-bold text-xs uppercase tracking-widest">Se désinscrire</button>` : ''}
+        ${isEditing ? `<button onclick="handleUnsubscribe('${regId}', '${eventId}')" class="w-full py-4 text-red-500 font-bold text-xs uppercase tracking-widest mt-1">Se désinscrire</button>` : ''}
         <button onclick="handleInscriptionPiPstep1('${eventId}')" class="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest">Retour</button>
     `;
+
+    // 4. DÉCLENCHEMENT DE L'AFFICHAGE (Tout est prêt, donc c'est instantané)
+    zone.classList.add('modal-mode');
+    zone.style.display = 'flex';
+    zone.style.pointerEvents = 'auto';
 }
 
 
@@ -2201,6 +2230,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
