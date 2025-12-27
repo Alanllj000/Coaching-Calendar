@@ -2129,11 +2129,12 @@ async function submitInscription(eventId, isEditing, registrationId) {
 
     try {
         let error = null;
-        // Déterminer l'action pour le registre
         const actionType = isEditing ? 'MODIFICATION' : 'INSCRIPTION';
         
-        // On récupère les anciennes notes depuis notre cache local
-        const oldNotes = registrationDetailsCache[eventId]?.notes || null;
+        // --- RÉCUPÉRATION DES ANCIENNES VALEURS (depuis le cache) ---
+        const oldData = registrationDetailsCache[eventId] || null;
+        const oldNotes = oldData?.notes || null;
+        const oldIsPrivate = oldData?.is_private_request ?? null;
 
         // --- PHASE 1 : ACTION SUR LA TABLE REGISTRATIONS ---
         if (isEditing && registrationId) {
@@ -2159,8 +2160,7 @@ async function submitInscription(eventId, isEditing, registrationId) {
 
         if (error) throw error;
 
-        // --- PHASE 2 : LOG DANS LE REGISTRE ---
-        // ATTENTION : On utilise le nom exact de ton schéma public
+        // --- PHASE 2 : LOG COMPLET DANS LE REGISTRE ---
         const { error: logError } = await sb
             .from('registre_inscription_modification_suppression')
             .insert([{
@@ -2169,14 +2169,12 @@ async function submitInscription(eventId, isEditing, registrationId) {
                 action_type: actionType,
                 old_notes: oldNotes,
                 new_notes: notes,
+                old_is_private: oldIsPrivate, // <--- Nouveau
+                new_is_private: isPrivate,  // <--- Nouveau
                 event_title: eventData?.title || 'Événement inconnu'
             }]);
             
-        if (logError) {
-            console.error("Erreur de log :", logError);
-            // On ne bloque pas l'utilisateur si seul le log échoue, 
-            // mais on le voit dans la console.
-        }
+        if (logError) console.error("Erreur de log :", logError);
 
         // --- PHASE 3 : NETTOYAGE ET UI ---
         if (typeof registrationDetailsCache !== 'undefined') {
@@ -2229,6 +2227,8 @@ async function handleUnsubscribe(registrationId, eventId) {
                 action_type: 'DESINSCRIPTION',
                 old_notes: oldNotes,
                 new_notes: null, // Pas de nouvelles notes lors d'une suppression
+                old_is_private: registrationDetailsCache[eventId]?.is_private_request || null, // <--- Ajouté
+                new_is_private: null,
                 event_title: eventData?.title || 'Événement inconnu'
             }]);
 
@@ -2299,6 +2299,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
