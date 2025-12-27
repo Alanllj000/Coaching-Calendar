@@ -1077,9 +1077,9 @@ function openDayPip(dateStr, events = []) {
 
                         ${isDatePast ? 
                             `<span class="w-32 py-2 text-center text-[9px] font-bold text-slate-400 uppercase border border-slate-100 rounded-xl bg-slate-50">Terminé</span>` : 
-                            `<button onclick="toggleReg('${e.id}', ${isReg})" 
+                            `<button onclick="handleInscriptionPiPstep1('${e.id}')" 
                                      class="w-32 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${isReg ? 'bg-orange-100 text-orange-600' : isFull ? 'bg-slate-50 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white shadow-md'}">
-                                ${isReg ? 'Inscrit' : (isFull ? 'Complet' : 'S\'inscrire')}
+                                ${isReg ? 'Modifier l'inscription' : (isFull ? 'Complet' : 'S\'inscrire')}
                             </button>`
                         }
                     </div>
@@ -1944,6 +1944,231 @@ function resetInactivityTimer() {
     inactivityTimer = setTimeout(forceLogout, INACTIVITY_LIMIT);
 }
 
+function handleInscriptionPiPstep1(eventId) {
+    // 1. On récupère l'événement complet depuis ton cache
+    // (Assure-toi que eventsCache est bien accessible ici)
+    const event = eventsCache.find(e => e.id === eventId);
+    if (!event) return alert("Événement introuvable");
+
+    const zone = document.getElementById('mobile-pip-zone');
+    
+    // Configuration de l'overlay (Rappel : CSS gère les bords carrés sur .modal-mode)
+    zone.classList.add('modal-mode');
+    zone.style.display = 'flex';
+    zone.style.pointerEvents = 'auto';
+
+    // Formatage des dates pour l'affichage
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateReadable = new Date(event.date).toLocaleDateString('fr-FR', dateOptions);
+
+    zone.innerHTML = `
+        <div class="mobile-pip-card flex flex-col gap-6 relative">
+            
+            <h3 class="text-xl font-black text-slate-900 uppercase text-center">Confirmation</h3>
+
+            <div class="text-sm text-slate-600 leading-relaxed text-center">
+                Souhaitez-vous confirmer votre inscription à l'événement 
+                <strong class="text-slate-900">${event.title}</strong> 
+                qui aura lieu le <strong class="text-slate-900">${dateReadable}</strong> 
+                de <strong class="text-slate-900">${event.start_time}</strong> 
+                à <strong class="text-slate-900">${event.end_time}</strong> ?
+                <br><br>
+                Le lieu où le cours a lieu est : <strong class="text-slate-900">${event.location || 'Non défini'}</strong>.
+            </div>
+
+            <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex gap-3 items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p class="text-xs text-orange-800 font-medium leading-snug">
+                    Une avance d'au minimum <strong>15 minutes</strong> avant le début de toute activité physique, dédiée à un échauffement, est nécessaire afin d'éviter les blessures !
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-3 mt-2">
+                <button onclick="handleInscriptionPiPstep2('${eventId}')" 
+                        class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
+                    Poursuivre l'inscription
+                </button>
+
+                <button onclick="closeInscriptionAndReturnToDay('${event.date}')" 
+                        class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition">
+                    Annuler
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function handleInscriptionPiPstep2(eventId) {
+    const event = eventsCache.find(e => e.id === eventId);
+    if (!event) return;
+
+    // 1. On cherche si l'utilisateur est déjà inscrit
+    // (Suppose que tu as chargé currentUser globalement au démarrage de l'app)
+    const myId = currentUser?.id; 
+    const myRegistration = event.registrations?.find(r => r.user_id === myId);
+    const isEditing = !!myRegistration; // true si déjà inscrit
+
+    // 2. Logique pour le bouton Privé (inchangée)
+    // On compte les autres (total - moi si je suis compté dedans)
+    let totalOthers = (event.registrations?.length || 0);
+    if (isEditing) totalOthers -= 1; 
+
+    const canBePrivate = totalOthers === 0;
+
+    const zone = document.getElementById('mobile-pip-zone');
+
+    // 3. Pré-remplissage des valeurs (si mode édition)
+    const existingNotes = myRegistration?.notes || '';
+    const existingPrivate = myRegistration?.is_private_request || false;
+
+    zone.innerHTML = `
+        <div class="mobile-pip-card flex flex-col gap-6 relative">
+            
+            <h3 class="text-xl font-bold text-slate-900 mb-2">
+                ${isEditing ? 'Modifier mon inscription' : 'Avant de valider...'}
+            </h3>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">
+                    ${isEditing ? 'Mettre à jour vos notes :' : 'Souhaitez-vous travailler quelque chose de spécial ?'}
+                </label>
+                <textarea id="reg-notes" 
+                          maxlength="999"
+                          placeholder="Ex: J'ai mal à l'épaule gauche..."
+                          class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-sm h-32 resize-none">${existingNotes}</textarea>
+            </div>
+
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-slate-900 text-sm">Session Privée</span>
+                    <label class="relative inline-flex items-center ${canBePrivate ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}">
+                        <input type="checkbox" id="reg-private-toggle" class="sr-only peer" 
+                               ${!canBePrivate ? 'disabled' : ''} 
+                               ${existingPrivate ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+                    </label>
+                </div>
+                <p class="text-xs text-slate-500 leading-snug">Si coché, l'inscription se bloquera pour les autres.</p>
+                ${!canBePrivate ? `<div class="mt-2 p-2 bg-red-50 rounded-lg border border-red-100 text-[10px] text-red-600 font-medium">L'option est bloquée car d'autres membres sont inscrits.</div>` : ''}
+            </div>
+
+            <div class="flex flex-col gap-3 mt-4">
+                <button onclick="submitInscription('${eventId}', ${isEditing}, '${myRegistration?.id || ''}')" 
+                        class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition">
+                    ${isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription'}
+                </button>
+
+                ${isEditing ? `
+                    <button onclick="handleUnsubscribe('${myRegistration.id}', '${eventId}')" 
+                            class="w-full py-4 bg-red-50 text-red-600 font-bold rounded-2xl border border-red-100 active:scale-95 transition">
+                        Se désinscrire
+                    </button>
+                ` : ''}
+
+                <button onclick="handleInscriptionPiPstep1('${eventId}')" 
+                        class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition">
+                    Retour
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Hack pour le toggle disabled (comme avant)
+    if (!canBePrivate) {
+        setTimeout(() => {
+            const toggleZone = document.getElementById('reg-private-toggle')?.parentElement;
+            if(toggleZone) toggleZone.onclick = (e) => { e.preventDefault(); };
+        }, 100);
+    }
+}
+
+
+
+async function submitInscription(eventId, isEditing, registrationId) {
+    const notes = document.getElementById('reg-notes').value;
+    const isPrivate = document.getElementById('reg-private-toggle').checked;
+    const userId = currentUser?.id;
+
+    if (!userId) return alert("Session expirée, veuillez vous reconnecter.");
+
+    try {
+        let error = null;
+
+        if (isEditing && registrationId) {
+            // --- CAS 1 : MISE À JOUR (UPDATE) ---
+            const { error: upError } = await sb
+                .from('registrations')
+                .update({ 
+                    notes: notes, 
+                    is_private_request: isPrivate 
+                })
+                .eq('id', registrationId); // On cible la ligne précise
+            error = upError;
+
+        } else {
+            // --- CAS 2 : NOUVELLE INSCRIPTION (INSERT) ---
+            const { error: insError } = await sb
+                .from('registrations')
+                .insert([{
+                    user_id: userId,
+                    event_id: eventId,
+                    notes: notes,
+                    is_private_request: isPrivate
+                }]);
+            error = insError;
+        }
+
+        if (error) throw error;
+
+        // Succès !
+        closeMobilePip(); // Ferme la modale
+        await fetchEvents(); // Recharge les données pour voir le point bleu/rouge à jour
+        alert(isEditing ? "Inscription modifiée !" : "Inscription validée !");
+
+    } catch (err) {
+        console.error("Erreur inscription :", err);
+        alert("Une erreur est survenue : " + err.message);
+    }
+}
+
+async function handleUnsubscribe(registrationId, eventId) {
+    if (!confirm("Voulez-vous vraiment annuler votre inscription à cet événement ?")) return;
+
+    try {
+        const { error } = await sb
+            .from('registrations')
+            .delete()
+            .eq('id', registrationId);
+
+        if (error) throw error;
+
+        // Succès
+        closeMobilePip();
+        await fetchEvents(); // Rafraîchit le calendrier (le point redevient bleu/disparaît)
+        
+        // Optionnel : Message toast
+        // alert("Désinscription réussie."); 
+
+    } catch (err) {
+        console.error("Erreur désinscription :", err);
+        alert("Impossible de se désinscrire : " + err.message);
+    }
+}
+// Fonction utilitaire pour le bouton "Annuler"
+// Elle ferme la modale actuelle et réouvre celle du jour
+function closeInscriptionAndReturnToDay(dateStr) {
+    const zone = document.getElementById('mobile-pip-zone');
+    zone.classList.remove('modal-mode'); // On repasse en mode "Calendrier"
+    
+    // On filtre à nouveau les événements de ce jour pour réouvrir la vue "Jour"
+    const dayEvts = eventsCache.filter(e => e.date === dateStr);
+    openDayPip(dateStr, dayEvts);
+}
+
+
+    
 async function forceLogout() {
     console.log("Session expirée pour inactivité.");
     if (window.sb) await sb.auth.signOut();
@@ -1977,6 +2202,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
