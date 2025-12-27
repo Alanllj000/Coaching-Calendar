@@ -2027,6 +2027,9 @@ function handleInscriptionPiPstep2(eventId) {
 
     zone.innerHTML = `
         <div class="mobile-pip-card flex flex-col gap-6 relative">
+            <button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">
+                &times;
+        </button>
             
             <h3 class="text-xl font-bold text-slate-900 mb-2">
                 ${isEditing ? 'Modifier mon inscription' : 'Avant de valider...'}
@@ -2070,8 +2073,8 @@ function handleInscriptionPiPstep2(eventId) {
                 ` : ''}
 
                 <button onclick="handleInscriptionPiPstep1('${eventId}')" 
-                        class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition">
-                    Retour
+                        class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition text-xs uppercase tracking-widest">
+                    ${isEditing ? 'Voir détails précédents' : 'Retour'}
                 </button>
             </div>
         </div>
@@ -2204,6 +2207,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
