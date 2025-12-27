@@ -2017,7 +2017,7 @@ async function handleInscriptionPiPstep2(eventId) {
     const myId = currentUser?.id; 
 
     // --- RÉCUPÉRATION DIRECTE DES DONNÉES DEPUIS LA TABLE REGISTRATIONS ---
-    const { data: myReg, error } = await supabase
+    const { data: myReg, error } = await sb
         .from('registrations')
         .select('id, notes, is_private_request')
         .eq('event_id', eventId)
@@ -2218,6 +2218,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
