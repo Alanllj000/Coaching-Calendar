@@ -2019,8 +2019,6 @@ function handleInscriptionPiPstep2(eventId) {
 
     const canBePrivate = totalOthers === 0;
 
-    const zone = document.getElementById('mobile-pip-zone');
-
     // 3. Pré-remplissage des valeurs (si mode édition)
     const existingNotes = myRegistration?.notes || '';
     const existingPrivate = myRegistration?.is_private_request || false;
@@ -2207,6 +2205,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
