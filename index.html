@@ -2129,8 +2129,8 @@ async function submitInscription(eventId, isEditing, registrationId) {
             const { error: upError } = await sb
                 .from('registrations')
                 .update({ 
-                    notes: notes, 
-                    is_private_request: isPrivate 
+                    notes: notesValue,
+                    is_private_request: isPrivateValue 
                 })
                 .eq('id', registrationId); // On cible la ligne précise
             error = upError;
@@ -2230,6 +2230,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
