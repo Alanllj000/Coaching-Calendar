@@ -2007,24 +2007,27 @@ async function handleInscriptionPiPstep2(eventId) {
 
     const zone = document.getElementById('mobile-pip-zone');
 
-    // 1. OUVERTURE IMMÉDIATE DE LA STRUCTURE (Skeleton UI)
-    // On affiche la carte tout de suite avec des placeholders
+    // 1. ON PRÉPARE LE CONTENEUR MODAL (Si pas déjà fait)
     zone.classList.add('modal-mode');
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
 
+    // 2. ON INJECTE LA STRUCTURE FIXE AVEC UN "SQUELETTE" À L'INTÉRIEUR
+    // Remarque : On crée une div 'pip-content' qui servira de cible pour la mise à jour
     zone.innerHTML = `
-        <div class="mobile-pip-card flex flex-col gap-6 relative">
-            <h3 class="text-xl font-bold text-slate-900 mb-2">Chargement...</h3>
-            <div class="animate-pulse space-y-4">
-                <div class="h-32 bg-slate-100 rounded-2xl"></div>
-                <div class="h-16 bg-slate-100 rounded-2xl"></div>
-                <div class="h-12 bg-slate-200 rounded-2xl"></div>
+        <div class="mobile-pip-card flex flex-col gap-6 relative" id="main-pip-card">
+            <div id="pip-dynamic-content" class="animate-pulse">
+                <h3 class="text-xl font-bold text-slate-300 mb-4 uppercase">Chargement...</h3>
+                <div class="space-y-4">
+                    <div class="h-32 bg-slate-50 rounded-2xl"></div>
+                    <div class="h-16 bg-slate-50 rounded-2xl"></div>
+                    <div class="h-12 bg-slate-100 rounded-2xl"></div>
+                </div>
             </div>
         </div>
     `;
 
-    // 2. APPEL SUPABASE EN ARRIÈRE-PLAN
+    // 3. APPEL SUPABASE
     const myId = currentUser?.id;
     const { data: myReg } = await sb
         .from('registrations')
@@ -2038,61 +2041,61 @@ async function handleInscriptionPiPstep2(eventId) {
     const existingNotes = myReg?.notes || '';
     const existingPrivate = myReg?.is_private_request || false;
 
-    // Calcul de l'option privée
     let totalOthers = (event.registrations?.length || 0);
     if (isEditing) totalOthers -= 1;
     const canBePrivate = totalOthers === 0;
 
-    // 3. MISE À JOUR DU CONTENU SANS FERMER LA PIP
-    // On remplace le "Chargement..." par le vrai formulaire
-    zone.innerHTML = `
-        <div class="mobile-pip-card flex flex-col gap-6 relative">
-            <button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">
-                &times;
-            </button>
-            
-            <h3 class="text-xl font-bold text-slate-900 mb-2">
-                ${isEditing ? 'Modifier mon inscription' : 'Avant de valider...'}
-            </h3>
+    // 4. MISE À JOUR CIBLÉE (On ne change que le contenu de 'pip-dynamic-content')
+    // La carte 'main-pip-card' ne bouge pas, donc pas de clignotement !
+    const contentZone = document.getElementById('pip-dynamic-content');
+    contentZone.classList.remove('animate-pulse');
+    
+    contentZone.innerHTML = `
+        <button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">
+            &times;
+        </button>
+        
+        <h3 class="text-xl font-bold text-slate-900 mb-2">
+            ${isEditing ? 'Modifier mon inscription' : 'Avant de valider...'}
+        </h3>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    ${isEditing ? 'Mettre à jour vos notes :' : 'Souhaitez-vous travailler quelque chose de spécial ?'}
+        <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">
+                ${isEditing ? 'Mettre à jour vos notes :' : 'Souhaitez-vous travailler quelque chose de spécial ?'}
+            </label>
+            <textarea id="reg-notes" 
+                      maxlength="999"
+                      class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-sm h-32 resize-none">${existingNotes}</textarea>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-bold text-slate-900 text-sm">Session Privée</span>
+                <label class="relative inline-flex items-center ${canBePrivate ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}">
+                    <input type="checkbox" id="reg-private-toggle" class="sr-only peer" 
+                           ${!canBePrivate ? 'disabled' : ''} 
+                           ${existingPrivate ? 'checked' : ''}>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
                 </label>
-                <textarea id="reg-notes" 
-                          maxlength="999"
-                          class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-sm h-32 resize-none">${existingNotes}</textarea>
             </div>
+            ${!canBePrivate ? `<div class="mt-2 p-2 bg-red-50 rounded-lg text-[10px] text-red-600 font-medium">Option bloquée (déjà des inscrits).</div>` : ''}
+        </div>
 
-            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="font-bold text-slate-900 text-sm">Session Privée</span>
-                    <label class="relative inline-flex items-center ${canBePrivate ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}">
-                        <input type="checkbox" id="reg-private-toggle" class="sr-only peer" 
-                               ${!canBePrivate ? 'disabled' : ''} 
-                               ${existingPrivate ? 'checked' : ''}>
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-                    </label>
-                </div>
-                ${!canBePrivate ? `<div class="mt-2 p-2 bg-red-50 rounded-lg text-[10px] text-red-600 font-medium italic">Option bloquée (déjà des inscrits).</div>` : ''}
-            </div>
-
-            <div class="flex flex-col gap-3 mt-4">
-                <button onclick="submitInscription('${eventId}', ${isEditing}, '${registrationId}')" 
-                        class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-                    ${isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription'}
-                </button>
-                ${isEditing ? `
-                    <button onclick="handleUnsubscribe('${registrationId}', '${eventId}')" class="w-full py-4 bg-red-50 text-red-600 font-bold rounded-2xl border border-red-100 active:scale-95 transition">Se désinscrire</button>
-                ` : ''}
-                <button onclick="handleInscriptionPiPstep1('${eventId}')" class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition text-xs uppercase tracking-widest">
-                    ${isEditing ? 'Voir détails précédents' : 'Retour'}
-                </button>
-            </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="submitInscription('${eventId}', ${isEditing}, '${registrationId}')" 
+                    class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
+                ${isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription'}
+            </button>
+            ${isEditing ? `
+                <button onclick="handleUnsubscribe('${registrationId}', '${eventId}')" class="w-full py-4 bg-red-50 text-red-600 font-bold rounded-2xl border border-red-100 active:scale-95 transition">Se désinscrire</button>
+            ` : ''}
+            <button onclick="handleInscriptionPiPstep1('${eventId}')" class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition text-xs uppercase tracking-widest">
+                ${isEditing ? 'Voir détails précédents' : 'Retour'}
+            </button>
         </div>
     `;
 
-    // Hack pour le toggle disabled
+    // Gestion du toggle (identique)
     if (!canBePrivate) {
         setTimeout(() => {
             const toggleZone = document.getElementById('reg-private-toggle')?.parentElement;
@@ -2219,6 +2222,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
