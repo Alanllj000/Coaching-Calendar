@@ -1079,7 +1079,7 @@ function openDayPip(dateStr, events = []) {
 
                         ${isDatePast ? 
                             `<span class="w-32 py-2 text-center text-[9px] font-bold text-slate-400 uppercase border border-slate-100 rounded-xl bg-slate-50">Terminé</span>` : 
-                            `<button onclick="handleInscriptionPiPstep1('${e.id}')" 
+                            <button onclick="${isReg ? `handleInscriptionPiPstep2('${e.id}')` : `handleInscriptionPiPstep1('${e.id}')`}" 
                                      class="w-32 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${isReg ? 'bg-orange-100 text-orange-600' : isFull ? 'bg-slate-50 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white shadow-md'}">
                                 ${isReg ? 'Modifier l\'inscription' : (isFull ? 'Complet' : 'S\'inscrire')}
                             </button>`
@@ -1975,7 +1975,7 @@ function handleInscriptionPiPstep1(eventId) {
                 de <strong class="text-slate-900">${event.start_time}</strong> 
                 à <strong class="text-slate-900">${event.end_time}</strong> ?
                 <br><br>
-                Le lieu où le cours a lieu est : <strong class="text-slate-900">${event.location || 'Non défini'}</strong>.
+                Le lieu du cour est : <strong class="text-slate-900">${event.location || 'Non défini'}</strong>.
             </div>
 
             <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex gap-3 items-start">
@@ -2204,6 +2204,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
