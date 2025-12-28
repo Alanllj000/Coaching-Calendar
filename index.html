@@ -1266,7 +1266,7 @@ function openDayPip(dateStr, events = []) {
 
             // PRIORITÉ : Si le cours est réservé par un tiers en mode privé
             if (isPrivateTaken && !myReg) {
-                btnLabel = "Déjà Réservé";
+                btnLabel = "Complet";
                 btnClass = "bg-red-500 text-white shadow-md cursor-not-allowed";
                 btnAction = "void(0)"; // On neutralise l'action
             }
@@ -3215,6 +3215,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
