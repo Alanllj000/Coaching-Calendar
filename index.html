@@ -1201,7 +1201,7 @@ function openDayPip(dateStr, events = []) {
             const isOwner = e.owner_id === myId;
 
             html += `
-                <div class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between shadow-sm ${isDatePast ? 'opacity-60' : ''}">
+                <div id="event-card-${e.id}" class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between shadow-sm ${isDatePast ? 'opacity-60' : ''}">
                     
                     <div class="flex-1 pr-4">
                         <h4 class="font-black text-slate-800 text-sm leading-tight mb-1">${e.title} ${isAdmin && isOwner ? '✎' : ''}</h4>
@@ -2799,43 +2799,46 @@ async function loadInbox() {
                     }
 
                     // 2. LOGIQUE INTERACTIVE (Stabilo + Calendrier)
-                    if (msg.metadata && msg.metadata.event_id) {
+                    if (msg.metadata && msg.metadata.event_id && msg.metadata.date) {
                         const eventId = msg.metadata.event_id;
-                        const eventDate = msg.metadata.date; // La date doit être dans les metadata (YYYY-MM-DD)
-
-                        // On ferme l'inbox (si nécessaire selon ton UI)
+                        const eventDate = msg.metadata.date;
+                    
+                        // 1. Fermer l'inbox
                         if (typeof closeInbox === 'function') closeInbox();
-
-                        // Fonction pour ouvrir le jour et stabiloter
-                        // Utilise le nom de ta fonction qui affiche le jour (ici j'utilise "openDayDetails")
-                        if (typeof openDayDetails === 'function') {
-                            await openDayDetails(eventDate);
+                    
+                        // 2. MODIFICATION ICI : Utilise openDayPip
+                        if (typeof openDayPip === 'function') {
+                            // On récupère les events du jour dans ton tableau global (eventsCache)
+                            // pour les donner à manger à openDayPip
+                            const eventsOfDay = eventsCache.filter(ev => ev.date === eventDate);
                             
-                            // Petit délai pour laisser le HTML se générer
+                            // On appelle ta fonction avec les deux arguments requis
+                            openDayPip(eventDate, eventsOfDay);
+                            
+                            // 3. Petit délai pour laisser le HTML se générer dans 'mobile-pip-zone'
                             setTimeout(() => {
                                 const el = document.getElementById(`event-card-${eventId}`);
                                 if (el) {
                                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     
-                                    // Effet Stabilo Clignotant
-                                    let toggle = true;
-                                    let clics = 0;
-                                    const interval = setInterval(() => {
-                                        el.style.backgroundColor = toggle ? "#ffff00" : "";
-                                        el.style.boxShadow = toggle ? "0 0 15px #ffff00" : "";
-                                        toggle = !toggle;
-                                        clics++;
-                                        if (clics >= 4) { // 2 fois ON/OFF
-                                            clearInterval(interval);
-                                            el.style.backgroundColor = "";
+                                    // Effet stabilo
+                                    let steps = 0;
+                                    const flash = setInterval(() => {
+                                        el.style.backgroundColor = (steps % 2 === 0) ? "#ffff00" : "white";
+                                        el.style.boxShadow = (steps % 2 === 0) ? "0 0 20px rgba(255, 255, 0, 0.8)" : "";
+                                        steps++;
+                                        if (steps >= 4) {
+                                            clearInterval(flash);
+                                            el.style.backgroundColor = ""; // Retour au style original
                                             el.style.boxShadow = "";
                                         }
                                     }, 500);
+                                } else {
+                                    console.warn("Élément introuvable : event-card-" + eventId);
                                 }
-                            }, 600);
+                            }, 600); 
                         }
-                    }
-                };
+                    }       
                 container.appendChild(div);
             });
 
@@ -2952,6 +2955,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
