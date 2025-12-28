@@ -748,6 +748,8 @@ let eventsCache = [];
 let initialProfileData = {};
 const DAY_NAMES = {0:'sunday', 1:'monday', 2:'tuesday', 3:'wednesday', 4:'thursday', 5:'friday', 6:'saturday'};
 const registrationDetailsCache = {};
+let globalRealtimeChannel = null;
+let currentDayStr = null;
     
 // --- GESTION DES CLICS GLOBAUX (REMPLACE HANDLEBODYCLICK) ---
 document.addEventListener('click', function(e) {
@@ -1016,7 +1018,13 @@ async function initApp(user) {
     currentUser = user;
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-content').classList.remove('hidden');
+    
+    // 1. Tes notifications Inbox (le tuyau existant)
     setupRealtimeNotifications(user.id);
+    
+    // 2. NOUVEAU : La synchronisation globale (le nouveau tuyau)
+    setupGlobalRealtimeSync(); 
+    
     await loadProfile();
     await fetchEvents();
     loadNotificationSettings();
@@ -1090,6 +1098,12 @@ async function fetchEvents() {
     }
 
     renderCalendar();
+    if (currentDayStr) {
+        // On filtre notre cache tout neuf pour ne garder que les events du jour affiché
+        const eventsForDay = eventsCache.filter(e => e.date === currentDayStr);
+        // On relance l'affichage de la PiP avec les données fraîches
+        openDayPip(currentDayStr, eventsForDay);
+    }
 }
 
 // --- RENDU CALENDRIER ---
@@ -1195,6 +1209,7 @@ function renderCalendar() {
 }
 // --- PIP DETAILS JOUR ---
 function openDayPip(dateStr, events = []) {
+    currentDayStr = dateStr;
     const zone = document.getElementById('mobile-pip-zone');
     if (!zone) return;
 
@@ -3139,6 +3154,29 @@ async function forceLogout() {
     document.addEventListener(event, resetInactivityTimer, true);
 });
 
+function setupRealtimeGlobalSync() {
+    // Canal pour les événements (Calendrier / Suppression / Modif Admin)
+    sb.channel('global-events-sync')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'events' },
+            async (payload) => {
+                console.log("📢 Changement Event détecté :", payload.eventType);
+                // On rafraîchit tout le cache local et le calendrier
+                await fetchEvents();
+            }
+        )
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'registrations' },
+            async (payload) => {
+                console.log("📢 Changement Inscription détecté :", payload.eventType);
+                // Utile pour mettre à jour les jauges de places en temps réel
+                await fetchEvents();
+            }
+        )
+        .subscribe();
+}
 resetInactivityTimer();
 // --- INITIALISATION ---
 window.onload = async function() {
@@ -3158,6 +3196,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
