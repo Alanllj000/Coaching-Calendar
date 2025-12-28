@@ -1786,6 +1786,7 @@ function closeAdminPanel() { document.getElementById('admin-panel').style.displa
 function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
 function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
 function closeMobilePip() {
+    currentDayStr = null;
     const zone = document.getElementById('mobile-pip-zone');
     zone.classList.remove('modal-mode'); // <--- Désactive tes paramètres
     zone.innerHTML = '';
@@ -3196,6 +3197,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
