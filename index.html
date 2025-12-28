@@ -2967,21 +2967,21 @@ async function saveNotificationPrefs() {
 
 //Fonctions pour la boite de messages
 function openInboxPip() {
+    console.log("État actuel avant clic:", isInboxOpen);
     const inbox = document.getElementById('pip-inbox');
     
-    // Si c'est déjà ouvert, on ferme (Toggle)
     if (isInboxOpen) {
+        console.log("Tentative de fermeture...");
         closeInboxPip();
         return;
     }
 
-    // Sinon, on ouvre
+    console.log("Tentative d'ouverture...");
     inbox.classList.remove('hidden');
     inbox.classList.add('flex');
-    isInboxOpen = true; // On marque comme ouvert
+    isInboxOpen = true;
     loadInbox(); 
 }
-
 
 
 function closeInboxPip() {
@@ -3278,6 +3278,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
