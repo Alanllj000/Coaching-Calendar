@@ -2789,55 +2789,47 @@ async function loadInbox() {
                 div.onclick = async (e) => {
                     e.stopPropagation();
                     
-                    // 1. Marquer comme lu si nécessaire
+                    // 1. MARQUAGE COMME LU IMMÉDIAT
                     if (!msg.is_read) {
                         msg.is_read = true; 
                         await sb.from('notifications').update({ is_read: true }).eq('id', msg.id);
-                        // On relance loadInbox pour mettre à jour les badges
                         isInboxLoading = false; 
                         setTimeout(() => loadInbox(), 150); 
                     }
-
-                    // 2. LOGIQUE INTERACTIVE (Stabilo + Calendrier)
-                    if (msg.metadata && msg.metadata.event_id && msg.metadata.date) {
-                        const eventId = msg.metadata.event_id;
-                        const eventDate = msg.metadata.date;
+                
+                    // 2. FERMETURE FORCÉE DE L'INBOX ET DE L'OVERLAY
+                    // On appelle ta fonction de fermeture si elle existe
+                    if (typeof closeInbox === 'function') {
+                        closeInbox();
+                    }
                     
-                        // --- AJOUT ICI : FERMETURE DE LA BOITE DE RÉCEPTION ---
-                        // On appelle la fonction qui ferme la PiP de l'inbox
+                    // SÉCURITÉ : On force la disparition de tout ce qui ressemble à un overlay d'inbox
+                    const inboxUI = document.getElementById('inbox-container') || document.getElementById('inbox-list-pip')?.closest('.mobile-pip-card');
+                    if (inboxUI) inboxUI.style.display = 'none';
+                
+                    const overlays = document.querySelectorAll('[id*="overlay"], [class*="backdrop"]');
+                    overlays.forEach(ov => {
+                        ov.style.display = 'none';
+                        ov.style.opacity = '0';
+                        ov.style.pointerEvents = 'none';
+                    });
+                
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = 'auto';
+                
+                    // 3. LOGIQUE D'OUVERTURE DU CALENDRIER
+                    if (msg.metadata && msg.metadata.event_id && msg.metadata.date) {
+                        const { event_id, date } = msg.metadata;
+                    
                         if (typeof openDayPip === 'function') {
-                            // 1. Préparation des données
-                            const eventsOfDay = eventsCache.filter(ev => ev.date === eventDate);
+                            const eventsOfDay = eventsCache.filter(ev => ev.date === date);
                             
-                            // 2. NETTOYAGE RADICAL DU FLOU ET DES OVERLAYS
-                            // On retire les classes qui bloquent le scroll ou ajoutent du flou au body
-                            document.body.classList.remove('modal-open', 'inbox-open', 'no-scroll');
-                            document.body.style.overflow = 'auto';
-                            document.body.style.pointerEvents = 'auto'; // Réactive les clics partout
-                        
-                            // On cache l'overlay spécifique (le div qui fait le noir/flou derrière)
-                            const inboxOverlay = document.getElementById('inbox-overlay');
-                            if (inboxOverlay) {
-                                inboxOverlay.style.display = 'none';
-                                inboxOverlay.style.opacity = '0';
-                                inboxOverlay.style.pointerEvents = 'none';
-                            }
-                        
-                            // 3. Préparation de la zone PiP
-                            const zone = document.getElementById('mobile-pip-zone');
-                            if (zone) {
-                                zone.classList.remove('modal-mode'); // Important pour ton CSS
-                                zone.style.pointerEvents = 'auto';
-                                zone.style.backdropFilter = 'none';
-                                zone.style.display = 'flex'; // On s'assure qu'elle est visible
-                            }
-                        
-                            // 4. On lance l'ouverture du jour (remplacement du contenu HTML)
-                            openDayPip(eventDate, eventsOfDay);
-                        
-                            // 5. Animation stabilo (après un court délai pour le rendu HTML)
+                            // On ouvre la nouvelle PiP (celle du calendrier)
+                            openDayPip(date, eventsOfDay);
+                            
+                            // 4. EFFET STABILO
                             setTimeout(() => {
-                                const el = document.getElementById(`event-card-${eventId}`);
+                                const el = document.getElementById(`event-card-${event_id}`);
                                 if (el) {
                                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     
@@ -2846,14 +2838,14 @@ async function loadInbox() {
                                         el.style.backgroundColor = (steps % 2 === 0) ? "#ffff00" : "white";
                                         el.style.boxShadow = (steps % 2 === 0) ? "0 0 20px rgba(255, 255, 0, 0.8)" : "";
                                         steps++;
-                                        if (steps >= 6) { // 3 clignotements
+                                        if (steps >= 6) {
                                             clearInterval(flash);
-                                            el.style.backgroundColor = "";
+                                            el.style.backgroundColor = ""; 
                                             el.style.boxShadow = "";
                                         }
                                     }, 400);
                                 }
-                            }, 600);
+                            }, 600); 
                         }
                     }
                 };
@@ -2973,6 +2965,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
