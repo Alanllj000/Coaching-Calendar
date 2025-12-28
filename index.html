@@ -2667,52 +2667,51 @@ function closeInboxPip() {
 // --- CHARGEMENT ET BADGE ---
 let isInboxLoading = false; // Le verrou
 async function loadInbox() {
+    // 1. Gestion du verrou pour éviter les collisions (important pour le Realtime)
+    if (isInboxLoading) return;
+    isInboxLoading = true;
+
     try {
-        // 1. Récupération de l'utilisateur actuel
+        // 2. Récupération de l'utilisateur actuel
         const { data: { user } } = await sb.auth.getUser();
         if (!user) return;
 
-        // 2. Récupération des notifications depuis la table (celle remplie par le Cron)
+        // 3. Récupération des notifications
         const { data: messages, error } = await sb
             .from('notifications')
             .select('*')
-            .eq('user_id', user.id) // Le user_id correspond à l'ID du profil
-            .order('created_at', { ascending: false }) // Les plus récentes en premier
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
             .limit(20);
 
         if (error) throw error;
 
-        // 3. Sélection des éléments du DOM
+        // 4. Sélection des éléments du DOM
         const container = document.getElementById('inbox-list-pip');
         const emptyMsg = document.getElementById('inbox-empty-pip');
         const badgeMain = document.getElementById('inbox-badge-main');
+        const badgeExternal = document.getElementById('menu-badge-dot');
         const btnReadAll = document.getElementById('btn-read-all-pip');
 
-        // 4. Traitement de l'affichage
+        // 5. Traitement de l'affichage
         if (messages && messages.length > 0) {
-            // On cache le message "vide" et on affiche le bouton "Tout lire"
             emptyMsg.classList.add('hidden');
             btnReadAll.classList.remove('hidden');
-            
-            // On nettoie la liste avant de la remplir
             container.innerHTML = "";
             
             let unreadCount = 0;
 
             messages.forEach(msg => {
-                // Compteur de non-lus pour le badge
                 if (!msg.is_read) unreadCount++;
                 
-                // Création de l'élément HTML
                 const div = document.createElement('div');
-                // Style conditionnel : Blanc + Ombre + Bordure bleue si NON LU | Transparent si LU
+                // Style dynamique selon l'état de lecture
                 div.className = `cursor-pointer p-4 rounded-[1.5rem] transition-all border mb-3 relative overflow-hidden group ${
                     !msg.is_read 
                     ? 'bg-white border-blue-100 shadow-sm hover:shadow-md' 
                     : 'bg-white/40 border-transparent hover:bg-white/60'
                 }`;
                 
-                // Injection du contenu HTML (Titre, Message, Heure)
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-1 gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -2727,39 +2726,33 @@ async function loadInbox() {
                 `;
                 
                 // Action au clic : Marquer comme lu
-                div.onclick = async () => {
+                div.onclick = async (e) => {
+                    e.stopPropagation(); // Empêche des bugs de clics multiples
                     if (!msg.is_read) {
-                        // 1. Update DB
+                        // Mise à jour en base de données
                         await sb.from('notifications').update({ is_read: true }).eq('id', msg.id);
-                        // 2. Update UI immédiat (pour éviter le clignotement du rechargement)
-                        div.classList.remove('bg-white', 'border-blue-100', 'shadow-sm');
-                        div.classList.add('bg-white/40', 'border-transparent');
-                        const dot = div.querySelector('.bg-blue-500');
-                        if(dot) dot.remove();
                         
-                        // 3. Recharger pour mettre à jour le badge global
-                        loadInbox();
+                        // IMPORTANT : On libère le verrou manuellement pour permettre le rechargement immédiat
+                        isInboxLoading = false; 
+                        loadInbox(); // Recalcule les badges (ex: passe de 5 à 4)
                     }
                 };
                 
                 container.appendChild(div);
             });
 
-            // 5. Mise à jour du badge rouge sur le menu principal
-
-            const badgeExternal = document.getElementById('menu-badge-dot');
-    
+            // 6. Mise à jour synchronisée des badges (Menu PiP + Logo Extérieur)
             if (unreadCount > 0) {
-                // Badge dans le menu (Boîte de réception)
+                // Badge Interne
                 badgeMain.innerText = unreadCount;
                 badgeMain.classList.remove('hidden');
-    
-                // Badge sur le logo (Extérieur)
+
+                // Badge Extérieur (Logo)
                 if (badgeExternal) {
                     badgeExternal.innerText = unreadCount;
                     badgeExternal.classList.remove('hidden');
                     
-                    // Petite animation de pop pour attirer l'oeil
+                    // Animation pour notifier l'utilisateur visuellement
                     badgeExternal.animate([
                         { transform: 'scale(1)' },
                         { transform: 'scale(1.2)' },
@@ -2767,14 +2760,13 @@ async function loadInbox() {
                     ], { duration: 300 });
                 }
             } else {
-                // On cache les deux badges s'il n'y a plus de messages non-lus
+                // Cacher si tout est lu
                 badgeMain.classList.add('hidden');
                 if (badgeExternal) badgeExternal.classList.add('hidden');
             }
-    
+
         } else {
-            // --- CAS OÙ LA LISTE EST VIDE (0 messages total) ---
-            const badgeExternal = document.getElementById('menu-badge-dot');
+            // Liste vide
             emptyMsg.classList.remove('hidden');
             btnReadAll.classList.add('hidden');
             badgeMain.classList.add('hidden');
@@ -2784,7 +2776,8 @@ async function loadInbox() {
     } catch (err) {
         console.error("Erreur Inbox:", err);
     } finally {
-        isInboxLoading = false; // On n'oublie pas de libérer le verrou
+        // Libération du verrou après un mini délai pour laisser le temps à la DB
+        setTimeout(() => { isInboxLoading = false; }, 200);
     }
 }
 function setupRealtimeNotifications(userId) {
@@ -2862,6 +2855,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
