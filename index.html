@@ -3090,97 +3090,61 @@ async function loadInbox() {
         setTimeout(() => { isInboxLoading = false; }, 200);
     }
 }
-// --- FONCTION REALTIME ---
-async function setupRealtimeNotifications(userId) {
-    // 1. Nettoyage des canaux existants (avec sécurité async/await)
-    try {
-        await sb.removeAllChannels();
-    } catch (e) {
-        console.warn("Note: Erreur lors du nettoyage des canaux", e);
-    }
-
-    // 2. On attend 500ms avant de recréer le canal pour éviter les erreurs de connexion WebSocket
-    setTimeout(() => {
-        const channelName = 'inbox-updates-' + userId;
-        
-        sb.channel(channelName)
-            .on(
-                'postgres_changes', 
-                { 
-                    event: 'INSERT', 
-                    schema: 'public', 
-                    table: 'notifications', 
-                    filter: `user_id=eq.${userId}` 
-                }, 
-                (payload) => {
-                    console.log('🔔 Notification Realtime reçue !', payload.new);
-                    
-                    // 3. FORCE UNLOCK : On libère le verrou pour autoriser la mise à jour
-                    isInboxLoading = false;
-
-                    // 4. On lance le chargement avec un mini délai pour laisser la DB se stabiliser
-                    setTimeout(() => {
-                        loadInbox(); 
-                    }, 200);
-
-                    // Retour haptique (vibration)
-                    if (navigator.vibrate) navigator.vibrate(100);
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log("🟢 Realtime connecté et aux aguets pour l'utilisateur :", userId);
-                }
-                if (status === 'CHANNEL_ERROR') {
-                    console.error("🔴 Erreur de canal Realtime");
-                }
-            });
-    }, 500);
-}
-//Fin des fonctions pour la boite de messages
-
-
 async function setupAppRealtime(userId) {
-    // 1. On nettoie l'ancien canal s'il existe
+    // 1. Nettoyage de sécurité pour éviter les doublons de WebSocket
     if (globalChannel) {
-        await sb.removeChannel(globalChannel);
+        try {
+            await sb.removeChannel(globalChannel);
+        } catch (e) {
+            console.warn("Note: Erreur lors du nettoyage", e);
+        }
     }
 
-    console.log("📡 Tentative de connexion au canal unique...");
+    console.log("📡 Initialisation du canal unique (Notifs + Calendrier)...");
 
-    // 2. On crée UN SEUL canal pour TOUTE l'application
-    globalChannel = sb.channel('app-realtime-stream')
-        // ÉCOUTE 1 : Les notifications (ton ancienne fonction setupRealtimeNotifications)
+    // 2. Création du canal unique
+    globalChannel = sb.channel('main-app-sync')
+        // --- BLOC A : NOTIFICATIONS (Logique récupérée) ---
         .on('postgres_changes', { 
             event: 'INSERT', 
             schema: 'public', 
             table: 'notifications', 
             filter: `user_id=eq.${userId}` 
         }, payload => {
-            console.log("🔔 Nouvelle notification !");
-            loadInbox(); // ou ta logique de cloche
+            console.log('🔔 Notification Realtime reçue !', payload.new);
+            
+            // On garde tes sécurités et effets :
+            if (typeof isInboxLoading !== 'undefined') isInboxLoading = false; // Déverrouillage
+            if (navigator.vibrate) navigator.vibrate(100); // Vibration téléphone
+
+            // Délai de 200ms pour laisser la DB respirer avant de lire
+            setTimeout(() => {
+                loadInbox(); 
+            }, 200);
         })
-        // ÉCOUTE 2 : Les événements (pour le calendrier)
+        
+        // --- BLOC B : ÉVÉNEMENTS (Calendrier) ---
         .on('postgres_changes', { 
             event: '*', 
             schema: 'public', 
             table: 'events' 
         }, async () => {
-            console.log("📅 Changement calendrier");
+            console.log("📅 Mise à jour calendrier détectée");
             await fetchEvents();
         })
-        // ÉCOUTE 3 : Les inscriptions (pour les jauges et le mode privé)
+        
+        // --- BLOC C : INSCRIPTIONS (Places & Mode Privé) ---
         .on('postgres_changes', { 
             event: '*', 
             schema: 'public', 
             table: 'registrations' 
         }, async () => {
-            console.log("✍️ Changement inscription");
+            console.log("✍️ Mise à jour inscriptions détectée");
             await fetchEvents();
         })
         .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-                console.log("✅ WebSocket connecté et unique !");
+                console.log("✅ Système Realtime global opérationnel");
             }
         });
 }
@@ -3244,3 +3208,4 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
