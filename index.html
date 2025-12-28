@@ -412,6 +412,7 @@
                 <button onclick="openEmailPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre email</button>
             </div>
 
+            <!-- Notifications !-->
             <div id="notif-section" class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 relative">
                 <div class="flex items-center justify-between">
                     <div>
@@ -419,16 +420,37 @@
                         <p class="text-xs text-slate-400">Recevoir des rappels sur cet appareil</p>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" id="notif-master" onchange="toggleNotifUI()">
+                        <input type="checkbox" id="notif-master" onchange="toggleNotifUI(); checkChanges()">
                         <span class="slider"></span>
                     </label>
                 </div>
-                
+            
                 <div id="notif-content-wrapper" class="space-y-4 pt-2 border-t border-slate-50 transition-all duration-300">
                     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Rappels avant un event</p>
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 semaine avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1s" onchange="checkChanges()"><span class="slider"></span></label></div>
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 jour avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1j" onchange="checkChanges()"><span class="slider"></span></label></div>
-                    <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-600">1 heure avant</span><label class="switch scale-75"><input type="checkbox" id="notif-1h" onchange="checkChanges()"><span class="slider"></span></label></div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-600">1 semaine avant</span>
+                        <label class="switch scale-75">
+                            <input type="checkbox" id="notif-1s" onchange="checkChanges()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-600">1 jour avant</span>
+                        <label class="switch scale-75">
+                            <input type="checkbox" id="notif-1j" onchange="checkChanges()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-600">1 heure avant</span>
+                        <label class="switch scale-75">
+                            <input type="checkbox" id="notif-1h" onchange="checkChanges()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                     
                     <div id="custom-reminders-list" class="space-y-3"></div>
                     
@@ -2562,6 +2584,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
