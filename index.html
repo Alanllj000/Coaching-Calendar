@@ -55,7 +55,7 @@
 
         .calendar-day { 
             min-height: 85px; background-color: white; padding: 0.5rem; 
-            display: flex; flex-direction: column; cursor: pointer; transition: background 0.2s; position: relative;
+            display: flex; flex-direction: column; cursor: pointer; transition: background 0.2s; position: relative; isolation: isolate;
         }
         .calendar-day:hover:not(.empty) { background-color: #f8fafc; }
         .calendar-day.empty { background-color: #f1f5f9; cursor: default; }
@@ -65,7 +65,22 @@
         .dot-red { background-color: #ef4444; }
         .dot-gray { background-color: #94a3b8; }
 
+        .calendar-day.selected:first-child {
+            border-top-left-radius: 1.5rem;
+        }
+        .calendar-day.selected:nth-child(7) {
+            border-top-right-radius: 1.5rem;
+        }
+        .calendar-day.selected:nth-child(7n+1):nth-last-child(-n+7),
+        .calendar-day.selected:last-child:nth-child(7n+1) {
+            border-bottom-left-radius: 1.5rem;
+        }
+        calendar-day.selected:last-child {
+            border-bottom-right-radius: 1.5rem;
+        }
 
+
+        
         #mobile-pip-zone {
             position: fixed;
             inset: 0;           /* Couvre tout l'écran (Haut/Bas/Gauche/Droite = 0) */
@@ -3231,6 +3246,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
