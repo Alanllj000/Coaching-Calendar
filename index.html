@@ -1253,22 +1253,25 @@ function openDayPip(dateStr, events = []) {
             const isFull = regCount >= e.max_participants;
             const isOwner = e.owner_id === myId;
             
-            // LOGIQUE PRIVÉ BLOQUÉ
-            const isPrivateTaken = e.is_private_request === true && regCount > 0;
+            // CORRECTION : On cherche si une inscription possède le flag is_private_request
+            const hasPrivateRegistration = e.registrations && e.registrations.some(function(r) { 
+                return r.is_private_request === true; 
+            });
+            const isPrivateTaken = hasPrivateRegistration && regCount > 0;
             
             // 1. Définition du bouton par défaut (Non inscrit)
             let btnLabel = isFull ? 'Complet' : "S'inscrire";
             let btnClass = isFull ? 'bg-slate-50 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white shadow-md';
             let btnAction = `handleInscriptionPiPstep1('${e.id}')`; 
 
-            // PRIORITÉ : Si le cours est privé et déjà réservé par quelqu'un d'autre
+            // PRIORITÉ : Si le cours est réservé par un tiers en mode privé
             if (isPrivateTaken && !myReg) {
                 btnLabel = "Déjà Réservé";
                 btnClass = "bg-red-500 text-white shadow-md cursor-not-allowed";
-                btnAction = "#"; // On bloque l'action
+                btnAction = "void(0)"; // On neutralise l'action
             }
 
-            // 2. Si inscrit (on écrase la logique précédente car l'utilisateur est prioritaire sur son inscription)
+            // 2. Si inscrit (on écrase pour permettre la modif de sa propre place)
             if (myReg) {
                 if (myReg.status === 'PENDING_CONFIRMATION') {
                     btnLabel = "Reconfirmer l'inscription";
@@ -3212,5 +3215,6 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
