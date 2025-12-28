@@ -2803,25 +2803,29 @@ async function loadInbox() {
                         const eventId = msg.metadata.event_id;
                         const eventDate = msg.metadata.date;
                     
-                        // 1. Fermer l'inbox
-                        if (typeof closeInbox === 'function') closeInbox();
-                    
-                        // 2. MODIFICATION ICI : Utilise openDayPip
+                        // --- AJOUT ICI : FERMETURE DE LA BOITE DE RÉCEPTION ---
+                        // On appelle la fonction qui ferme la PiP de l'inbox
+                        if (typeof closeInbox === 'function') {
+                            closeInbox();
+                        } else {
+                            // Si tu n'as pas de fonction closeInbox, on cache manuellement le container
+                            const inboxContainer = document.getElementById('inbox-list-pip')?.parentElement;
+                            if (inboxContainer) inboxContainer.style.display = 'none';
+                        }
+                
+                        // 3. OUVERTURE DU CALENDRIER (Day Pip)
                         if (typeof openDayPip === 'function') {
-                            // On récupère les events du jour dans ton tableau global (eventsCache)
-                            // pour les donner à manger à openDayPip
                             const eventsOfDay = eventsCache.filter(ev => ev.date === eventDate);
                             
-                            // On appelle ta fonction avec les deux arguments requis
+                            // On lance l'ouverture du jour
                             openDayPip(eventDate, eventsOfDay);
                             
-                            // 3. Petit délai pour laisser le HTML se générer dans 'mobile-pip-zone'
+                            // 4. EFFET STABILO
                             setTimeout(() => {
                                 const el = document.getElementById(`event-card-${eventId}`);
                                 if (el) {
                                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     
-                                    // Effet stabilo
                                     let steps = 0;
                                     const flash = setInterval(() => {
                                         el.style.backgroundColor = (steps % 2 === 0) ? "#ffff00" : "white";
@@ -2829,16 +2833,14 @@ async function loadInbox() {
                                         steps++;
                                         if (steps >= 4) {
                                             clearInterval(flash);
-                                            el.style.backgroundColor = ""; // Retour au style original
+                                            el.style.backgroundColor = ""; 
                                             el.style.boxShadow = "";
                                         }
                                     }, 500);
-                                } else {
-                                    console.warn("Élément introuvable : event-card-" + eventId);
                                 }
                             }, 600); 
                         }
-                    }       
+                    }
                 };
                 container.appendChild(div);
             });
@@ -2956,6 +2958,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
