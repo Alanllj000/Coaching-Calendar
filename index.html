@@ -2670,16 +2670,13 @@ let isInboxLoading = false;
 
 // --- FONCTION DE CHARGEMENT ---
 async function loadInbox() {
-    // 1. Gestion du verrou
     if (isInboxLoading) return;
     isInboxLoading = true;
 
     try {
-        // 2. Récupération de l'utilisateur
         const { data: { user } } = await sb.auth.getUser();
         if (!user) return;
 
-        // 3. Récupération des notifications
         const { data: messages, error } = await sb
             .from('notifications')
             .select('*')
@@ -2689,17 +2686,22 @@ async function loadInbox() {
 
         if (error) throw error;
 
-        // 4. Sélection des éléments du DOM
+        // --- SÉCURITÉ : On récupère les éléments ---
         const container = document.getElementById('inbox-list-pip');
         const emptyMsg = document.getElementById('inbox-empty-pip');
         const badgeMain = document.getElementById('inbox-badge-main');
         const badgeExternal = document.getElementById('menu-badge-dot');
         const btnReadAll = document.getElementById('btn-read-all-pip');
 
-        // 5. Traitement de l'affichage
+        // Si le container n'existe pas, on arrête pour éviter l'erreur TypeError
+        if (!container) {
+            console.warn("⚠️ Container 'inbox-list-pip' introuvable dans le DOM.");
+            return;
+        }
+
         if (messages && messages.length > 0) {
-            emptyMsg.classList.add('hidden');
-            btnReadAll.classList.remove('hidden');
+            if (emptyMsg) emptyMsg.classList.add('hidden');
+            if (btnReadAll) btnReadAll.classList.remove('hidden');
             container.innerHTML = "";
             
             let unreadCount = 0;
@@ -2727,71 +2729,44 @@ async function loadInbox() {
                     <p class="text-xs ${msg.is_read ? 'text-slate-400' : 'text-slate-600'} leading-snug break-words">${msg.message}</p>
                 `;
                 
-                // --- ACTION AU CLIC ---
                 div.onclick = async (e) => {
                     e.stopPropagation();
-                    
                     if (!msg.is_read) {
-                        // A. On change visuellement tout de suite (UX)
                         msg.is_read = true; 
-                        
-                        // B. On met à jour la DB
-                        const { error } = await sb
-                            .from('notifications')
-                            .update({ is_read: true })
-                            .eq('id', msg.id);
-
-                        if (error) {
-                            console.error("Erreur update:", error);
-                            msg.is_read = false; 
-                            return;
-                        }
-
-                        // C. FORCE UNLOCK : On casse le verrou manuellement
+                        await sb.from('notifications').update({ is_read: true }).eq('id', msg.id);
                         isInboxLoading = false; 
-                        
-                        // D. On recharge après 150ms pour être sûr que la DB a validé le changement
-                        setTimeout(() => {
-                            loadInbox();
-                        }, 150); 
+                        setTimeout(() => loadInbox(), 150); 
                     }
                 };
-                
                 container.appendChild(div);
             });
 
-            // 6. Mise à jour des badges
+            // MISE À JOUR SÉCURISÉE DES BADGES
             if (unreadCount > 0) {
-                // Afficher Badges
-                badgeMain.innerText = unreadCount;
-                badgeMain.classList.remove('hidden');
-
+                if (badgeMain) {
+                    badgeMain.innerText = unreadCount;
+                    badgeMain.classList.remove('hidden');
+                }
                 if (badgeExternal) {
                     badgeExternal.innerText = unreadCount;
                     badgeExternal.classList.remove('hidden');
-                    // Animation Pop
-                    badgeExternal.animate([
-                        { transform: 'scale(1)' }, { transform: 'scale(1.2)' }, { transform: 'scale(1)' }
-                    ], { duration: 300 });
+                    badgeExternal.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.2)' }, { transform: 'scale(1)' }], { duration: 300 });
                 }
             } else {
-                // Cacher Badges (Cas passage de 1 à 0)
-                badgeMain.classList.add('hidden');
+                if (badgeMain) badgeMain.classList.add('hidden');
                 if (badgeExternal) badgeExternal.classList.add('hidden');
             }
 
         } else {
-            // Liste vide
-            emptyMsg.classList.remove('hidden');
-            btnReadAll.classList.add('hidden');
-            badgeMain.classList.add('hidden');
+            if (emptyMsg) emptyMsg.classList.remove('hidden');
+            if (btnReadAll) btnReadAll.classList.add('hidden');
+            if (badgeMain) badgeMain.classList.add('hidden');
             if (badgeExternal) badgeExternal.classList.add('hidden');
             container.innerHTML = "";
         }
     } catch (err) {
-        console.error("Erreur Inbox:", err);
+        console.error("❌ Erreur Inbox:", err);
     } finally {
-        // Libération de sécurité (au cas où)
         setTimeout(() => { isInboxLoading = false; }, 200);
     }
 }
@@ -2868,6 +2843,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
