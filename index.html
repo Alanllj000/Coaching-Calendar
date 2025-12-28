@@ -78,7 +78,11 @@
         calendar-day.selected:last-child {
             border-bottom-right-radius: 1.5rem;
         }
-
+        .calendar-day.selected {
+            /* Remplace ta bordure par ceci pour un résultat parfait */
+            border: none !important; 
+            box-shadow: inset 0 0 0 2px #3b82f6 !important;
+        }
 
         
         #mobile-pip-zone {
@@ -3246,6 +3250,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
