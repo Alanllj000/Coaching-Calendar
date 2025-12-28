@@ -325,37 +325,8 @@
             <div id="user-menu" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-[3500] hidden">
                 <button onclick="openSettingsPanel()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center gap-3"><i class="fas fa-cog"></i> Réglages</button>
                 <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3"><i class="fas fa-plus-circle"></i> Créer Event</button>
-                <div id="main-inbox-container" class="px-4 mb-6">
-                    <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                        <div class="flex items-center justify-between mb-4 px-1">
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                <h3 class="font-black text-slate-800 uppercase text-[10px] tracking-widest">Messages</h3>
-                            </div>
-                            <span id="notif-badge" class="hidden bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
-                        </div>
                 
-                        <div id="inbox-list" class="space-y-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                            <div id="inbox-empty" class="text-center py-6">
-                                <p class="text-[10px] text-slate-400 italic">Aucun nouveau message</p>
-                            </div>
-                        </div>
-                        
-                        <button onclick="markAllAsRead()" id="btn-read-all" class="hidden w-full mt-3 pt-3 border-t border-slate-50 text-[9px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 transition">
-                            Tout marquer comme lu
-                        </button>
-                    </div>
-                </div>
                 
-                <div class="px-4">
-                    <button onclick="openSettings()" class="w-full py-4 bg-slate-50 text-slate-600 rounded-2xl font-bold text-sm flex items-center justify-center gap-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                        Réglages des notifications
-                    </button>
-                </div>
                 <div class="border-t border-slate-100 my-1"></div>
                 <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
             </div>
@@ -2703,6 +2674,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
