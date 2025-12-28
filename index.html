@@ -333,15 +333,17 @@
                     <i class="fas fa-cog w-5 text-center text-slate-400"></i> Réglages
                 </button>
         
-                <button onclick="openInboxPip()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center justify-between transition">
+               <button onclick="openInboxPip()" class="w-full text-left p-3 hover:bg-slate-50 rounded-xl font-bold text-sm text-slate-700 flex items-center justify-between transition">
                     <div class="flex items-center gap-3">
                         <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
                         <span>Boîte de réception</span>
                     </div>
-                    <span id="inbox-badge-main" class="hidden bg-slate-900 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
-                </button>
+                    <span id="inbox-badge-main" class="hidden w-5 h-5 bg-red-600 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black shadow-sm">
+                        0
+                    </span>
+               </button>
         
                 <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3 transition">
                     <i class="fas fa-plus-circle w-5 text-center"></i> Créer Event
@@ -2853,6 +2855,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
