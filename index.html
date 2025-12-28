@@ -13,7 +13,7 @@
         
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f8fafc; 
+            background-color: #f8fafc; loadInbox
             color: #0f172a;
             overflow: hidden; 
             height: 100vh;
@@ -2816,7 +2816,18 @@ async function loadInbox() {
                         // 3. OUVERTURE DU CALENDRIER (Day Pip)
                         if (typeof openDayPip === 'function') {
                             const eventsOfDay = eventsCache.filter(ev => ev.date === eventDate);
+                            document.body.classList.remove('modal-open'); 
+                            // 2. On cache l'overlay de l'inbox s'il est séparé
+                            const inboxOverlay = document.getElementById('inbox-overlay'); // Vérifie l'ID de ton overlay
+                            if (inboxOverlay) inboxOverlay.style.display = 'none';
                             
+                            // 3. On s'assure que la zone PiP est prête à recevoir le nouveau contenu
+                            const zone = document.getElementById('mobile-pip-zone');
+                            if (zone) {
+                                zone.style.pointerEvents = 'auto'; 
+                                // Si tu as un flou CSS direct sur la zone ou un parent
+                                zone.style.backdropFilter = 'none'; 
+                            }
                             // On lance l'ouverture du jour
                             openDayPip(eventDate, eventsOfDay);
                             
@@ -2958,6 +2969,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
