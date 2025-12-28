@@ -2228,7 +2228,7 @@ function handleInscriptionPiPstep1(eventId) {
     // --- 2. DETECTION DU MODE & STATUT ---
     const myId = currentUser?.id;
     // Recherche dans le cache global pour une réactivité immédiate de l'UI
-    const myReg = registrationsCache.find(r => r.event_id === eventId && r.user_id === myId);
+    const myReg = event.registrations && event.registrations.find(r => r.user_id === myId);
     
     const isEditing = !!myReg;
     const isPending = myReg && myReg.status === 'PENDING_CONFIRMATION';
@@ -3032,6 +3032,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
