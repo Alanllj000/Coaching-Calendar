@@ -2814,8 +2814,6 @@ function setupRealtimeNotifications(userId) {
         }, 
         (payload) => {
             console.log('🔔 Nouvelle notification reçue en temps réel !');
-            isInboxLoading = false;
-            loadInbox();
             // 3. Petit délai de sécurité (200ms) pour laisser le temps à la DB de se stabiliser
             // Cela garantit que loadInbox récupère bien le nouveau message et incrémente le badge.
             setTimeout(() => {
@@ -2874,6 +2872,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
