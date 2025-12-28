@@ -2788,32 +2788,39 @@ async function loadInbox() {
     }
 }
 function setupRealtimeNotifications(userId) {
-    // On s'assure de nettoyer les anciennes souscriptions pour éviter les doublons
+    // 1. Nettoyage des canaux existants pour éviter les fuites de mémoire et les doublons
     sb.removeAllChannels();
 
-    // On écoute la table 'notifications'
+    // 2. Création du canal d'écoute sur la table 'notifications'
     sb.channel('public:notifications')
       .on(
         'postgres_changes', 
         { 
-          event: 'INSERT', // On réagit dès que le Cron insère une nouvelle ligne
+          event: 'INSERT', // On écoute uniquement les nouveaux messages créés par le Cron
           schema: 'public', 
           table: 'notifications', 
-          filter: `user_id=eq.${userId}` // On filtre pour ne recevoir que SES messages
+          filter: `user_id=eq.${userId}` // Filtre de sécurité : uniquement pour cet utilisateur
         }, 
         (payload) => {
-            console.log('🔔 Nouvelle notification Cron reçue :', payload);
+            console.log('🔔 Nouvelle notification reçue en temps réel !');
             
-            // Optionnel : Jouer un petit son ou faire vibrer le téléphone ici
-            // if (navigator.vibrate) navigator.vibrate(200);
+            // 3. Petit délai de sécurité (200ms) pour laisser le temps à la DB de se stabiliser
+            // Cela garantit que loadInbox récupère bien le nouveau message et incrémente le badge.
+            setTimeout(() => {
+                loadInbox(); 
+            }, 200);
 
-            // On recharge la liste pour afficher le nouveau message immédiatement
-            loadInbox(); 
+            // Optionnel : Retour haptique pour l'utilisateur
+            if (navigator.vibrate) navigator.vibrate(100);
         }
       )
       .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-              console.log("🟢 Connecté aux notifications en temps réel");
+              console.log("🟢 Écoute des notifications activée pour l'utilisateur :", userId);
+          }
+          
+          if (status === 'CHANNEL_ERROR') {
+              console.error("🔴 Erreur de connexion au canal Realtime");
           }
       });
 }
@@ -2855,6 +2862,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
