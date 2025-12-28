@@ -2270,14 +2270,13 @@ async function handleInscriptionPiPstep2(eventId) {
     const template = document.getElementById('pip-step2-template');
 
     // 1. RÉCUPÉRATION DE LA DONNÉE (Cache d'abord, sinon Supabase)
-    // On attend d'avoir la donnée AVANT d'afficher quoi que ce soit pour éviter le saut visuel
     let myReg = registrationDetailsCache[eventId];
 
     if (!myReg) {
-        document.body.style.cursor = 'wait'; // Petit indicateur discret
-        const { data } = await sb // Assure-toi que c'est bien 'sb'
+        document.body.style.cursor = 'wait'; 
+        const { data } = await sb 
             .from('registrations')
-            .select('id, notes, is_private_request')
+            .select('id, notes, is_private_request, status') // Ajout de status pour la logique intelligente
             .eq('event_id', eventId)
             .eq('user_id', currentUser?.id)
             .maybeSingle();
@@ -2290,11 +2289,21 @@ async function handleInscriptionPiPstep2(eventId) {
     // 2. PRÉPARATION DES VARIABLES
     const isEditing = !!myReg;
     const regId = myReg?.id || '';
+    
+    // --- LOGIQUE INTELLIGENTE DU TEXTE DU BOUTON ---
+    let mainBtnText = isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription';
+    let mainBtnColor = 'bg-blue-600';
 
-    // 3. INJECTION ET REMPLISSAGE (Toujours invisible pour l'instant)
+    // Si on édite, on vérifie si une reconfirmation est nécessaire
+    if (isEditing && myReg.status === 'PENDING_CONFIRMATION') {
+        mainBtnText = 'Confirmer les nouveaux horaires';
+        mainBtnColor = 'bg-orange-500'; // Orange pour attirer l'attention sur le changement
+    }
+
+    // 3. INJECTION ET REMPLISSAGE
     zone.innerHTML = template.innerHTML;
 
-    // On remplit les IDs directement dans le DOM
+    // Mise à jour des textes de l'en-tête
     document.getElementById('step2-title').innerText = isEditing ? 'Modifier mon inscription' : 'Avant de valider...';
     document.getElementById('step2-label').innerText = isEditing ? 'Mettre à jour vos notes :' : 'Un souhait particulier ?';
     document.getElementById('reg-notes').value = myReg?.notes || '';
@@ -2316,22 +2325,29 @@ async function handleInscriptionPiPstep2(eventId) {
         container.onclick = (e) => e.preventDefault();
     }
 
-    // Injection des boutons
+    // --- INJECTION DES BOUTONS (Version avec boutons intelligents et Se désinscrire) ---
     document.getElementById('step2-buttons-zone').innerHTML = `
         <button onclick="submitInscription('${eventId}', ${isEditing}, '${regId}')" 
-                class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-            ${isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription'}
+                class="w-full py-4 ${mainBtnColor} text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
+            ${mainBtnText}
         </button>
-        ${isEditing ? `<button onclick="handleUnsubscribe('${regId}', '${eventId}')" class="w-full py-4 text-red-500 font-bold text-xs uppercase tracking-widest mt-1">Se désinscrire</button>` : ''}
-        <button onclick="handleInscriptionPiPstep1('${eventId}')" class="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest">Retour</button>
+        
+        <button onclick="handleUnsubscribe('${regId}', '${eventId}')" 
+                class="w-full py-4 bg-red-50 text-red-500 font-bold rounded-2xl text-[10px] uppercase tracking-widest mt-3 border border-red-100 active:scale-95 transition">
+            Se désinscrire
+        </button>
+    
+        <button onclick="handleInscriptionPiPstep1('${eventId}')" 
+                class="w-full py-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">
+            Retour
+        </button>
     `;
 
-    // 4. DÉCLENCHEMENT DE L'AFFICHAGE (Tout est prêt, donc c'est instantané)
+    // 4. DÉCLENCHEMENT DE L'AFFICHAGE
     zone.classList.add('modal-mode');
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
 }
-
 async function submitInscription(eventId, isEditing, registrationId) {
     const notes = document.getElementById('reg-notes').value;
     const isPrivate = document.getElementById('reg-private-toggle').checked;
@@ -2965,6 +2981,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
