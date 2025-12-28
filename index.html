@@ -1053,8 +1053,42 @@ async function loadProfile() {
 }
 
 async function fetchEvents() {
-    const { data: evts } = await sb.from('events').select('*, registrations(id, user_id)').eq('is_archived', false);
-    if (evts) eventsCache = evts;
+    // AJOUT de 'status' dans la sélection des registrations
+    // AJOUT de 'notes' et 'is_private_request' pour que la Step 2 soit déjà pré-remplie
+    const { data: evts, error } = await sb
+        .from('events')
+        .select(`
+            *, 
+            registrations (
+                id, 
+                user_id, 
+                status, 
+                notes, 
+                is_private_request
+            )
+        `)
+        .eq('is_archived', false);
+
+    if (error) {
+        console.error("Erreur lors de la récupération des événements:", error);
+        return;
+    }
+
+    if (evts) {
+        eventsCache = evts;
+        
+        // --- MISE À JOUR DU CACHE DE DÉTAILS ---
+        // On en profite pour remplir registrationDetailsCache pour éviter les appels
+        // réseaux inutiles quand on ouvre la Step 2
+        evts.forEach(event => {
+            const myId = currentUser?.id;
+            const myReg = event.registrations?.find(r => r.user_id === myId);
+            if (myReg) {
+                registrationDetailsCache[event.id] = myReg;
+            }
+        });
+    }
+
     renderCalendar();
 }
 
@@ -3085,6 +3119,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
