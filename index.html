@@ -840,6 +840,7 @@ async function handleAuth() {
     const { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
     if (error) return alert(error.message);
     initApp(data.user);
+    loadInbox()
 }
 
 
@@ -1000,6 +1001,8 @@ async function initApp(user) {
     document.getElementById('main-content').classList.remove('hidden');
     await loadProfile();
     await fetchEvents();
+    loadNotificationSettings();
+    loadInbox();
 }
 
 async function loadProfile() {
@@ -2713,7 +2716,20 @@ async function loadInbox() {
         console.error("Erreur Inbox:", err);
     }
 }
+
+function setupRealtimeNotifications(userId) {
+    sb.channel('inbox-updates')
+      .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, 
+          () => {
+              console.log('Nouvelle notification reçue !');
+              loadInbox(); // Rafraîchit le badge et la liste
+          }
+      )
+      .subscribe();
+}
 //Fin des fonctions pour la boite de messages
+
 
 
     
@@ -2750,6 +2766,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
