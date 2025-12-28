@@ -2441,36 +2441,9 @@ function checkChanges() {
 }
 
 // 6. SAUVEGARDE DANS SUPABASE
-let initialSettings = null;
 
-async function loadNotificationSettings() {
-    const user = (await sb.auth.getUser()).data.user;
-    if (!user) return;
-
-    const { data, error } = await sb
-        .from('profiles')
-        .select('notif_enable, notif_week, notif_day, notif_hour, notif_custom')
-        .eq('id', user.id)
-        .single();
-
-    if (data) {
-        // On mappe tes colonnes de la DB vers ton UI
-        initialSettings = data;
-        document.getElementById('notif-master').checked = data.notif_enable;
-        document.getElementById('notif-1s').checked = data.notif_week;
-        document.getElementById('notif-1j').checked = data.notif_day;
-        document.getElementById('notif-1h').checked = data.notif_hour;
-        
-        // On récupère tes rappels personnalisés (notif_custom dans ton schéma)
-        currentCustomReminders = data.notif_custom || [];
-        
-        renderCustomReminders();
-        toggleNotifUI();
-    }
-    checkChanges();
-}
-
-let initialSettings = { // Valeurs par défaut pour éviter le blocage
+// 1. UNE SEULE DÉCLARATION INITIALE
+let initialSettings = {
     notif_enable: false,
     notif_week: false,
     notif_day: false,
@@ -2478,11 +2451,13 @@ let initialSettings = { // Valeurs par défaut pour éviter le blocage
     notif_custom: []
 };
 
-// --- CHARGEMENT ---
+// 2. UNE SEULE FONCTION DE CHARGEMENT
 async function loadNotificationSettings() {
     try {
         const { data: { user } } = await sb.auth.getUser();
         if (!user) return;
+
+        console.log("Chargement des réglages pour :", user.email);
 
         const { data, error } = await sb
             .from('profiles')
@@ -2493,34 +2468,41 @@ async function loadNotificationSettings() {
         if (error) throw error;
 
         if (data) {
-            // On s'assure que notif_custom est au moins un tableau vide
+            // Nettoyage des données pour la comparaison
             const cleanedData = {
-                ...data,
+                notif_enable: !!data.notif_enable,
+                notif_week: !!data.notif_week,
+                notif_day: !!data.notif_day,
+                notif_hour: !!data.notif_hour,
                 notif_custom: data.notif_custom || []
             };
             
-            initialSettings = JSON.parse(JSON.stringify(cleanedData)); // Copie propre
+            // On stocke la référence pour checkChanges()
+            initialSettings = JSON.parse(JSON.stringify(cleanedData));
             
-            // Mise à jour UI
+            // Mise à jour de l'interface (UI)
             document.getElementById('notif-master').checked = cleanedData.notif_enable;
             document.getElementById('notif-1s').checked = cleanedData.notif_week;
             document.getElementById('notif-1j').checked = cleanedData.notif_day;
             document.getElementById('notif-1h').checked = cleanedData.notif_hour;
+            
+            // Mise à jour de la variable globale des rappels personnalisés
             currentCustomReminders = [...cleanedData.notif_custom];
             
             renderCustomReminders();
-            toggleNotifUI();
-            console.log("Paramètres chargés :", initialSettings);
+            toggleNotifUI(); // Pour griser/dégriser selon le master switch
+            console.log("Paramètres chargés avec succès");
         }
     } catch (err) {
-        console.error("Erreur chargement :", err);
+        console.error("Erreur lors du chargement des réglages :", err);
     }
-    checkChanges();
+    checkChanges(); // On vérifie l'état du bouton sauvegarder
 }
 
-// --- COMPARAISON (Le coeur du problème) ---
+// 3. FONCTION DE COMPARAISON
 function checkChanges() {
     const btn = document.getElementById('btn-save-notif');
+    if (!btn) return;
     
     const currentUI = {
         notif_enable: document.getElementById('notif-master').checked,
@@ -2530,26 +2512,22 @@ function checkChanges() {
         notif_custom: currentCustomReminders
     };
 
-    // Comparaison stricte via Stringify
     const hasChanged = JSON.stringify(currentUI) !== JSON.stringify(initialSettings);
     
     console.log("Changement détecté ?", hasChanged);
 
     if (hasChanged) {
-        // ACTIVER
         btn.disabled = false;
         btn.style.cursor = "pointer";
         btn.classList.remove('bg-slate-200', 'text-slate-400');
         btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
     } else {
-        // DESACTIVER
         btn.disabled = true;
         btn.style.cursor = "not-allowed";
         btn.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
         btn.classList.add('bg-slate-200', 'text-slate-400');
     }
 }
-
     
 async function forceLogout() {
     console.log("Session expirée pour inactivité.");
@@ -2584,6 +2562,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
