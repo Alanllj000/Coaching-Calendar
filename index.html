@@ -1209,6 +1209,7 @@ function renderCalendar() {
     }
 }
 // --- PIP DETAILS JOUR ---
+
 function openDayPip(dateStr, events = []) {
     currentDayStr = dateStr;
     const zone = document.getElementById('mobile-pip-zone');
@@ -1246,33 +1247,37 @@ function openDayPip(dateStr, events = []) {
         events.forEach(function(e) {
             const myId = currentUser ? currentUser.id : null;
             
-            // --- LOGIQUE DES 3 ÉTATS ---
-            // On cherche l'inscription dans les données reçues
+            // --- LOGIQUE DES ÉTATS ---
             const myReg = e.registrations && e.registrations.find(function(r) { return r.user_id === myId; });
-            
-            // 1. Est-ce complet ?
             const regCount = (e.registrations && e.registrations.length) || 0;
             const isFull = regCount >= e.max_participants;
             const isOwner = e.owner_id === myId;
-
-            // 2. Définition du bouton par défaut (Non inscrit)
+            
+            // LOGIQUE PRIVÉ BLOQUÉ
+            const isPrivateTaken = e.is_private_request === true && regCount > 0;
+            
+            // 1. Définition du bouton par défaut (Non inscrit)
             let btnLabel = isFull ? 'Complet' : "S'inscrire";
             let btnClass = isFull ? 'bg-slate-50 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white shadow-md';
-            // Par défaut, s'inscrire ouvre la Step 1 (Détails)
             let btnAction = `handleInscriptionPiPstep1('${e.id}')`; 
 
-            // 3. Si inscrit, on vérifie le statut exact
+            // PRIORITÉ : Si le cours est privé et déjà réservé par quelqu'un d'autre
+            if (isPrivateTaken && !myReg) {
+                btnLabel = "Déjà Réservé";
+                btnClass = "bg-red-500 text-white shadow-md cursor-not-allowed";
+                btnAction = "#"; // On bloque l'action
+            }
+
+            // 2. Si inscrit (on écrase la logique précédente car l'utilisateur est prioritaire sur son inscription)
             if (myReg) {
                 if (myReg.status === 'PENDING_CONFIRMATION') {
-                    // ÉTAT : RECONFIRMATION
                     btnLabel = "Reconfirmer l'inscription";
-                    btnClass = "bg-orange-500 text-white shadow-lg"; // Orange
-                    btnAction = `handleInscriptionPiPstep1('${e.id}')`; // OBLIGE de passer par Step 1 pour relire
+                    btnClass = "bg-orange-500 text-white shadow-lg";
+                    btnAction = `handleInscriptionPiPstep1('${e.id}')`;
                 } else {
-                    // ÉTAT : MODIFICATION STANDARD
                     btnLabel = "Modifier l'inscription";
-                    btnClass = "bg-slate-100 text-slate-600 border border-slate-200"; // Gris (Style modification)
-                    btnAction = `handleInscriptionPiPstep2('${e.id}')`; // Va direct au formulaire (Step 2)
+                    btnClass = "bg-slate-100 text-slate-600 border border-slate-200";
+                    btnAction = `handleInscriptionPiPstep2('${e.id}')`;
                 }
             }
 
@@ -1310,7 +1315,6 @@ function openDayPip(dateStr, events = []) {
 
     zone.innerHTML = html + `</div></div>`;
 }
-
 
 async function toggleReg(eid, isR) {
     if(isR) await sb.from('registrations').delete().eq('event_id', eid).eq('user_id', currentUser.id);
@@ -3208,4 +3212,5 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
