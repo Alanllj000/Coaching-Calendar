@@ -2195,25 +2195,28 @@ function handleInscriptionPiPstep1(eventId) {
     if (!event) return;
 
     // --- 1. PRE-FETCHING (CHARGEMENT ANTICIPÉ) ---
-    // On lance la requête immédiatement en arrière-plan sans 'await'
-    // pour que la Step 2 soit instantanée plus tard.
+    // On ajoute 'status' dans le select pour la logique intelligente de la Step 2
     if (!registrationDetailsCache[eventId]) {
         sb.from('registrations')
-            .select('id, notes, is_private_request')
+            .select('id, notes, is_private_request, status')
             .eq('event_id', eventId)
             .eq('user_id', currentUser?.id)
             .maybeSingle()
             .then(({ data, error }) => {
                 if (!error && data) {
                     registrationDetailsCache[eventId] = data;
-                    console.log("🚀 Step 2 mise en cache anticipée");
+                    console.log("🚀 Step 2 mise en cache anticipée (avec statut)");
                 }
             });
     }
 
-    // --- 2. DETECTION DU MODE MODIFICATION ---
+    // --- 2. DETECTION DU MODE & STATUT ---
     const myId = currentUser?.id;
-    const isEditing = event.registrations && event.registrations.some(r => r.user_id === myId);
+    // On cherche l'inscription dans le cache global pour le statut immédiat
+    const myReg = registrationsCache.find(r => r.event_id === eventId && r.user_id === myId);
+    
+    const isEditing = !!myReg;
+    const isPending = myReg && myReg.status === 'PENDING_CONFIRMATION';
 
     const zone = document.getElementById('mobile-pip-zone');
     zone.classList.add('modal-mode');
@@ -2223,18 +2226,40 @@ function handleInscriptionPiPstep1(eventId) {
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const dateReadable = new Date(event.date).toLocaleDateString('fr-FR', dateOptions);
 
+    // --- 3. LOGIQUE DES TEXTES INTELLIGENTS ---
+    let statusLabel = '';
+    let instructionText = `Souhaitez-vous confirmer votre inscription à l'événement <strong class="text-slate-900">${event.title}</strong>...`;
+    let btnText = "Poursuivre l'inscription";
+    let btnClass = "bg-slate-900";
+
+    if (isEditing) {
+        if (isPending) {
+            statusLabel = '<span class="text-orange-600 font-bold uppercase text-[10px] block mb-2">⚠️ Reconfirmation nécessaire</span>';
+            instructionText = `<span class="text-orange-800 font-medium">Les informations de cet événement ont été modifiées.</span><br><strong>Veuillez relire les informations et reconfirmer l'inscription.</strong>`;
+            btnText = "Poursuivre la confirmation";
+            btnClass = "bg-orange-500";
+        } else {
+            statusLabel = '<span class="text-blue-600 font-bold uppercase text-[10px] block mb-2">Vous êtes déjà inscrit</span>';
+            btnText = "Retourner au formulaire de modification";
+            btnClass = "bg-slate-900";
+        }
+    }
+
     zone.innerHTML = `
         <div class="mobile-pip-card flex flex-col gap-6 relative">
             <h3 class="text-xl font-black text-slate-900 uppercase text-center">Détails de l'événement</h3>
 
             <div class="text-sm text-slate-600 leading-relaxed text-center">
-                ${isEditing ? '<span class="text-blue-600 font-bold uppercase text-[10px] block mb-2">Vous êtes déjà inscrit</span>' : ''}
-                Souhaitez-vous confirmer votre inscription à l'événement 
-                <strong class="text-slate-900">${event.title}</strong> 
-                qui aura lieu le <strong class="text-slate-900">${dateReadable}</strong> 
-                de <strong class="text-slate-900">${event.start_time}</strong> 
-                à <strong class="text-slate-900">${event.end_time}</strong> ?
-                <br><br>
+                ${statusLabel}
+                <div class="mb-4">
+                    ${isPending ? instructionText : `
+                        Souhaitez-vous confirmer votre inscription à l'événement 
+                        <strong class="text-slate-900">${event.title}</strong> 
+                        qui aura lieu le <strong class="text-slate-900">${dateReadable}</strong> 
+                        de <strong class="text-slate-900">${event.start_time}</strong> 
+                        à <strong class="text-slate-900">${event.end_time}</strong> ?
+                    `}
+                </div>
                 Le lieu est : <strong class="text-slate-900">${event.location || 'Non défini'}</strong>.
             </div>
 
@@ -2249,8 +2274,8 @@ function handleInscriptionPiPstep1(eventId) {
 
             <div class="flex flex-col gap-3 mt-2">
                 <button onclick="handleInscriptionPiPstep2('${eventId}')" 
-                        class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-                    ${isEditing ? 'Retourner au formulaire de modification' : 'Poursuivre l\'inscription'}
+                        class="w-full py-4 ${btnClass} text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
+                    ${btnText}
                 </button>
 
                 <button onclick="closeInscriptionAndReturnToDay('${event.date}')" 
@@ -2981,6 +3006,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
