@@ -2982,19 +2982,7 @@ function openInboxPip() {
     loadInbox(); 
 }
 
-function closeInboxPip() {
-    const inbox = document.getElementById('pip-inbox');
-    if (inbox) {
-        inbox.classList.add('hidden');
-        inbox.classList.remove('flex');
-    }
-    
-    isInboxOpen = false; // INDISPENSABLE : On marque comme fermé pour autoriser la réouverture
-    
-    // On ferme aussi le menu pour éviter que l'inbox ne l'ouvre par erreur
-    const userMenu = document.getElementById('user-menu');
-    if (userMenu) userMenu.classList.add('hidden');
-}
+
 
 function closeInboxPip() {
     const inbox = document.getElementById('pip-inbox');
@@ -3290,6 +3278,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
