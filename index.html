@@ -852,6 +852,15 @@ async function handleAuth() {
 }
 
 
+
+    } catch (err) {
+        console.error("Erreur Inbox:", err);
+    } finally {
+        isInboxLoading = false; // On libère le verrou
+    }
+}
+
+
 async function handleRegisterStep1() {
     // 1. Récupération précise des valeurs
     const emailVal = document.getElementById('auth-email').value.trim();
@@ -2656,6 +2665,7 @@ function closeInboxPip() {
     document.getElementById('pip-inbox').classList.remove('flex');
 }
 // --- CHARGEMENT ET BADGE ---
+let isInboxLoading = false; // Le verrou
 async function loadInbox() {
     try {
         // 1. Récupération de l'utilisateur actuel
@@ -2822,6 +2832,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
