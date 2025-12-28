@@ -1016,6 +1016,7 @@ async function initApp(user) {
     currentUser = user;
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-content').classList.remove('hidden');
+    setupRealtimeNotifications(user.id);
     await loadProfile();
     await fetchEvents();
     loadNotificationSettings();
@@ -2843,6 +2844,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
