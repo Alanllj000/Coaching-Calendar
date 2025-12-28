@@ -1486,67 +1486,72 @@ async function requestAdminSubmit(isConfirmed = false) {
 }
 
 async function handleUpdate(eventId) {
-    // 1. On vérifie si l'événement est récurrent via le cache
+    // 1. On récupère l'événement dans le cache pour connaître sa date et son type
     const event = eventsCache.find(e => e.id === eventId);
     
-    if (event && event.is_recurring) {
-        // C'est une série : on ouvre la PiP de choix au lieu du confirm()
+    if (!event) return;
+
+    // 2. SÉCURITÉ : Bloquer la modification si l'événement est passé
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    eventDate.setHours(0, 0, 0, 0);
+
+    if (eventDate < today) {
+        alert("🔒 Impossible : Cet événement est passé. Par mesure de sécurité et pour l'intégrité des logs, il ne peut plus être modifié.");
+        return; // On arrête tout ici
+    }
+
+    // 3. LOGIQUE HABITUELLE (seulement si la date est valide)
+    if (event.is_recurring) {
+        // C'est une série : on ouvre la PiP de choix
         openConfirmUpdateSeriesPip(eventId);
     } else {
-        // C'est un événement unique : on met à jour directement sans poser de question
+        // C'est un événement unique : on met à jour directement
         await processUpdate(eventId, false);
     }
 }
 
-async function processUpdate(eventId, changeAll) {
-    const title = document.getElementById('admin-title').value;
-    const location = document.getElementById('admin-loc').value;
-    const dateStr = document.getElementById('admin-date').value;
-    const startTime = document.getElementById('admin-start').value;
-    const endTime = document.getElementById('admin-end').value;
-    const maxParticipants = document.getElementById('admin-max').value;
+async function requestDeleteEvent(eventId, deleteAll = false) {
+    const event = eventsCache.find(e => e.id === eventId);
+    if (!event) return;
+
+    // SÉCURITÉ : On ne touche pas au passé
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    eventDate.setHours(0,0,0,0);
+
+    if (eventDate < today) {
+        alert("🔒 Action impossible : Cet événement est passé. Vous ne pouvez pas supprimer l'historique.");
+        return;
+    }
+
+    if (!confirm("Voulez-vous vraiment supprimer cet événement ?")) return;
 
     try {
-        if (changeAll) {
-            // --- LOGIQUE SÉRIE ---
-            const event = eventsCache.find(e => e.id === eventId);
-            const pId = (event && event.parent_event_id) ? event.parent_event_id : eventId;
-            
-            // Mise à jour de tous les événements liés à partir de cette date
+        if (deleteAll && event.parent_event_id || event.is_recurring) {
+            // Suppression de la série : UNIQUEMENT les événements à venir
+            const pId = event.parent_event_id || event.id;
             const { error } = await sb.from('events')
-                .update({ 
-                    title, location, start_time: startTime, end_time: endTime, max_participants: maxParticipants 
-                })
+                .delete()
                 .or(`id.eq.${pId},parent_event_id.eq.${pId}`)
-                .gte('date', dateStr);
+                .gte('date', event.date); // SÉCURITÉ : Supprime seulement à partir d'aujourd'hui
 
             if (error) throw error;
         } else {
-            // --- LOGIQUE UNIQUE ---
-            // On le détache de la série s'il en faisait partie (devient un événement indépendant)
-            const { error } = await sb.from('events')
-                .update({ 
-                    title, location, date: dateStr, start_time: startTime, end_time: endTime, 
-                    max_participants: maxParticipants, 
-                    parent_event_id: null, is_recurring: false 
-                })
-                .eq('id', eventId);
-
+            // Suppression unique
+            const { error } = await sb.from('events').delete().eq('id', eventId);
             if (error) throw error;
         }
 
-        alert("Mise à jour réussie !");
-        
-        // Fermeture des interfaces
+        alert("Suppression réussie !");
         closeMobilePip();
-        closeAdminPanel();
-        
-        // Rafraîchissement des données
         await fetchEvents();
-        
     } catch (err) {
-        console.error("Erreur modification:", err);
-        alert("Une erreur est survenue lors de la modification.");
+        console.error("Erreur suppression:", err);
+        // Utilisation de notre nouvelle table d'erreurs
+        await sb.from('system_errors').insert([{ error_message: err.message, function_name: 'requestDeleteEvent' }]);
     }
 }
 
@@ -2857,6 +2862,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
