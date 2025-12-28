@@ -2773,38 +2773,51 @@ async function loadInbox() {
 }
 
 // --- FONCTION REALTIME ---
-function setupRealtimeNotifications(userId) {
-    // 1. Nettoyage
-    sb.removeAllChannels();
+async function setupRealtimeNotifications(userId) {
+    // 1. Nettoyage des canaux existants (avec sécurité async/await)
+    try {
+        await sb.removeAllChannels();
+    } catch (e) {
+        console.warn("Note: Erreur lors du nettoyage des canaux", e);
+    }
 
-    // 2. Création du canal (Nom unique pour éviter les conflits)
-    sb.channel('inbox-updates-' + userId)
-      .on(
-        'postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'notifications', 
-          filter: `user_id=eq.${userId}` 
-        }, 
-        (payload) => {
-            console.log('🔔 Notification Realtime reçue !');
-            
-            // 3. FORCE UNLOCK : C'est ici la clé du problème "Refresh"
-            // On force le verrou à s'ouvrir pour accepter la nouvelle donnée immédiatement
-            isInboxLoading = false;
+    // 2. On attend 500ms avant de recréer le canal pour éviter les erreurs de connexion WebSocket
+    setTimeout(() => {
+        const channelName = 'inbox-updates-' + userId;
+        
+        sb.channel(channelName)
+            .on(
+                'postgres_changes', 
+                { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'notifications', 
+                    filter: `user_id=eq.${userId}` 
+                }, 
+                (payload) => {
+                    console.log('🔔 Notification Realtime reçue !', payload.new);
+                    
+                    // 3. FORCE UNLOCK : On libère le verrou pour autoriser la mise à jour
+                    isInboxLoading = false;
 
-            // 4. On lance le chargement avec un mini délai
-            setTimeout(() => {
-                loadInbox(); 
-            }, 200);
+                    // 4. On lance le chargement avec un mini délai pour laisser la DB se stabiliser
+                    setTimeout(() => {
+                        loadInbox(); 
+                    }, 200);
 
-            if (navigator.vibrate) navigator.vibrate(100);
-        }
-      )
-      .subscribe((status) => {
-          if (status === 'SUBSCRIBED') console.log("🟢 Realtime connecté");
-      });
+                    // Retour haptique (vibration)
+                    if (navigator.vibrate) navigator.vibrate(100);
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log("🟢 Realtime connecté et aux aguets pour l'utilisateur :", userId);
+                }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error("🔴 Erreur de canal Realtime");
+                }
+            });
+    }, 500);
 }
 //Fin des fonctions pour la boite de messages
 
@@ -2844,6 +2857,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
