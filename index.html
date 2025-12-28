@@ -847,7 +847,8 @@ async function handleAuth() {
     const { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
     if (error) return alert(error.message);
     initApp(data.user);
-    loadInbox()
+    await loadInbox();
+    setupRealtimeNotifications(data.user.id)
 }
 
 
@@ -2657,83 +2658,131 @@ function closeInboxPip() {
 // --- CHARGEMENT ET BADGE ---
 async function loadInbox() {
     try {
+        // 1. Récupération de l'utilisateur actuel
         const { data: { user } } = await sb.auth.getUser();
         if (!user) return;
 
+        // 2. Récupération des notifications depuis la table (celle remplie par le Cron)
         const { data: messages, error } = await sb
             .from('notifications')
             .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
+            .eq('user_id', user.id) // Le user_id correspond à l'ID du profil
+            .order('created_at', { ascending: false }) // Les plus récentes en premier
             .limit(20);
 
+        if (error) throw error;
+
+        // 3. Sélection des éléments du DOM
         const container = document.getElementById('inbox-list-pip');
         const emptyMsg = document.getElementById('inbox-empty-pip');
         const badgeMain = document.getElementById('inbox-badge-main');
         const btnReadAll = document.getElementById('btn-read-all-pip');
 
+        // 4. Traitement de l'affichage
         if (messages && messages.length > 0) {
+            // On cache le message "vide" et on affiche le bouton "Tout lire"
             emptyMsg.classList.add('hidden');
             btnReadAll.classList.remove('hidden');
+            
+            // On nettoie la liste avant de la remplir
             container.innerHTML = "";
             
             let unreadCount = 0;
 
             messages.forEach(msg => {
+                // Compteur de non-lus pour le badge
                 if (!msg.is_read) unreadCount++;
                 
+                // Création de l'élément HTML
                 const div = document.createElement('div');
-                div.className = `p-4 rounded-[1.5rem] transition-all border ${
-                    msg.is_read ? 'bg-white/50 border-transparent' : 'bg-white border-blue-100 shadow-sm'
+                // Style conditionnel : Blanc + Ombre + Bordure bleue si NON LU | Transparent si LU
+                div.className = `cursor-pointer p-4 rounded-[1.5rem] transition-all border mb-3 relative overflow-hidden group ${
+                    !msg.is_read 
+                    ? 'bg-white border-blue-100 shadow-sm hover:shadow-md' 
+                    : 'bg-white/40 border-transparent hover:bg-white/60'
                 }`;
                 
+                // Injection du contenu HTML (Titre, Message, Heure)
                 div.innerHTML = `
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="flex items-center gap-2">
-                            ${!msg.is_read ? '<div class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>' : ''}
-                            <p class="font-bold text-[11px] uppercase ${msg.is_read ? 'text-slate-400' : 'text-slate-700'}">${msg.title}</p>
+                    <div class="flex justify-between items-start mb-1 gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            ${!msg.is_read ? '<div class="shrink-0 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>' : ''}
+                            <p class="font-bold text-[11px] uppercase truncate ${msg.is_read ? 'text-slate-400' : 'text-slate-800'}">${msg.title}</p>
                         </div>
-                        <span class="text-[9px] text-slate-400">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        <span class="shrink-0 text-[9px] text-slate-400 whitespace-nowrap">
+                            ${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
                     </div>
-                    <p class="text-xs text-slate-600 leading-snug">${msg.message}</p>
+                    <p class="text-xs ${msg.is_read ? 'text-slate-400' : 'text-slate-600'} leading-snug break-words">${msg.message}</p>
                 `;
                 
+                // Action au clic : Marquer comme lu
                 div.onclick = async () => {
                     if (!msg.is_read) {
+                        // 1. Update DB
                         await sb.from('notifications').update({ is_read: true }).eq('id', msg.id);
+                        // 2. Update UI immédiat (pour éviter le clignotement du rechargement)
+                        div.classList.remove('bg-white', 'border-blue-100', 'shadow-sm');
+                        div.classList.add('bg-white/40', 'border-transparent');
+                        const dot = div.querySelector('.bg-blue-500');
+                        if(dot) dot.remove();
+                        
+                        // 3. Recharger pour mettre à jour le badge global
                         loadInbox();
                     }
                 };
+                
                 container.appendChild(div);
             });
 
-            // Mise à jour du badge sur le bouton du menu
+            // 5. Mise à jour du badge rouge sur le menu principal
             if (unreadCount > 0) {
                 badgeMain.innerText = unreadCount;
                 badgeMain.classList.remove('hidden');
             } else {
                 badgeMain.classList.add('hidden');
             }
+
         } else {
+            // Si aucune notification
             emptyMsg.classList.remove('hidden');
             btnReadAll.classList.add('hidden');
             badgeMain.classList.add('hidden');
+            container.innerHTML = "";
         }
     } catch (err) {
         console.error("Erreur Inbox:", err);
     }
 }
-
 function setupRealtimeNotifications(userId) {
-    sb.channel('inbox-updates')
-      .on('postgres_changes', 
-          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, 
-          () => {
-              console.log('Nouvelle notification reçue !');
-              loadInbox(); // Rafraîchit le badge et la liste
-          }
+    // On s'assure de nettoyer les anciennes souscriptions pour éviter les doublons
+    sb.removeAllChannels();
+
+    // On écoute la table 'notifications'
+    sb.channel('public:notifications')
+      .on(
+        'postgres_changes', 
+        { 
+          event: 'INSERT', // On réagit dès que le Cron insère une nouvelle ligne
+          schema: 'public', 
+          table: 'notifications', 
+          filter: `user_id=eq.${userId}` // On filtre pour ne recevoir que SES messages
+        }, 
+        (payload) => {
+            console.log('🔔 Nouvelle notification Cron reçue :', payload);
+            
+            // Optionnel : Jouer un petit son ou faire vibrer le téléphone ici
+            // if (navigator.vibrate) navigator.vibrate(200);
+
+            // On recharge la liste pour afficher le nouveau message immédiatement
+            loadInbox(); 
+        }
       )
-      .subscribe();
+      .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+              console.log("🟢 Connecté aux notifications en temps réel");
+          }
+      });
 }
 //Fin des fonctions pour la boite de messages
 
@@ -2773,6 +2822,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
