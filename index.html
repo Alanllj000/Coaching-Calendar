@@ -2665,14 +2665,17 @@ function closeInboxPip() {
     document.getElementById('pip-inbox').classList.remove('flex');
 }
 // --- CHARGEMENT ET BADGE ---
-let isInboxLoading = false; // Le verrou
+// --- VARIABLE GLOBALE (Le verrou) ---
+let isInboxLoading = false; 
+
+// --- FONCTION DE CHARGEMENT ---
 async function loadInbox() {
-    // 1. Gestion du verrou pour éviter les collisions (important pour le Realtime)
+    // 1. Gestion du verrou
     if (isInboxLoading) return;
     isInboxLoading = true;
 
     try {
-        // 2. Récupération de l'utilisateur actuel
+        // 2. Récupération de l'utilisateur
         const { data: { user } } = await sb.auth.getUser();
         if (!user) return;
 
@@ -2705,7 +2708,6 @@ async function loadInbox() {
                 if (!msg.is_read) unreadCount++;
                 
                 const div = document.createElement('div');
-                // Style dynamique selon l'état de lecture
                 div.className = `cursor-pointer p-4 rounded-[1.5rem] transition-all border mb-3 relative overflow-hidden group ${
                     !msg.is_read 
                     ? 'bg-white border-blue-100 shadow-sm hover:shadow-md' 
@@ -2725,15 +2727,15 @@ async function loadInbox() {
                     <p class="text-xs ${msg.is_read ? 'text-slate-400' : 'text-slate-600'} leading-snug break-words">${msg.message}</p>
                 `;
                 
-                // Action au clic : Marquer comme lu
+                // --- ACTION AU CLIC ---
                 div.onclick = async (e) => {
                     e.stopPropagation();
                     
                     if (!msg.is_read) {
-                        // 1. On marque localement comme lu TOUT DE SUITE pour l'UX
+                        // A. On change visuellement tout de suite (UX)
                         msg.is_read = true; 
                         
-                        // 2. On met à jour la base de données
+                        // B. On met à jour la DB
                         const { error } = await sb
                             .from('notifications')
                             .update({ is_read: true })
@@ -2741,15 +2743,14 @@ async function loadInbox() {
 
                         if (error) {
                             console.error("Erreur update:", error);
-                            msg.is_read = false; // On annule si erreur
+                            msg.is_read = false; 
                             return;
                         }
 
-                        // 3. On force la libération du verrou et on attend un tout petit peu
-                        // avant de recharger pour laisser la DB respirer
-                        isInboxLoading = false;
+                        // C. FORCE UNLOCK : On casse le verrou manuellement
+                        isInboxLoading = false; 
                         
-                        // Utiliser un léger délai garantit que le badge passera bien à 0
+                        // D. On recharge après 150ms pour être sûr que la DB a validé le changement
                         setTimeout(() => {
                             loadInbox();
                         }, 150); 
@@ -2759,26 +2760,22 @@ async function loadInbox() {
                 container.appendChild(div);
             });
 
-            // 6. Mise à jour synchronisée des badges (Menu PiP + Logo Extérieur)
+            // 6. Mise à jour des badges
             if (unreadCount > 0) {
-                // Badge Interne
+                // Afficher Badges
                 badgeMain.innerText = unreadCount;
                 badgeMain.classList.remove('hidden');
 
-                // Badge Extérieur (Logo)
                 if (badgeExternal) {
                     badgeExternal.innerText = unreadCount;
                     badgeExternal.classList.remove('hidden');
-                    
-                    // Animation pour notifier l'utilisateur visuellement
+                    // Animation Pop
                     badgeExternal.animate([
-                        { transform: 'scale(1)' },
-                        { transform: 'scale(1.2)' },
-                        { transform: 'scale(1)' }
+                        { transform: 'scale(1)' }, { transform: 'scale(1.2)' }, { transform: 'scale(1)' }
                     ], { duration: 300 });
                 }
             } else {
-                // Cacher si tout est lu
+                // Cacher Badges (Cas passage de 1 à 0)
                 badgeMain.classList.add('hidden');
                 if (badgeExternal) badgeExternal.classList.add('hidden');
             }
@@ -2794,44 +2791,43 @@ async function loadInbox() {
     } catch (err) {
         console.error("Erreur Inbox:", err);
     } finally {
-        // Libération du verrou après un mini délai pour laisser le temps à la DB
+        // Libération de sécurité (au cas où)
         setTimeout(() => { isInboxLoading = false; }, 200);
     }
 }
+
+// --- FONCTION REALTIME ---
 function setupRealtimeNotifications(userId) {
-    // 1. Nettoyage des canaux existants pour éviter les fuites de mémoire et les doublons
+    // 1. Nettoyage
     sb.removeAllChannels();
 
-    // 2. Création du canal d'écoute sur la table 'notifications'
-    sb.channel('public:notifications')
+    // 2. Création du canal (Nom unique pour éviter les conflits)
+    sb.channel('inbox-updates-' + userId)
       .on(
         'postgres_changes', 
         { 
-          event: 'INSERT', // On écoute uniquement les nouveaux messages créés par le Cron
+          event: 'INSERT', 
           schema: 'public', 
           table: 'notifications', 
-          filter: `user_id=eq.${userId}` // Filtre de sécurité : uniquement pour cet utilisateur
+          filter: `user_id=eq.${userId}` 
         }, 
         (payload) => {
-            console.log('🔔 Nouvelle notification reçue en temps réel !');
-            // 3. Petit délai de sécurité (200ms) pour laisser le temps à la DB de se stabiliser
-            // Cela garantit que loadInbox récupère bien le nouveau message et incrémente le badge.
+            console.log('🔔 Notification Realtime reçue !');
+            
+            // 3. FORCE UNLOCK : C'est ici la clé du problème "Refresh"
+            // On force le verrou à s'ouvrir pour accepter la nouvelle donnée immédiatement
+            isInboxLoading = false;
+
+            // 4. On lance le chargement avec un mini délai
             setTimeout(() => {
                 loadInbox(); 
             }, 200);
 
-            // Optionnel : Retour haptique pour l'utilisateur
             if (navigator.vibrate) navigator.vibrate(100);
         }
       )
       .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-              console.log("🟢 Écoute des notifications activée pour l'utilisateur :", userId);
-          }
-          
-          if (status === 'CHANNEL_ERROR') {
-              console.error("🔴 Erreur de connexion au canal Realtime");
-          }
+          if (status === 'SUBSCRIBED') console.log("🟢 Realtime connecté");
       });
 }
 //Fin des fonctions pour la boite de messages
@@ -2872,6 +2868,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
