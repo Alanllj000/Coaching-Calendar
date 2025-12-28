@@ -2727,14 +2727,32 @@ async function loadInbox() {
                 
                 // Action au clic : Marquer comme lu
                 div.onclick = async (e) => {
-                    e.stopPropagation(); // Empêche des bugs de clics multiples
+                    e.stopPropagation();
+                    
                     if (!msg.is_read) {
-                        // Mise à jour en base de données
-                        await sb.from('notifications').update({ is_read: true }).eq('id', msg.id);
+                        // 1. On marque localement comme lu TOUT DE SUITE pour l'UX
+                        msg.is_read = true; 
                         
-                        // IMPORTANT : On libère le verrou manuellement pour permettre le rechargement immédiat
-                        isInboxLoading = false; 
-                        loadInbox(); // Recalcule les badges (ex: passe de 5 à 4)
+                        // 2. On met à jour la base de données
+                        const { error } = await sb
+                            .from('notifications')
+                            .update({ is_read: true })
+                            .eq('id', msg.id);
+
+                        if (error) {
+                            console.error("Erreur update:", error);
+                            msg.is_read = false; // On annule si erreur
+                            return;
+                        }
+
+                        // 3. On force la libération du verrou et on attend un tout petit peu
+                        // avant de recharger pour laisser la DB respirer
+                        isInboxLoading = false;
+                        
+                        // Utiliser un léger délai garantit que le badge passera bien à 0
+                        setTimeout(() => {
+                            loadInbox();
+                        }, 150); 
                     }
                 };
                 
@@ -2855,6 +2873,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
