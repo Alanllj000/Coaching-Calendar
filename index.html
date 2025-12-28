@@ -1017,17 +1017,17 @@ async function logout() {
 async function initApp(user) {
     if (!user) return;
     currentUser = user;
+
+    // Affichage de l'interface
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-content').classList.remove('hidden');
     
-    // 1. Tes notifications Inbox (le tuyau existant)
-    setupRealtimeNotifications(user.id);
+    // On lance LE canal unique (remplace les deux anciens appels)
+    setupAppRealtime(user.id);
     
-    // 2. NOUVEAU : La synchronisation globale (le nouveau tuyau)
-    setupGlobalRealtimeSync(); 
-    
+    // Chargement des données
     await loadProfile();
-    await fetchEvents();
+    await fetchEvents(); // Le calendrier s'affiche
     loadNotificationSettings();
     loadInbox();
 }
@@ -3140,7 +3140,50 @@ async function setupRealtimeNotifications(userId) {
 //Fin des fonctions pour la boite de messages
 
 
+async function setupAppRealtime(userId) {
+    // 1. On nettoie l'ancien canal s'il existe
+    if (globalChannel) {
+        await sb.removeChannel(globalChannel);
+    }
 
+    console.log("📡 Tentative de connexion au canal unique...");
+
+    // 2. On crée UN SEUL canal pour TOUTE l'application
+    globalChannel = sb.channel('app-realtime-stream')
+        // ÉCOUTE 1 : Les notifications (ton ancienne fonction setupRealtimeNotifications)
+        .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'notifications', 
+            filter: `user_id=eq.${userId}` 
+        }, payload => {
+            console.log("🔔 Nouvelle notification !");
+            loadInbox(); // ou ta logique de cloche
+        })
+        // ÉCOUTE 2 : Les événements (pour le calendrier)
+        .on('postgres_changes', { 
+            event: '*', 
+            schema: 'public', 
+            table: 'events' 
+        }, async () => {
+            console.log("📅 Changement calendrier");
+            await fetchEvents();
+        })
+        // ÉCOUTE 3 : Les inscriptions (pour les jauges et le mode privé)
+        .on('postgres_changes', { 
+            event: '*', 
+            schema: 'public', 
+            table: 'registrations' 
+        }, async () => {
+            console.log("✍️ Changement inscription");
+            await fetchEvents();
+        })
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log("✅ WebSocket connecté et unique !");
+            }
+        });
+}
     
 async function forceLogout() {
     console.log("Session expirée pour inactivité.");
@@ -3201,119 +3244,3 @@ window.onload = async function() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
