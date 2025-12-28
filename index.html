@@ -1554,30 +1554,56 @@ async function processUpdate(eventId, changeAll) {
             const pId = (event && event.parent_event_id) ? event.parent_event_id : eventId;
             
             result = await sb.from('events')
-                .update({ title, location, start_time: startTime, end_time: endTime, max_participants: maxParticipants })
+                .update({ 
+                    title, 
+                    location, 
+                    start_time: startTime, 
+                    end_time: endTime, 
+                    max_participants: maxParticipants 
+                })
                 .or(`id.eq.${pId},parent_event_id.eq.${pId}`)
                 .gte('date', dateStr);
         } else {
             // Logique de modification d'un événement unique
             result = await sb.from('events')
                 .update({ 
-                    title, location, date: dateStr, start_time: startTime, 
-                    end_time: endTime, max_participants: maxParticipants, 
-                    parent_event_id: null, is_recurring: false 
+                    title, 
+                    location, 
+                    date: dateStr, 
+                    start_time: startTime, 
+                    end_time: endTime, 
+                    max_participants: maxParticipants, 
+                    parent_event_id: null, 
+                    is_recurring: false 
                 })
                 .eq('id', eventId);
         }
 
         if (result.error) throw result.error;
 
-        alert("Mise à jour réussie !");
+        // --- SYNCHRONISATION CRUCIALE (CRON / TRIGGER) ---
+        // 1. On attend que le Trigger SQL finisse de passer les status en PENDING
+        // 2. On re-télécharge tout pour mettre à jour eventsCache avec les nouveaux statuts
+        await fetchEvents(); 
+        
+        console.log("✅ Mise à jour réussie et cache rafraîchi avec les nouveaux statuts.");
+
+        // Fermeture des panels
         closeAdminPanel();
-        if (typeof closeMobilePip === 'function') closeMobilePip();
-        await fetchEvents();
+        
+        // 3. RAFRAICHISSEMENT VISUEL DU BOUTON
+        // Au lieu de simplement fermer la PiP, on la relance avec la date modifiée
+        // pour que openDayPip voie les nouveaux status et affiche "Reconfirmer"
+        if (typeof openDayPip === 'function') {
+            const updatedEvents = eventsCache.filter(e => e.date === dateStr);
+            openDayPip(dateStr, updatedEvents);
+        }
+
+        alert("Mise à jour réussie ! Les inscrits devront reconfirmer leur présence.");
         
     } catch (err) {
         console.error("Erreur modification:", err);
-        // Sécurité : on log l'erreur dans ta nouvelle table system_errors
+        // Sécurité : on log l'erreur dans ta table system_errors
         await sb.from('system_errors').insert([{ 
             error_message: err.message, 
             function_name: 'processUpdate' 
@@ -3059,6 +3085,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
