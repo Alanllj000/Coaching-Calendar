@@ -853,12 +853,6 @@ async function handleAuth() {
 
 
 
-    } catch (err) {
-        console.error("Erreur Inbox:", err);
-    } finally {
-        isInboxLoading = false; // On libère le verrou
-    }
-}
 
 
 async function handleRegisterStep1() {
@@ -2832,6 +2826,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
