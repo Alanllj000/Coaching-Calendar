@@ -2451,15 +2451,45 @@ function toggleReminderActive(id) {
     checkChanges();
 }
 
-// 5. Détecter les changements pour le bouton Sauvegarder
+// --- COMPARAISON STRICTE ---
 function checkChanges() {
     const btn = document.getElementById('btn-save-notif');
-    // Ici on active le bouton dès qu'un changement est fait
-    btn.disabled = false;
-    btn.classList.replace('bg-slate-200', 'bg-blue-600');
-    btn.classList.replace('text-slate-400', 'text-white');
-    btn.classList.add('shadow-blue-200');
-    btn.style.cursor = "pointer";
+    if (!btn || !initialSettings) return;
+    
+    // On construit l'objet actuel avec des types propres (boolean et array)
+    const currentUI = {
+        notif_enable: Boolean(document.getElementById('notif-master').checked),
+        notif_week: Boolean(document.getElementById('notif-1s').checked),
+        notif_day: Boolean(document.getElementById('notif-1j').checked),
+        notif_hour: Boolean(document.getElementById('notif-1h').checked),
+        notif_custom: currentCustomReminders || []
+    };
+
+    // Nettoyage de l'objet initial pour la comparaison (évite le null vs false)
+    const baseReference = {
+        notif_enable: Boolean(initialSettings.notif_enable),
+        notif_week: Boolean(initialSettings.notif_week),
+        notif_day: Boolean(initialSettings.notif_day),
+        notif_hour: Boolean(initialSettings.notif_hour),
+        notif_custom: initialSettings.notif_custom || []
+    };
+
+    const hasChanged = JSON.stringify(currentUI) !== JSON.stringify(baseReference);
+    
+    // LOG DE DEBUG : À regarder dans la console F12
+    console.log("Comparaison UI vs DB :", hasChanged ? "DIFFÉRENT" : "IDENTIQUE");
+
+    if (hasChanged) {
+        btn.disabled = false;
+        btn.style.cursor = "pointer";
+        btn.classList.remove('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
+    } else {
+        btn.disabled = true;
+        btn.style.cursor = "not-allowed";
+        btn.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
+        btn.classList.add('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+    }
 }
 
 // 6. SAUVEGARDE DANS SUPABASE
@@ -2521,33 +2551,41 @@ async function loadNotificationSettings() {
     checkChanges(); // On vérifie l'état du bouton sauvegarder
 }
 
-// 3. FONCTION DE COMPARAISON
-function checkChanges() {
-    const btn = document.getElementById('btn-save-notif');
-    if (!btn) return;
+async function saveNotificationPrefs() {
+    // 1. On vérifie si l'utilisateur est connecté
+    const { data: { user } } = await sb.auth.getUser();
     
-    const currentUI = {
+    if (!user) {
+        alert("Session expirée, veuillez vous reconnecter.");
+        return;
+    }
+
+    // 2. On récupère les valeurs actuelles de l'interface
+    const settingsToSave = {
         notif_enable: document.getElementById('notif-master').checked,
         notif_week: document.getElementById('notif-1s').checked,
         notif_day: document.getElementById('notif-1j').checked,
         notif_hour: document.getElementById('notif-1h').checked,
-        notif_custom: currentCustomReminders
+        notif_custom: currentCustomReminders // Le tableau que tu gères déjà
     };
 
-    const hasChanged = JSON.stringify(currentUI) !== JSON.stringify(initialSettings);
-    
-    console.log("Changement détecté ?", hasChanged);
+    console.log("Sauvegarde en cours...", settingsToSave);
 
-    if (hasChanged) {
-        btn.disabled = false;
-        btn.style.cursor = "pointer";
-        btn.classList.remove('bg-slate-200', 'text-slate-400');
-        btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
+    // 3. On envoie les données à Supabase (table profiles)
+    const { error } = await sb
+        .from('profiles')
+        .update(settingsToSave)
+        .eq('id', user.id);
+
+    if (error) {
+        console.error("Erreur de sauvegarde:", error);
+        alert("Erreur lors de l'enregistrement : " + error.message);
     } else {
-        btn.disabled = true;
-        btn.style.cursor = "not-allowed";
-        btn.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
-        btn.classList.add('bg-slate-200', 'text-slate-400');
+        alert("Vos préférences ont été enregistrées !");
+        
+        // 4. CRUCIAL : On met à jour la référence initiale pour que le bouton redevienne gris
+        initialSettings = JSON.parse(JSON.stringify(settingsToSave));
+        checkChanges(); // Cette fonction va griser le bouton car UI == initialSettings
     }
 }
     
@@ -2584,6 +2622,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
