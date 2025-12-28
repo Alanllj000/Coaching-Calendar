@@ -3155,67 +3155,32 @@ async function forceLogout() {
     document.addEventListener(event, resetInactivityTimer, true);
 });
 
-function setupRealtimeGlobalSync() {
-    // Canal pour les événements (Calendrier / Suppression / Modif Admin)
-    sb.channel('global-events-sync')
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'events' },
-            async (payload) => {
-                console.log("📢 Changement Event détecté :", payload.eventType);
-                // On rafraîchit tout le cache local et le calendrier
-                await fetchEvents();
-            }
-        )
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'registrations' },
-            async (payload) => {
-                console.log("📢 Changement Inscription détecté :", payload.eventType);
-                // Utile pour mettre à jour les jauges de places en temps réel
-                await fetchEvents();
-            }
-        )
-        .subscribe();
-}
 
-
-function setupGlobalRealtimeSync() {
-    // 1. Sécurité : Si un canal existe déjà, on le ferme proprement
-    if (globalRealtimeChannel) {
-        sb.removeChannel(globalRealtimeChannel);
+async function setupGlobalRealtimeSync() {
+    // Si un canal existe, on se désabonne proprement avant d'en créer un nouveau
+    if (globalChannel) {
+        await sb.removeChannel(globalChannel);
     }
 
-    console.log("📡 Tentative de connexion au Realtime Global...");
-
-    // 2. Création du canal
-    globalRealtimeChannel = sb.channel('db-global-sync')
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'events' },
-            async (payload) => {
-                console.log("♻️ [Realtime] Table EVENTS modifiée :", payload.eventType);
-                await fetchEvents(); 
-            }
-        )
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'registrations' },
-            async (payload) => {
-                console.log("♻️ [Realtime] Table REGISTRATIONS modifiée :", payload.eventType);
-                await fetchEvents(); 
-            }
-        )
+    globalChannel = sb.channel('any_name_you_want')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, payload => {
+            console.log("Change on events", payload);
+            fetchEvents();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, payload => {
+            console.log("Change on registrations", payload);
+            fetchEvents();
+        })
         .subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                console.log("✅ [Realtime] Synchronisation globale ACTIVE");
-            } else if (status === 'CLOSED') {
-                console.log("🔌 [Realtime] Connexion fermée");
-            } else if (status === 'CHANNEL_ERROR') {
-                console.error("❌ [Realtime] Erreur de canal (vérifie les RLS sur Supabase)");
+            console.log("Realtime status:", status);
+            if (status === 'CHANNEL_ERROR') {
+                // Si ça échoue, on ne boucle pas, on attend 5 sec
+                setTimeout(setupGlobalRealtimeSync, 5000);
             }
         });
 }
+
+
 resetInactivityTimer();
 // --- INITIALISATION ---
 window.onload = async function() {
@@ -3235,6 +3200,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
