@@ -2972,8 +2972,19 @@ function openInboxPip() {
 }
 
 function closeInboxPip() {
-    document.getElementById('pip-inbox').classList.add('hidden');
-    document.getElementById('pip-inbox').classList.remove('flex');
+    const inbox = document.getElementById('pip-inbox');
+    if (inbox) {
+        inbox.classList.add('hidden');
+        inbox.classList.remove('flex');
+    }
+    
+    // --- L'AJOUT INDISPENSABLE ---
+    // On indique au script que l'inbox est officiellement fermée
+    isInboxOpen = false; 
+
+    // On en profite pour fermer le menu du header pour éviter les chevauchements
+    const userMenu = document.getElementById('user-menu');
+    if (userMenu) userMenu.classList.add('hidden');
 }
 // --- CHARGEMENT ET BADGE ---
 // --- VARIABLE GLOBALE (Le verrou) ---
@@ -3254,6 +3265,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
