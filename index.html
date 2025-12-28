@@ -10,7 +10,13 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-        
+
+
+        #calendar-container {
+            position: relative; /* Indispensable pour que le z-index fonctionne */
+            z-index: 10;        /* Une valeur supérieure au background */
+            background-color: white; /* Assure-toi qu'il n'est pas transparent */
+        }
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: #f8fafc; loadInbox
@@ -3215,6 +3221,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
