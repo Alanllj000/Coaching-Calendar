@@ -1245,6 +1245,9 @@ function renderCalendar() {
 // --- PIP DETAILS JOUR ---
 
 function openDayPip(dateStr, events = []) {
+    if (typeof closeInboxPip === "function") {
+        closeInboxPip();
+    }
     currentDayStr = dateStr;
     const zone = document.getElementById('mobile-pip-zone');
     if (!zone) return;
@@ -3249,6 +3252,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
