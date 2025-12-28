@@ -1196,23 +1196,34 @@ function openDayPip(dateStr, events = []) {
         events.forEach(function(e) {
             const myId = currentUser ? currentUser.id : null;
             
-            // --- LOGIQUE INTELLIGENTE ---
+            // --- LOGIQUE DES 3 ÉTATS ---
+            // On cherche l'inscription dans les données reçues
             const myReg = e.registrations && e.registrations.find(function(r) { return r.user_id === myId; });
-            const isReg = !!myReg;
-            const isPending = myReg && myReg.status === 'PENDING_CONFIRMATION';
             
+            // 1. Est-ce complet ?
             const regCount = (e.registrations && e.registrations.length) || 0;
             const isFull = regCount >= e.max_participants;
             const isOwner = e.owner_id === myId;
 
-            // Détermination du texte et du style du bouton
-            let btnText = isReg ? 'Modifier l\'inscription' : (isFull ? 'Complet' : 'S\'inscrire');
-            let btnClass = isReg ? 'bg-orange-100 text-orange-600' : (isFull ? 'bg-slate-50 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white shadow-md');
-            
-            // Si reconfirmation nécessaire : on change le texte et on force la couleur orange
-            if (isPending) {
-                btnText = "Reconfirmer l'inscription";
-                btnClass = "bg-orange-500 text-white shadow-lg";
+            // 2. Définition du bouton par défaut (Non inscrit)
+            let btnLabel = isFull ? 'Complet' : "S'inscrire";
+            let btnClass = isFull ? 'bg-slate-50 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white shadow-md';
+            // Par défaut, s'inscrire ouvre la Step 1 (Détails)
+            let btnAction = `handleInscriptionPiPstep1('${e.id}')`; 
+
+            // 3. Si inscrit, on vérifie le statut exact
+            if (myReg) {
+                if (myReg.status === 'PENDING_CONFIRMATION') {
+                    // ÉTAT : RECONFIRMATION
+                    btnLabel = "Reconfirmer l'inscription";
+                    btnClass = "bg-orange-500 text-white shadow-lg"; // Orange
+                    btnAction = `handleInscriptionPiPstep1('${e.id}')`; // OBLIGE de passer par Step 1 pour relire
+                } else {
+                    // ÉTAT : MODIFICATION STANDARD
+                    btnLabel = "Modifier l'inscription";
+                    btnClass = "bg-slate-100 text-slate-600 border border-slate-200"; // Gris (Style modification)
+                    btnAction = `handleInscriptionPiPstep2('${e.id}')`; // Va direct au formulaire (Step 2)
+                }
             }
 
             html += `
@@ -1223,7 +1234,7 @@ function openDayPip(dateStr, events = []) {
                         <div class="flex flex-col gap-0.5 text-[10px] font-bold">
                             <span class="text-blue-600 font-black">${e.start_time.substring(0, 5)}</span>
                             <span class="text-slate-400 uppercase tracking-tight">${e.location}</span>
-                            <div class="mt-1 text-[10px] font-black ${isFull && !isReg ? 'text-red-500' : 'text-slate-300'}">
+                            <div class="mt-1 text-[10px] font-black ${isFull && !myReg ? 'text-red-500' : 'text-slate-300'}">
                                 ${regCount} / ${e.max_participants} participants
                             </div>
                         </div>
@@ -1237,9 +1248,9 @@ function openDayPip(dateStr, events = []) {
 
                         ${isDatePast ? 
                             `<span class="w-32 py-2 text-center text-[9px] font-bold text-slate-400 uppercase border border-slate-100 rounded-xl bg-slate-50">Terminé</span>` : 
-                            `<button onclick="${isPending ? `handleInscriptionPiPstep1('${e.id}')` : (isReg ? `handleInscriptionPiPstep2('${e.id}')` : `handleInscriptionPiPstep1('${e.id}')`)}" 
+                            `<button onclick="${btnAction}" 
                                      class="w-32 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${btnClass}">
-                                ${btnText}
+                                ${btnLabel}
                             </button>`
                         }
                     </div>
@@ -2330,36 +2341,51 @@ async function handleInscriptionPiPstep2(eventId) {
         document.body.style.cursor = 'default';
     }
 
-    // 2. PRÉPARATION DES VARIABLES INTELLIGENTES
+    // 2. PRÉPARATION DES VARIABLES
     const isEditing = !!myReg;
     const isPending = myReg && myReg.status === 'PENDING_CONFIRMATION';
     const regId = myReg?.id || '';
     
-    // Logique des titres et boutons
-    let titleText = isEditing ? 'Modifier mon inscription' : 'Avant de valider...';
-    let mainBtnText = isEditing ? 'Enregistrer les modifications' : 'Finaliser l\'inscription';
-    let mainBtnColor = isEditing ? 'bg-slate-800' : 'bg-blue-600';
-    let backBtnText = isEditing ? "Aller vers les Détails de l'évènement" : "Retour";
+    // --- DÉFINITION DES TEXTES SELON LES 3 CAS ---
+    
+    // CAS 1 : NOUVELLE INSCRIPTION (Défaut)
+    let titleText = 'Avant de valider...';
+    let labelText = 'Un souhait particulier ?';
+    let mainBtnText = "Finaliser l'inscription";
+    let mainBtnColor = 'bg-blue-600';
+    let backBtnText = 'Retour';
 
-    // CAS SPÉCIFIQUE : RECONFIRMATION (DEMANDÉE)
-    if (isPending) {
-        titleText = "Reconfirmation";
-        mainBtnText = "Terminer la confirmation";
-        mainBtnColor = "bg-orange-500";
+    if (isEditing) {
+        // Le bouton retour change pour tous ceux qui sont déjà inscrits
+        backBtnText = "Aller vers les Détails de l'évènement";
+        labelText = 'Mettre à jour vos notes :';
+
+        if (isPending) {
+            // CAS 2 : RECONFIRMATION (Prioritaire)
+            titleText = 'Reconfirmation';
+            mainBtnText = 'Terminer la confirmation';
+            mainBtnColor = 'bg-orange-500'; // Orange
+        } else {
+            // CAS 3 : MODIFICATION STANDARD
+            titleText = 'Modifier mon inscription';
+            mainBtnText = 'Enregistrer les modifications';
+            mainBtnColor = 'bg-slate-800'; // Gris foncé
+        }
     }
 
     // 3. INJECTION ET REMPLISSAGE
     zone.innerHTML = template.innerHTML;
 
-    // Mise à jour des textes de l'en-tête
+    // Mise à jour des textes
     document.getElementById('step2-title').innerText = titleText;
-    document.getElementById('step2-label').innerText = isEditing ? 'Mettre à jour vos notes :' : 'Un souhait particulier ?';
+    document.getElementById('step2-label').innerText = labelText;
     
-    // On conserve les notes et le statut privé de l'utilisateur
+    // Remplissage des données existantes (Notes + Toggle)
+    // C'est ici que je conserve le visuel standard : les champs sont toujours là
     document.getElementById('reg-notes').value = myReg?.notes || '';
     document.getElementById('reg-private-toggle').checked = myReg?.is_private_request || false;
 
-    // Gestion de l'option privée (sécurité capacité)
+    // Gestion de l'option privée (Capacité)
     let totalOthers = (event.registrations?.length || 0);
     if (isEditing) totalOthers -= 1;
     const canBePrivate = totalOthers <= 0;
@@ -2375,7 +2401,8 @@ async function handleInscriptionPiPstep2(eventId) {
         container.onclick = (e) => e.preventDefault();
     }
 
-    // --- INJECTION DES BOUTONS (Version Intelligente demandée) ---
+    // --- INJECTION DES BOUTONS ---
+    // Note : J'utilise bien des guillemets simples autour de eventId dans les onclick
     document.getElementById('step2-buttons-zone').innerHTML = `
         <button onclick="submitInscription('${eventId}', ${isEditing}, '${regId}')" 
                 class="w-full py-4 ${mainBtnColor} text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
@@ -2387,13 +2414,13 @@ async function handleInscriptionPiPstep2(eventId) {
             Se désinscrire
         </button>
     
-        <button onclick="handleInscriptionPiPstep1('${eventId}')"
+        <button onclick="handleInscriptionPiPstep1('${eventId}')" 
                 class="w-full py-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">
             ${backBtnText}
         </button>
     `;
 
-    // 4. DÉCLENCHEMENT DE L'AFFICHAGE
+    // 4. AFFICHAGE
     zone.classList.add('modal-mode');
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
@@ -3032,6 +3059,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
