@@ -12,11 +12,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 
-        #calendar-container {
-            position: relative; /* Indispensable pour que le z-index fonctionne */
-            z-index: 10;        /* Une valeur supérieure au background */
-            background-color: white; /* Assure-toi qu'il n'est pas transparent */
-        }
+        
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: #f8fafc; loadInbox
@@ -35,9 +31,23 @@
         .input-field:focus { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.05); }
         .input-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
 
-        .calendar-container { height: 62vh; overflow-y: auto; scroll-behavior: smooth; }
-        @media (min-width: 769px) { .calendar-container { height: calc(100vh - 110px); padding-bottom: 80px; } }
-
+        .calendar-container { 
+            height: auto;           /* On laisse le calendrier prendre toute sa place */
+            min-height: 60vh;       /* Optionnel: garde une taille mini */
+            overflow-y: visible;    /* On ne veut pas de scroll interne au calendrier sur mobile */
+            scroll-behavior: smooth; 
+            position: relative;     /* On sécurise l'empilement */
+            z-index: 1; 
+        }
+        
+        /* 2. Sur PC (quand on réduit la fenêtre) */
+        @media (min-width: 769px) { 
+            .calendar-container { 
+                height: calc(100vh - 110px); 
+                overflow-y: auto;   /* Le scroll interne ne revient que sur grand écran */
+                padding-bottom: 100px; /* On augmente un peu pour laisser de l'air en bas */
+            } 
+        }
         .calendar-grid { 
             display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; 
             background-color: #e2e8f0; border-radius: 1.5rem; overflow: hidden; border: 1px solid #e2e8f0;
@@ -3221,6 +3231,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
