@@ -2499,6 +2499,7 @@ async function submitInscription(eventId, isEditing, registrationId) {
 
     if (!userId) return alert("Session expirée, veuillez vous reconnecter.");
 
+    // Gestion de l'état du bouton (UI feedback)
     const btn = event?.target; 
     if (btn && btn.tagName === 'BUTTON') {
         btn.disabled = true;
@@ -2509,7 +2510,7 @@ async function submitInscription(eventId, isEditing, registrationId) {
         let error = null;
         const actionType = isEditing ? 'MODIFICATION' : 'INSCRIPTION';
         
-        // --- RÉCUPÉRATION DES ANCIENNES VALEURS (depuis le cache) ---
+        // --- RÉCUPÉRATION DES ANCIENNES VALEURS (pour le registre) ---
         const oldData = registrationDetailsCache[eventId] || null;
         const oldNotes = oldData?.notes || null;
         const oldIsPrivate = oldData?.is_private_request ?? null;
@@ -2520,7 +2521,9 @@ async function submitInscription(eventId, isEditing, registrationId) {
                 .from('registrations')
                 .update({ 
                     notes: notes,
-                    is_private_request: isPrivate
+                    is_private_request: isPrivate,
+                    status: 'CONFIRMED', // <-- INDISPENSABLE : On valide la reconfirmation
+                    last_status_change: new Date().toISOString()
                 })
                 .eq('id', registrationId);
             error = upError;
@@ -2531,7 +2534,8 @@ async function submitInscription(eventId, isEditing, registrationId) {
                     user_id: userId,
                     event_id: eventId,
                     notes: notes,
-                    is_private_request: isPrivate
+                    is_private_request: isPrivate,
+                    status: 'CONFIRMED' // Une nouvelle inscription est confirmée par défaut
                 }]);
             error = insError;
         }
@@ -2547,22 +2551,52 @@ async function submitInscription(eventId, isEditing, registrationId) {
                 action_type: actionType,
                 old_notes: oldNotes,
                 new_notes: notes,
-                old_is_private: oldIsPrivate, // <--- Nouveau
-                new_is_private: isPrivate,  // <--- Nouveau
+                old_is_private: oldIsPrivate,
+                new_is_private: isPrivate,
                 event_title: eventData?.title || 'Événement inconnu'
             }]);
             
         if (logError) console.error("Erreur de log :", logError);
 
-        // --- PHASE 3 : NETTOYAGE ET UI ---
+        // --- PHASE 3 : NETTOYAGE ET SYNCHRONISATION DES CACHES ---
+        
+        // 1. Suppression du cache de détails (Step 2)
         if (typeof registrationDetailsCache !== 'undefined') {
             delete registrationDetailsCache[eventId];
         }
 
+        // 2. Mise à jour manuelle du cache global (Optimisation UX)
+        if (eventData) {
+            if (!eventData.registrations) eventData.registrations = [];
+            const myReg = eventData.registrations.find(r => r.user_id === userId);
+            
+            if (myReg) {
+                myReg.status = 'CONFIRMED';
+                myReg.notes = notes;
+                myReg.is_private_request = isPrivate;
+            } else {
+                eventData.registrations.push({
+                    user_id: userId,
+                    status: 'CONFIRMED',
+                    notes: notes,
+                    is_private_request: isPrivate
+                });
+            }
+        }
+
+        // --- PHASE 4 : FERMETURE ET RAFRAICHISSEMENT VISUEL ---
         closeMobilePip(); 
+        
+        // On rafraîchit la vue du jour immédiatement pour voir le bouton passer au gris
+        if (typeof openDayPip === 'function' && eventData) {
+            const dayEvents = eventsCache.filter(e => e.date === eventData.date);
+            openDayPip(eventData.date, dayEvents);
+        }
+
+        // On lance fetchEvents en arrière-plan pour être sûr que tout le calendrier est à jour
         await fetchEvents(); 
         
-        alert(isEditing ? "Modification enregistrée !" : "Inscription validée !");
+        alert(isEditing ? "Modifications enregistrées !" : "Inscription validée !");
 
     } catch (err) {
         console.error("Erreur globale :", err);
@@ -3124,6 +3158,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
