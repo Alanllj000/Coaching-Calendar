@@ -3178,6 +3178,44 @@ function setupRealtimeGlobalSync() {
         )
         .subscribe();
 }
+
+
+function setupGlobalRealtimeSync() {
+    // 1. Sécurité : Si un canal existe déjà, on le ferme proprement
+    if (globalRealtimeChannel) {
+        sb.removeChannel(globalRealtimeChannel);
+    }
+
+    console.log("📡 Tentative de connexion au Realtime Global...");
+
+    // 2. Création du canal
+    globalRealtimeChannel = sb.channel('db-global-sync')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'events' },
+            async (payload) => {
+                console.log("♻️ [Realtime] Table EVENTS modifiée :", payload.eventType);
+                await fetchEvents(); 
+            }
+        )
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'registrations' },
+            async (payload) => {
+                console.log("♻️ [Realtime] Table REGISTRATIONS modifiée :", payload.eventType);
+                await fetchEvents(); 
+            }
+        )
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log("✅ [Realtime] Synchronisation globale ACTIVE");
+            } else if (status === 'CLOSED') {
+                console.log("🔌 [Realtime] Connexion fermée");
+            } else if (status === 'CHANNEL_ERROR') {
+                console.error("❌ [Realtime] Erreur de canal (vérifie les RLS sur Supabase)");
+            }
+        });
+}
 resetInactivityTimer();
 // --- INITIALISATION ---
 window.onload = async function() {
@@ -3197,6 +3235,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
