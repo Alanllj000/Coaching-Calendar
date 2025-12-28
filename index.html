@@ -2692,14 +2692,12 @@ async function loadInbox() {
 
         if (error) throw error;
 
-        // --- SÉCURITÉ : On récupère les éléments ---
         const container = document.getElementById('inbox-list-pip');
         const emptyMsg = document.getElementById('inbox-empty-pip');
         const badgeMain = document.getElementById('inbox-badge-main');
         const badgeExternal = document.getElementById('menu-badge-dot');
         const btnReadAll = document.getElementById('btn-read-all-pip');
 
-        // Si le container n'existe pas, on arrête pour éviter l'erreur TypeError
         if (!container) {
             console.warn("⚠️ Container 'inbox-list-pip' introuvable dans le DOM.");
             return;
@@ -2722,6 +2720,9 @@ async function loadInbox() {
                     : 'bg-white/40 border-transparent hover:bg-white/60'
                 }`;
                 
+                // Ajout d'une petite icône si c'est un lien interactif
+                const hasAction = msg.metadata && msg.metadata.event_id;
+
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-1 gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -2733,21 +2734,62 @@ async function loadInbox() {
                         </span>
                     </div>
                     <p class="text-xs ${msg.is_read ? 'text-slate-400' : 'text-slate-600'} leading-snug break-words">${msg.message}</p>
+                    ${hasAction ? '<p class="text-[10px] text-blue-500 mt-2 font-medium">👉 Cliquez pour voir l\'événement</p>' : ''}
                 `;
                 
                 div.onclick = async (e) => {
                     e.stopPropagation();
+                    
+                    // 1. Marquer comme lu si nécessaire
                     if (!msg.is_read) {
                         msg.is_read = true; 
                         await sb.from('notifications').update({ is_read: true }).eq('id', msg.id);
+                        // On relance loadInbox pour mettre à jour les badges
                         isInboxLoading = false; 
                         setTimeout(() => loadInbox(), 150); 
+                    }
+
+                    // 2. LOGIQUE INTERACTIVE (Stabilo + Calendrier)
+                    if (msg.metadata && msg.metadata.event_id) {
+                        const eventId = msg.metadata.event_id;
+                        const eventDate = msg.metadata.date; // La date doit être dans les metadata (YYYY-MM-DD)
+
+                        // On ferme l'inbox (si nécessaire selon ton UI)
+                        if (typeof closeInbox === 'function') closeInbox();
+
+                        // Fonction pour ouvrir le jour et stabiloter
+                        // Utilise le nom de ta fonction qui affiche le jour (ici j'utilise "openDayDetails")
+                        if (typeof openDayDetails === 'function') {
+                            await openDayDetails(eventDate);
+                            
+                            // Petit délai pour laisser le HTML se générer
+                            setTimeout(() => {
+                                const el = document.getElementById(`event-card-${eventId}`);
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    
+                                    // Effet Stabilo Clignotant
+                                    let toggle = true;
+                                    let clics = 0;
+                                    const interval = setInterval(() => {
+                                        el.style.backgroundColor = toggle ? "#ffff00" : "";
+                                        el.style.boxShadow = toggle ? "0 0 15px #ffff00" : "";
+                                        toggle = !toggle;
+                                        clics++;
+                                        if (clics >= 4) { // 2 fois ON/OFF
+                                            clearInterval(interval);
+                                            el.style.backgroundColor = "";
+                                            el.style.boxShadow = "";
+                                        }
+                                    }, 500);
+                                }
+                            }, 600);
+                        }
                     }
                 };
                 container.appendChild(div);
             });
 
-            // MISE À JOUR SÉCURISÉE DES BADGES
             if (unreadCount > 0) {
                 if (badgeMain) {
                     badgeMain.innerText = unreadCount;
@@ -2776,7 +2818,6 @@ async function loadInbox() {
         setTimeout(() => { isInboxLoading = false; }, 200);
     }
 }
-
 // --- FONCTION REALTIME ---
 async function setupRealtimeNotifications(userId) {
     // 1. Nettoyage des canaux existants (avec sécurité async/await)
@@ -2862,6 +2903,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
