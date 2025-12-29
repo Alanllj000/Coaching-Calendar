@@ -3011,63 +3011,82 @@ async function loadNotificationSettings() {
 }
 
 async function saveNotificationPrefs() {
-    // 1. On vérifie l'utilisateur
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) {
-        alert("Session expirée, veuillez vous reconnecter.");
-        return;
-    }
+    try {
+        alert("1. Début de la fonction saveNotificationPrefs");
 
-    // 2. Récupération de l'état du switch principal
-    const isEnabled = document.getElementById('notif-master').checked;
-
-    // --- LOGIQUE PUSH API ---
-    // Si l'utilisateur active le switch, on gère l'abonnement technique via le navigateur
-    if (isEnabled) {
-        const permission = await Notification.requestPermission();
+        // 1. On vérifie l'utilisateur
+        const { data: { user }, error: authError } = await sb.auth.getUser();
         
-        if (permission === 'granted') {
-            // Cette fonction crée l'abonnement et l'enregistre dans 'user_push_subscriptions'
-            await subscribeUserToPush(); 
+        if (authError) {
+            alert("Erreur Auth : " + authError.message);
+            return;
+        }
+
+        if (!user) {
+            alert("2. Session expirée ou aucun utilisateur trouvé");
+            return;
+        }
+        alert("2. Utilisateur détecté : " + user.email);
+
+        // 2. Récupération de l'état du switch principal
+        const masterSwitch = document.getElementById('notif-master');
+        if (!masterSwitch) {
+            alert("Erreur : Elément 'notif-master' introuvable dans le HTML");
+            return;
+        }
+        const isEnabled = masterSwitch.checked;
+        alert("3. Switch master est sur : " + isEnabled);
+
+        // --- LOGIQUE PUSH API ---
+        if (isEnabled) {
+            alert("4. Demande de permission au navigateur...");
+            const permission = await Notification.requestPermission();
+            alert("5. Permission navigateur : " + permission);
+            
+            if (permission === 'granted') {
+                alert("6. Lancement de subscribeUserToPush()...");
+                // Attention : vérifie bien que cette fonction a aussi des alertes !
+                await subscribeUserToPush(); 
+                alert("7. Retour de subscribeUserToPush");
+            } else {
+                alert("Notifications bloquées par l'appareil.");
+                document.getElementById('notif-master').checked = false;
+                return;
+            }
+        }
+
+        // 3. Préparation des données
+        const settingsToSave = {
+            notif_enable: isEnabled,
+            notif_week: document.getElementById('notif-1s')?.checked || false,
+            notif_day: document.getElementById('notif-1j')?.checked || false,
+            notif_hour: document.getElementById('notif-1h')?.checked || false,
+            notif_custom: typeof currentCustomReminders !== 'undefined' ? currentCustomReminders : []
+        };
+        alert("8. Données prêtes pour l'update profiles");
+
+        // 4. Mise à jour du profil Supabase
+        const { error: updateError } = await sb
+            .from('profiles')
+            .update(settingsToSave)
+            .eq('id', user.id);
+
+        if (updateError) {
+            alert("9. ERREUR UPDATE : " + updateError.message);
         } else {
-            alert("Les notifications sont bloquées par votre navigateur. Veuillez les autoriser dans les réglages de votre appareil.");
-            document.getElementById('notif-master').checked = false;
-            return; // On arrête tout si le navigateur refuse
+            alert("10. SUCCÈS : Préférences enregistrées dans la base !");
+            
+            if (typeof initialSettings !== 'undefined') {
+                initialSettings = JSON.parse(JSON.stringify(settingsToSave));
+                if (typeof checkChanges === "function") checkChanges();
+            }
         }
-    }
-
-    // 3. Préparation des données pour la table 'profiles'
-    // On récupère les valeurs de tes autres réglages (1 semaine, 1 jour, etc.)
-    const settingsToSave = {
-        notif_enable: isEnabled,
-        notif_week: document.getElementById('notif-1s')?.checked || false,
-        notif_day: document.getElementById('notif-1j')?.checked || false,
-        notif_hour: document.getElementById('notif-1h')?.checked || false,
-        notif_custom: typeof currentCustomReminders !== 'undefined' ? currentCustomReminders : []
-    };
-
-    console.log("Sauvegarde des préférences profil...", settingsToSave);
-
-    // 4. Mise à jour du profil Supabase
-    const { error } = await sb
-        .from('profiles')
-        .update(settingsToSave)
-        .eq('id', user.id);
-
-    if (error) {
-        console.error("Erreur de sauvegarde profile:", error);
-        alert("Erreur lors de l'enregistrement : " + error.message);
-    } else {
-        alert("Vos préférences ont été enregistrées !");
-
-        // 5. Mise à jour de l'état pour griser le bouton "Sauvegarder"
-        if (typeof initialSettings !== 'undefined') {
-            initialSettings = JSON.parse(JSON.stringify(settingsToSave));
-            if (typeof checkChanges === "function") checkChanges();
-        }
+    } catch (globalError) {
+        // C'est ce bloc qui te dira s'il y a une erreur de syntaxe ou un crash inattendu
+        alert("CRASH GLOBAL : " + globalError.message);
+        console.error(globalError);
     }
 }
-
 
 //Fonctions pour la boite de messages
 
@@ -3475,6 +3494,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
