@@ -3409,32 +3409,43 @@ document.addEventListener(event, resetInactivityTimer, true);
 
 async function subscribeUserToPush() {
     try {
+        alert("A. Entrée dans subscribeUserToPush");
+
+        // 1. Vérification du Service Worker
+        alert("B. Attente du Service Worker...");
         const registration = await navigator.serviceWorker.ready;
+        alert("C. Service Worker prêt !");
+
+        // 2. Préparation de la clé
+        // ATTENTION : Assure-toi que ta clé ne contient PAS de guillemets doubles à l'intérieur
+        const publicVapidKey = "BAs4HzcCnOFP6ePWnfTFJ7IW6y_kWjeftUnQtnImOp1jaGHc_MRXOBTjD3A00D403snaTgJhc4pxzAakZnGbxM4";
         
-        // TA CLÉ PUBLIQUE INTÉGRÉE
-        const publicKey = "BAs4HzcCnOFP6ePWnfTFJ7IW6y_kWjeftUnQtnImOp1jaGHc_MRXOBTjD3A00D403snaTgJhc4pxzAakZnGbxM4"; 
-        
+        alert("D. Tentative d'abonnement (subscribe)...");
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicKey)
+            applicationServerKey: publicVapidKey
+        });
+        alert("E. Abonnement technique réussi !");
+
+        // 3. Envoi à la base de données
+        const { data: { user } } = await sb.auth.getUser();
+        alert("F. Envoi vers Supabase pour l'user : " + user.id);
+
+        const { error } = await sb.from('user_push_subscriptions').insert({
+            user_id: user.id,
+            subscription: subscription // objet JSON
         });
 
-        const { data: { user } } = await sb.auth.getUser();
-        if (!user) return;
-
-        // On enregistre l'abonnement technique dans la nouvelle table
-        const { error } = await sb.from('user_push_subscriptions').upsert({ 
-            user_id: user.id, 
-            subscription: subscription,
-            device_type: navigator.userAgent,
-            updated_at: new Date()
-        }, { onConflict: 'user_id' }); // On met à jour si l'utilisateur change d'appareil ou réinitialise
-
-        if (error) throw error;
-        console.log("✅ Abonnement Push enregistré avec succès !");
+        if (error) {
+            alert("ERREUR INSERT : " + error.message);
+            throw error;
+        }
+        
+        alert("G. Fin de subscribeUserToPush (Succès)");
 
     } catch (err) {
-        console.error("❌ Erreur lors de l'abonnement Push:", err);
+        alert("CRASH DANS SUBSCRIBE : " + err.name + " - " + err.message);
+        console.error(err);
     }
 }
 
@@ -3494,6 +3505,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
