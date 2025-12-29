@@ -416,6 +416,10 @@
             <input id="admin-event-id" type="hidden">
             <input id="admin-title" placeholder="Titre" class="input-field">
             <input id="admin-loc" placeholder="Lieu" class="input-field">
+            <div class="mt-4">
+                <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Notes Complémentaires</label>
+                <textarea id="event-notes" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[80px]" placeholder="Détails du coaching, matériel à prévoir..."></textarea>
+            </div>
             <div class="grid grid-cols-2 gap-4">
                 <input id="admin-date" type="date" class="input-field">
                 <input id="admin-max" type="number" placeholder="Places Max" class="input-field">
@@ -1354,6 +1358,7 @@ function openDayPip(dateStr, events = []) {
                         <div class="flex flex-col gap-0.5 text-[10px] font-bold">
                             <span class="text-blue-600 font-black">${e.start_time.substring(0, 5)}</span>
                             <span class="text-slate-400 uppercase tracking-tight">${e.location}</span>
+                            ${e.notes ? `<p class="text-[10px] text-slate-500 mb-2 leading-tight italic bg-slate-50 p-1.5 rounded-lg border-l-2 border-slate-200">${e.notes}</p>` : ''}
                             <div class="mt-1 text-[10px] font-black ${isFull && !myReg ? 'text-red-500' : 'text-slate-300'}">
                                 ${regCount} / ${e.max_participants} participants
                             </div>
@@ -1407,7 +1412,7 @@ async function openEventDetails(eventId) {
     detailZone.style.pointerEvents = 'auto';
 
     // 3. Injection du HTML structuré
-    detailZone.innerHTML = `
+   detailZone.innerHTML = `
         <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
             
             <div class="flex justify-between items-start mb-8">
@@ -1433,21 +1438,37 @@ async function openEventDetails(eventId) {
 
             <div class="grid grid-cols-1 gap-6 mb-10">
                 
-                <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 border border-slate-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                <div class="grid ${event.notes ? 'grid-cols-2' : 'grid-cols-1'} gap-4">
+                    <div class="flex items-center gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm shrink-0 border border-slate-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Localisation</p>
+                            <p class="font-bold text-slate-700 text-xs truncate">${event.location}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Localisation</p>
-                        <p class="font-bold text-slate-700 text-sm">${event.location}</p>
+
+                    ${event.notes ? `
+                    <div class="flex items-center gap-4 bg-blue-50/30 p-4 rounded-2xl border border-blue-100/50">
+                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm shrink-0 border border-blue-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[9px] font-black text-blue-400 uppercase tracking-widest">Notes du Coach</p>
+                            <p class="font-bold text-slate-700 text-xs truncate">${event.notes}</p>
+                        </div>
                     </div>
+                    ` : ''}
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 border border-slate-100">
+                    <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 border border-slate-100 shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -1461,7 +1482,7 @@ async function openEventDetails(eventId) {
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 border border-slate-100">
+                    <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 border border-slate-100 shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
@@ -1520,6 +1541,7 @@ async function requestAdminSubmit(isConfirmed = false) {
     const endTime = document.getElementById('admin-end').value;
     const location = document.getElementById('admin-loc').value;
     const maxParticipants = document.getElementById('admin-max').value || 99;
+    const notes = document.getElementById('event-notes').value;
     
     // Cet ID est la clé : s'il existe, on est en mode UPDATE
     const eventId = document.getElementById('admin-event-id').value;
@@ -1556,7 +1578,8 @@ async function requestAdminSubmit(isConfirmed = false) {
         // 1. CRÉATION DU PREMIER ÉVÉNEMENT (LE PARENT)
         const { data: createdEvents, error: pError } = await sb.from('events').insert([{ 
             title, 
-            location, 
+            location,
+            notes,
             date: dateStr, 
             start_time: startTime, 
             end_time: endTime, 
@@ -1577,6 +1600,7 @@ async function requestAdminSubmit(isConfirmed = false) {
             owner_id: ownerId,
             title: title,
             location: location,
+            notes,
             date: dateStr,
             start_time: startTime,
             end_time: endTime,
@@ -1601,7 +1625,8 @@ async function requestAdminSubmit(isConfirmed = false) {
                 if (selectedDays.includes(dayName)) {
                     occs.push({ 
                         title, 
-                        location, 
+                        location,
+                        notes,
                         date: nextDateStr, 
                         start_time: startTime, 
                         end_time: endTime, 
@@ -1664,6 +1689,7 @@ async function processUpdate(eventId, changeAll) {
     const startTime = document.getElementById('admin-start').value;
     const endTime = document.getElementById('admin-end').value;
     const maxParticipants = document.getElementById('admin-max').value;
+    const notes = document.getElementById('event-notes').value;
 
     try {
         let result;
@@ -1675,7 +1701,8 @@ async function processUpdate(eventId, changeAll) {
             result = await sb.from('events')
                 .update({ 
                     title, 
-                    location, 
+                    location,
+                    notes,
                     start_time: startTime, 
                     end_time: endTime, 
                     max_participants: maxParticipants 
@@ -1687,7 +1714,8 @@ async function processUpdate(eventId, changeAll) {
             result = await sb.from('events')
                 .update({ 
                     title, 
-                    location, 
+                    location,
+                    notes,
                     date: dateStr, 
                     start_time: startTime, 
                     end_time: endTime, 
@@ -2442,6 +2470,11 @@ function handleInscriptionPiPstep1(eventId) {
                     <p>Le <strong class="text-slate-900">${dateReadable}</strong></p>
                     <p>De <strong class="text-slate-900">${event.start_time.substring(0, 5)}</strong> à <strong class="text-slate-900">${event.end_time.substring(0, 5)}</strong></p>
                     <p>Lieu : <strong class="text-slate-900">${event.location || 'Non défini'}</strong></p>
+                    ${event.notes ? `
+                        <p class="mt-2 pt-2 border-t border-slate-200/60 italic text-slate-500 text-[11px]">
+                            Note : <span class="font-medium text-slate-700">${event.notes}</span>
+                        </p>
+                    ` : ''}
                 </div>
             </div>
 
@@ -3331,6 +3364,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
