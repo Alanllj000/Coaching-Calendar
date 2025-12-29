@@ -1328,7 +1328,7 @@ function openDayPip(dateStr, events = []) {
             // Cas 1 : Complet (et je ne suis pas inscrit)
             if (isFull && !myReg) {
                 btnLabel = "Complet";
-                btnClass = "bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100";
+                btnClass = "bg-red-50 text-red-500 border border-red-100 cursor-not-allowed font-black";
                 btnAction = "void(0)";
             }
 
@@ -3381,6 +3381,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
