@@ -1256,13 +1256,24 @@ function renderCalendar() {
     }
 }
 // --- PIP DETAILS JOUR ---
-
 function openDayPip(dateStr, events = []) {
-    const userMenu = document.getElementById('user-menu');
+    // 1. On ferme proprement l'inbox (cela gère aussi isInboxOpen = false)
     if (typeof closeInboxPip === "function") {
         closeInboxPip();
+    }
+
+    // 2. On ferme systématiquement le menu utilisateur pour libérer l'écran
+    const userMenu = document.getElementById('user-menu');
+    if (userMenu) {
         userMenu.classList.add('hidden');
     }
+
+    // 3. ICI : La suite de ta logique habituelle pour ouvrir le jour
+    // (Affichage des events, retrait du 'hidden' de ta div de jour, etc.)
+    console.log("Ouverture du jour :", dateStr);
+    // ...
+}
+
     currentDayStr = dateStr;
     const zone = document.getElementById('mobile-pip-zone');
     if (!zone) return;
@@ -3290,6 +3301,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
