@@ -1358,7 +1358,10 @@ function openDayPip(dateStr, events = []) {
                         <div class="flex flex-col gap-0.5 text-[10px] font-bold">
                             <span class="text-blue-600 font-black">${e.start_time.substring(0, 5)}</span>
                             <span class="text-slate-400 uppercase tracking-tight">${e.location}</span>
-                            ${e.notes ? `<p class="text-[10px] text-slate-500 mb-2 leading-tight italic bg-slate-50 p-1.5 rounded-lg border-l-2 border-slate-200">${e.notes}</p>` : ''}
+                            ${e.notes ? `<p class="text-[10px] text-slate-500 mt-1 mb-2 leading-tight italic flex items-start gap-1">
+                                <span class="shrink-0">💬</span> 
+                                <span>${e.notes}</span>
+                            </p>` : ''}
                             <div class="mt-1 text-[10px] font-black ${isFull && !myReg ? 'text-red-500' : 'text-slate-300'}">
                                 ${regCount} / ${e.max_participants} participants
                             </div>
@@ -3364,6 +3367,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
