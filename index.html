@@ -3072,8 +3072,8 @@ async function loadInbox() {
                 }`;
                 
                 // Ajout d'une petite icône si c'est un lien interactif
-                const hasAction = msg.metadata && msg.metadata.event_id;
-                const isDeleted = msg.metadata && msg.metadata.is_deleted; 
+                const isDeleted = msg.metadata && msg.metadata.is_deleted;
+                const hasAction = msg.metadata && msg.metadata.event_id && !isDeleted;
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-1 gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -3304,6 +3304,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
