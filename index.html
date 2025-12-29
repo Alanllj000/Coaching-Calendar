@@ -3186,6 +3186,33 @@ async function loadInbox() {
         setTimeout(() => { isInboxLoading = false; }, 200);
     }
 }
+
+async function markAllAsRead() {
+    // 1. Récupération de l'utilisateur actuel
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    // 2. Update massif dans la base de données
+    const { error } = await sb
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false); // On ne cible que ceux qui ne sont pas lus
+
+    if (error) {
+        console.error("Erreur lors du marquage :", error);
+        return;
+    }
+
+    // 3. Mise à jour de l'UI
+    console.log("Toutes les notifications sont marquées comme lues");
+    
+    // Si tu as un compteur global (badge), on le remet à zéro ici
+    unreadCount = 0; 
+    
+    // On recharge l'inbox pour voir le changement de style (opacité/couleurs)
+    loadInbox(); 
+}
 async function setupAppRealtime(userId) {
     // 1. Nettoyage de sécurité pour éviter les doublons de WebSocket
     if (globalChannel) {
@@ -3304,6 +3331,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
