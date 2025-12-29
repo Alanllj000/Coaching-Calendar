@@ -3073,7 +3073,7 @@ async function loadInbox() {
                 
                 // Ajout d'une petite icône si c'est un lien interactif
                 const hasAction = msg.metadata && msg.metadata.event_id;
-
+                const isDeleted = msg.metadata && msg.metadata.is_deleted; 
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-1 gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -3098,7 +3098,11 @@ async function loadInbox() {
                         isInboxLoading = false; 
                         setTimeout(() => loadInbox(), 150); 
                     }
-                
+
+                    if (msg.metadata && msg.metadata.is_deleted) {
+                        console.log("Message de suppression : pas de redirection.");
+                        return; // Le clic ne mène nulle part
+                    }
                     // 2. FERMETURE FORCÉE DE L'INBOX ET DE L'OVERLAY
                     // On appelle ta fonction de fermeture si elle existe
                     if (typeof closeInbox === 'function') {
@@ -3300,6 +3304,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
