@@ -3411,44 +3411,53 @@ async function subscribeUserToPush() {
     try {
         alert("A. Entrée dans subscribeUserToPush");
 
-        // 1. Vérification du Service Worker
-        alert("B. Attente du Service Worker...");
-        const registration = await navigator.serviceWorker.ready;
-        alert("C. Service Worker prêt !");
+        // On ne fait pas .ready, on va chercher l'enregistrement actuel
+        let reg = await navigator.serviceWorker.getRegistration();
+        
+        // Si vraiment rien n'est enregistré, on le fait manuellement
+        if (!reg) {
+            alert("B. Aucun SW trouvé. Tentative d'enregistrement...");
+            reg = await navigator.serviceWorker.register('./sw.js');
+        }
 
-        // 2. Préparation de la clé
-        // ATTENTION : Assure-toi que ta clé ne contient PAS de guillemets doubles à l'intérieur
+        // Sécurité : Si le SW est encore en train d'installer, on attend un tout petit peu
+        if (!reg.active) {
+            alert("C. SW en cours d'activation, patience...");
+            // On attend 2 secondes max que l'activation se termine
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        alert("D. SW récupéré ! État : " + (reg.active ? "Actif" : "Non-actif"));
+
         const publicVapidKey = "BAs4HzcCnOFP6ePWnfTFJ7IW6y_kWjeftUnQtnImOp1jaGHc_MRXOBTjD3A00D403snaTgJhc4pxzAakZnGbxM4";
         
-        alert("D. Tentative d'abonnement (subscribe)...");
-        const subscription = await registration.pushManager.subscribe({
+        alert("E. Tentative de PushManager.subscribe...");
+        
+        const subscription = await reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: publicVapidKey
         });
-        alert("E. Abonnement technique réussi !");
 
-        // 3. Envoi à la base de données
+        alert("F. Abonnement technique OK !");
+
         const { data: { user } } = await sb.auth.getUser();
-        alert("F. Envoi vers Supabase pour l'user : " + user.id);
-
-        const { error } = await sb.from('user_push_subscriptions').insert({
-            user_id: user.id,
-            subscription: subscription // objet JSON
-        });
-
-        if (error) {
-            alert("ERREUR INSERT : " + error.message);
-            throw error;
-        }
         
-        alert("G. Fin de subscribeUserToPush (Succès)");
+        // On utilise UPSERT au lieu de INSERT : si la ligne existe déjà, il la met à jour
+        // Cela évite les erreurs de "doublons" sur l'ID user
+        const { error } = await sb.from('user_push_subscriptions').upsert({
+            user_id: user.id,
+            subscription: subscription
+        }, { onConflict: 'user_id' });
+
+        if (error) throw error;
+        
+        alert("G. Sauvegarde BDD réussie !");
 
     } catch (err) {
-        alert("CRASH DANS SUBSCRIBE : " + err.name + " - " + err.message);
+        alert("ERREUR DANS SUBSCRIBE : " + err.name + "\n" + err.message);
         console.error(err);
     }
 }
-
        
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -3505,6 +3514,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
