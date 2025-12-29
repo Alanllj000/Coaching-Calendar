@@ -2988,38 +2988,38 @@ async function saveNotificationPrefs() {
 }
 
 //Fonctions pour la boite de messages
+
 function openInboxPip() {
     console.log("État actuel avant clic:", isInboxOpen);
-    const inbox = document.getElementById('pip-inbox');
     
     if (isInboxOpen) {
-        console.log("Tentative de fermeture...");
         closeInboxPip();
         return;
     }
 
-    console.log("Tentative d'ouverture...");
-    inbox.classList.remove('hidden');
-    inbox.classList.add('flex');
-    isInboxOpen = true;
-    loadInbox(); 
+    const inbox = document.getElementById('pip-inbox');
+    if (inbox) {
+        inbox.classList.remove('hidden');
+        inbox.style.display = 'flex'; // On force le display pour contrer le hidden
+        inbox.style.pointerEvents = 'auto';
+        loadInbox(); // On recharge les messages
+        isInboxOpen = true;
+        console.log("Inbox ouverte, isInboxOpen est true");
+    }
 }
-
 
 function closeInboxPip() {
     const inbox = document.getElementById('pip-inbox');
     if (inbox) {
         inbox.classList.add('hidden');
         inbox.classList.remove('flex');
+        // On nettoie les styles en ligne qui pourraient bloquer
+        inbox.style.display = 'none'; 
     }
     
-    // --- L'AJOUT INDISPENSABLE ---
-    // On indique au script que l'inbox est officiellement fermée
+    // TRÈS IMPORTANT : On libère le verrou pour que le prochain clic fonctionne
     isInboxOpen = false; 
-
-    // On en profite pour fermer le menu du header pour éviter les chevauchements
-    const userMenu = document.getElementById('user-menu');
-    if (userMenu) userMenu.classList.add('hidden');
+    console.log("Inbox fermée, isInboxOpen est maintenant false");
 }
 // --- CHARGEMENT ET BADGE ---
 // --- VARIABLE GLOBALE (Le verrou) ---
@@ -3300,6 +3300,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
