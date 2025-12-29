@@ -1414,7 +1414,11 @@ detailZone.style.pointerEvents = 'auto';
        // --- 1. LOGIQUE DE CALCUL ---
        const regCount = event.registrations ? event.registrations.length : 0;
        const maxPlus = event.max_participants || 0;
-       const isFull = regCount >= maxPlus || event.is_private_request;
+       const isFull = regCount >= maxPlus ||
+               regCount >= maxPlus || 
+               event.is_private_request === true || 
+               event.type === 'private' || 
+               (event.title && event.title.toLowerCase().includes('privé'));
        // --- 2. INJECTION DU HTML ---
        detailZone.innerHTML = `
            <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
@@ -3370,6 +3374,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
