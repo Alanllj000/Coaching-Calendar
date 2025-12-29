@@ -1261,128 +1261,138 @@ grid.appendChild(cell);
 }
 // --- PIP DETAILS JOUR ---
 function openDayPip(dateStr, events = []) {
-// 1. On ferme proprement l'inbox (cela gère aussi isInboxOpen = false)
-if (typeof closeInboxPip === "function") {
-closeInboxPip();
-}
+    // 1. Nettoyage de l'interface (fermeture des autres menus)
+    if (typeof closeInboxPip === "function") closeInboxPip();
+    const userMenu = document.getElementById('user-menu');
+    if (userMenu) userMenu.classList.add('hidden');
 
-// 2. On ferme systématiquement le menu utilisateur pour libérer l'écran
-const userMenu = document.getElementById('user-menu');
-if (userMenu) {
-userMenu.classList.add('hidden');
-}
+    // 2. Préparation de la zone PiP
+    console.log("Ouverture du jour :", dateStr);
+    currentDayStr = dateStr;
+    const zone = document.getElementById('mobile-pip-zone');
+    if (!zone) return;
 
-// 3. ICI : La suite de ta logique habituelle pour ouvrir le jour
-// (Affichage des events, retrait du 'hidden' de ta div de jour, etc.)
-console.log("Ouverture du jour :", dateStr);
-// ...
+    zone.classList.remove('modal-mode');
+    zone.style.display = 'flex';
+    zone.style.pointerEvents = 'auto';
 
-currentDayStr = dateStr;
-const zone = document.getElementById('mobile-pip-zone');
-if (!zone) return;
+    // 3. Variables globales au jour
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const isDatePast = dateStr < todayStr;
+    const isAdmin = typeof currentProfile !== 'undefined' && currentProfile && currentProfile.role === 'admin';
+    const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
-zone.classList.remove('modal-mode'); 
-zone.style.display = 'flex';
-zone.style.pointerEvents = 'auto';
+    // 4. Construction de l'en-tête HTML
+    let html = `
+        <div class="mobile-pip-card">
+            <div class="flex items-center justify-between p-5 border-b border-slate-50">
+                <div>
+                    <span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>
+                    ${isAdmin ? `
+                        <button onclick="openAdminFromPip('${dateStr}')" 
+                                class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">
+                            ${isDatePast ? '➕ Ajouter (Date passée)' : 'Ajouter un cours'}
+                        </button>` : ''
+                    }
+                </div>
+                <button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-xl active:scale-90 transition-transform">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-10 custom-scrollbar">`;
 
-const now = new Date();
-const todayStr = now.toISOString().split('T')[0];
-const isDatePast = dateStr < todayStr;
-const isAdmin = currentProfile && currentProfile.role === 'admin';
-const dateL = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    // 5. Boucle sur les événements
+    if (!events || !events.length) {
+        html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu ce jour-là</div>`;
+    } else {
+        events.forEach(function(e) {
+            const myId = typeof currentUser !== 'undefined' && currentUser ? currentUser.id : null;
 
-let html = `
-       <div class="mobile-pip-card">
-           <div class="flex items-center justify-between p-5 border-b border-slate-50">
-               <div>
-                   <span class="font-black text-slate-800 uppercase text-xs">${dateL}</span>
-                   ${isAdmin ? `
-                       <button onclick="openAdminFromPip('${dateStr}')" 
-                               class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">
-                           ${isDatePast ? '➕ Ajouter (Date passée)' : 'Ajouter'}
-                       </button>` : ''
-                   }
-               </div>
-               <button onclick="closeMobilePip()" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-xl">&times;</button>
-           </div>
-           <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-10">`;
+            // --- LOGIQUE DE CALCUL (Intégrée dans la boucle) ---
+            const regCount = e.registrations ? e.registrations.length : 0;
+            const maxPlus = e.max_participants || 0;
+            const myReg = e.registrations && e.registrations.find(r => r.user_id === myId);
+            const isOwner = e.owner_id === myId;
 
-if (!events || !events.length) {
-html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu</div>`;
-} else {
-events.forEach(function(e) {
-const myId = currentUser ? currentUser.id : null;
+            // Détection du cours privé (via flag SQL ou Titre)
+            const hasPrivateReg = e.registrations && e.registrations.some(r => r.is_private_request === true);
+            const isPrivateTitle = e.title && e.title.toLowerCase().includes('privé');
+            
+            // Un événement est "Complet" si : Max atteint OU Flag Privé présent OU Titre contient "Privé"
+            const isFull = (regCount >= maxPlus) || hasPrivateReg || isPrivateTitle;
 
-// --- LOGIQUE DES ÉTATS ---
-const myReg = e.registrations && e.registrations.find(function(r) { return r.user_id === myId; });
-const regCount = (e.registrations && e.registrations.length) || 0;
-const isFull = regCount >= e.max_participants;
-const isOwner = e.owner_id === myId;
+            // --- LOGIQUE DU BOUTON D'ACTION ---
+            let btnLabel = "S'inscrire";
+            let btnClass = "bg-slate-900 text-white shadow-md hover:bg-slate-800";
+            let btnAction = `handleInscriptionPiPstep1('${e.id}')`;
 
-// CORRECTION : On cherche si une inscription possède le flag is_private_request
-const hasPrivateRegistration = e.registrations && e.registrations.some(function(r) { 
-return r.is_private_request === true; 
-});
-const isPrivateTaken = hasPrivateRegistration && regCount > 0;
+            // Cas 1 : Complet (et je ne suis pas inscrit)
+            if (isFull && !myReg) {
+                btnLabel = "Complet";
+                btnClass = "bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100";
+                btnAction = "void(0)";
+            }
 
-// 1. Définition du bouton par défaut (Non inscrit)
-let btnLabel = isFull ? 'Complet' : "S'inscrire";
-let btnClass = isFull ? 'bg-slate-50 text-slate-200 cursor-not-allowed' : 'bg-slate-900 text-white shadow-md';
-let btnAction = `handleInscriptionPiPstep1('${e.id}')`; 
+            // Cas 2 : Déjà inscrit
+            if (myReg) {
+                if (myReg.status === 'PENDING_CONFIRMATION') {
+                    btnLabel = "En attente";
+                    btnClass = "bg-orange-100 text-orange-600 border border-orange-200";
+                    btnAction = `handleInscriptionPiPstep1('${e.id}')`; // Permet de revoir/annuler
+                } else {
+                    btnLabel = "Ma place";
+                    btnClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                    btnAction = `handleInscriptionPiPstep2('${e.id}')`; // Ouvre le menu d'annulation
+                }
+            }
 
-// PRIORITÉ : Si le cours est réservé par un tiers en mode privé
-if (isPrivateTaken && !myReg) {
-btnLabel = "Complet";
-btnClass = "bg-red-500 text-white shadow-md cursor-not-allowed";
-btnAction = "void(0)"; // On neutralise l'action
-}
+            // Cas 3 : Date passée (écrase tout)
+            if (isDatePast) {
+                btnLabel = "Terminé";
+                btnClass = "bg-slate-50 text-slate-300 border border-slate-100 cursor-default";
+                btnAction = "void(0)";
+            }
 
-// 2. Si inscrit (on écrase pour permettre la modif de sa propre place)
-if (myReg) {
-if (myReg.status === 'PENDING_CONFIRMATION') {
-btnLabel = "Reconfirmer l'inscription";
-btnClass = "bg-orange-500 text-white shadow-lg";
-btnAction = `handleInscriptionPiPstep1('${e.id}')`;
-} else {
-btnLabel = "Modifier l'inscription";
-btnClass = "bg-slate-100 text-slate-600 border border-slate-200";
-btnAction = `handleInscriptionPiPstep2('${e.id}')`;
-}
-}
+            // --- HTML DE LA CARTE ---
+            html += `
+                <div id="event-card-${e.id}" class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between shadow-sm transition-all ${isDatePast ? 'opacity-60 grayscale-[0.5]' : ''}">
+                    
+                    <div class="flex-1 pr-4 min-w-0">
+                        <h4 class="font-black text-slate-800 text-sm leading-tight mb-1 truncate">
+                            ${e.title} ${isAdmin && isOwner ? '<span class="text-blue-500 text-[10px]">✎</span>' : ''}
+                        </h4>
+                        
+                        <div class="flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                                <span class="text-blue-600 font-black">${e.start_time.substring(0, 5)}</span>
+                                <span>•</span>
+                                <span class="truncate">${e.location}</span>
+                            </div>
 
-html += `
-               <div id="event-card-${e.id}" class="p-4 border border-slate-100 rounded-2xl bg-white flex items-center justify-between shadow-sm ${isDatePast ? 'opacity-60' : ''}">
-                   
-                   <div class="flex-1 pr-4">
-                       <h4 class="font-black text-slate-800 text-sm leading-tight mb-1">${e.title} ${isAdmin && isOwner ? '✎' : ''}</h4>
-                       <div class="flex flex-col gap-0.5 text-[10px] font-bold">
-                           <span class="text-blue-600 font-black">${e.start_time.substring(0, 5)}</span>
-                           <span class="text-slate-400 uppercase tracking-tight">${e.location}</span>
-                           <div class="mt-1 text-[10px] font-black ${isFull && !myReg ? 'text-red-500' : 'text-slate-300'}">
-                               ${regCount} / ${e.max_participants} participants
-                           </div>
-                       </div>
-                   </div>
+                            <div class="flex items-center gap-1.5 mt-1.5">
+                                <div class="w-1.5 h-1.5 rounded-full ${isFull ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-emerald-500'}"></div>
+                                <span class="text-[10px] font-black ${isFull ? 'text-red-600' : 'text-slate-500'} uppercase tracking-tighter">
+                                    ${isFull ? 'Complet' : `${regCount} / ${maxPlus} membres`}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
 
-                   <div class="flex flex-col gap-2">
-                       <button onclick="openEventDetails('${e.id}')" 
-                               class="w-32 py-2 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 border border-slate-200">
-                           Détails
-                       </button>
+                    <div class="flex flex-col gap-2 shrink-0">
+                        <button onclick="openEventDetails('${e.id}')" 
+                                class="w-28 py-2 bg-white text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 border border-slate-200 hover:bg-slate-50">
+                            Détails
+                        </button>
 
-                       ${isDatePast ? 
-                           `<span class="w-32 py-2 text-center text-[9px] font-bold text-slate-400 uppercase border border-slate-100 rounded-xl bg-slate-50">Terminé</span>` : 
-                           `<button onclick="${btnAction}" 
-                                    class="w-32 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${btnClass}">
-                               ${btnLabel}
-                           </button>`
-                       }
-                   </div>
-               </div>`;
-});
-}
+                        <button onclick="${btnAction}" 
+                                class="w-28 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${btnClass}">
+                            ${btnLabel}
+                        </button>
+                    </div>
+                </div>`;
+        });
+    }
 
-zone.innerHTML = html + `</div></div>`;
+    zone.innerHTML = html + `</div></div>`;
 }
 
 async function toggleReg(eid, isR) {
@@ -3371,6 +3381,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
