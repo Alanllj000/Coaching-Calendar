@@ -2954,52 +2954,60 @@ notif_custom: []
 
 // 2. UNE SEULE FONCTION DE CHARGEMENT
 async function loadNotificationSettings() {
-try {
-const { data: { user } } = await sb.auth.getUser();
-if (!user) return;
+    try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) return;
 
-console.log("Chargement des réglages pour :", user.email);
+        const { data, error } = await sb
+            .from('profiles')
+            .select('notif_enable, notif_week, notif_day, notif_hour, notif_custom')
+            .eq('id', user.id)
+            .single();
 
-const { data, error } = await sb
-.from('profiles')
-.select('notif_enable, notif_week, notif_day, notif_hour, notif_custom')
-.eq('id', user.id)
-.single();
+        if (error) throw error;
 
-if (error) throw error;
+        if (data) {
+            // 1. Détection de la permission réelle du navigateur
+            const browserPermission = Notification.permission; // 'granted', 'denied', 'default'
 
-if (data) {
-// Nettoyage des données pour la comparaison
-const cleanedData = {
-notif_enable: !!data.notif_enable,
-notif_week: !!data.notif_week,
-notif_day: !!data.notif_day,
-notif_hour: !!data.notif_hour,
-notif_custom: data.notif_custom || []
-};
+            // 2. LOGIQUE DE SYNCHRONISATION :
+            // On ne considère 'enable' que si la DB dit OUI ET que le navigateur est OK
+            const realEnableStatus = (!!data.notif_enable && browserPermission === 'granted');
 
-// On stocke la référence pour checkChanges()
-initialSettings = JSON.parse(JSON.stringify(cleanedData));
+            const cleanedData = {
+                notif_enable: realEnableStatus,
+                notif_week: !!data.notif_week,
+                notif_day: !!data.notif_day,
+                notif_hour: !!data.notif_hour,
+                notif_custom: data.notif_custom || []
+            };
 
-// Mise à jour de l'interface (UI)
-document.getElementById('notif-master').checked = cleanedData.notif_enable;
-document.getElementById('notif-1s').checked = cleanedData.notif_week;
-document.getElementById('notif-1j').checked = cleanedData.notif_day;
-document.getElementById('notif-1h').checked = cleanedData.notif_hour;
+            // On stocke la référence initiale
+            initialSettings = JSON.parse(JSON.stringify(cleanedData));
 
-// Mise à jour de la variable globale des rappels personnalisés
-currentCustomReminders = [...cleanedData.notif_custom];
+            // 3. Mise à jour de l'UI avec sécurité (?.)
+            const masterToggle = document.getElementById('notif-master');
+            if (masterToggle) {
+                masterToggle.checked = cleanedData.notif_enable;
+                // Si le navigateur a bloqué (denied), on peut même griser le switch
+                if (browserPermission === 'denied') masterToggle.disabled = true;
+            }
 
-renderCustomReminders();
-toggleNotifUI(); // Pour griser/dégriser selon le master switch
-console.log("Paramètres chargés avec succès");
+            if (document.getElementById('notif-1s')) document.getElementById('notif-1s').checked = cleanedData.notif_week;
+            if (document.getElementById('notif-1j')) document.getElementById('notif-1j').checked = cleanedData.notif_day;
+            if (document.getElementById('notif-1h')) document.getElementById('notif-1h').checked = cleanedData.notif_hour;
+
+            currentCustomReminders = [...cleanedData.notif_custom];
+
+            renderCustomReminders();
+            toggleNotifUI(); 
+            console.log("Paramètres chargés et synchronisés avec le navigateur");
+        }
+    } catch (err) {
+        console.error("Erreur lors du chargement des réglages :", err);
+    }
+    checkChanges(); 
 }
-} catch (err) {
-console.error("Erreur lors du chargement des réglages :", err);
-}
-checkChanges(); // On vérifie l'état du bouton sauvegarder
-}
-
 
 async function saveNotificationPrefs() {
     // 1. On vérifie l'utilisateur
@@ -3466,6 +3474,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
