@@ -2999,47 +2999,65 @@ console.error("Erreur lors du chargement des réglages :", err);
 checkChanges(); // On vérifie l'état du bouton sauvegarder
 }
 
-async function saveNotificationPrefs() {
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return alert("Session expirée.");
 
+async function saveNotificationPrefs() {
+    // 1. On vérifie l'utilisateur
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) {
+        alert("Session expirée, veuillez vous reconnecter.");
+        return;
+    }
+
+    // 2. Récupération de l'état du switch principal
     const isEnabled = document.getElementById('notif-master').checked;
 
-    // --- NOUVEAU : GESTION DU PUSH API ---
+    // --- LOGIQUE PUSH API ---
+    // Si l'utilisateur active le switch, on gère l'abonnement technique via le navigateur
     if (isEnabled) {
-        // On demande l'autorisation au navigateur
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
-            // Si autorisé, on crée l'abonnement technique
+            // Cette fonction crée l'abonnement et l'enregistre dans 'user_push_subscriptions'
             await subscribeUserToPush(); 
         } else {
-            alert("Les notifications sont bloquées par votre navigateur. Veuillez les autoriser dans les réglages du site.");
-            // Optionnel : on décoche le bouton si le navigateur refuse
+            alert("Les notifications sont bloquées par votre navigateur. Veuillez les autoriser dans les réglages de votre appareil.");
             document.getElementById('notif-master').checked = false;
-            return;
+            return; // On arrête tout si le navigateur refuse
         }
     }
 
-    // --- TA LOGIQUE DE SAUVEGARDE HABITUELLE ---
+    // 3. Préparation des données pour la table 'profiles'
+    // On récupère les valeurs de tes autres réglages (1 semaine, 1 jour, etc.)
     const settingsToSave = {
         notif_enable: isEnabled,
-        notif_week: document.getElementById('notif-1s').checked,
-        notif_day: document.getElementById('notif-1j').checked,
-        notif_hour: document.getElementById('notif-1h').checked,
-        notif_custom: currentCustomReminders 
+        notif_week: document.getElementById('notif-1s')?.checked || false,
+        notif_day: document.getElementById('notif-1j')?.checked || false,
+        notif_hour: document.getElementById('notif-1h')?.checked || false,
+        notif_custom: typeof currentCustomReminders !== 'undefined' ? currentCustomReminders : []
     };
 
-    const { error } = await sb.from('profiles').update(settingsToSave).eq('id', user.id);
+    console.log("Sauvegarde des préférences profil...", settingsToSave);
+
+    // 4. Mise à jour du profil Supabase
+    const { error } = await sb
+        .from('profiles')
+        .update(settingsToSave)
+        .eq('id', user.id);
 
     if (error) {
-        console.error("Erreur:", error);
+        console.error("Erreur de sauvegarde profile:", error);
+        alert("Erreur lors de l'enregistrement : " + error.message);
     } else {
-        alert("Préférences enregistrées !");
-        initialSettings = JSON.parse(JSON.stringify(settingsToSave));
-        checkChanges();
+        alert("Vos préférences ont été enregistrées !");
+
+        // 5. Mise à jour de l'état pour griser le bouton "Sauvegarder"
+        if (typeof initialSettings !== 'undefined') {
+            initialSettings = JSON.parse(JSON.stringify(settingsToSave));
+            if (typeof checkChanges === "function") checkChanges();
+        }
     }
 }
+
 
 //Fonctions pour la boite de messages
 
@@ -3341,32 +3359,37 @@ document.addEventListener(event, resetInactivityTimer, true);
 });
 
 
-
 async function subscribeUserToPush() {
     try {
         const registration = await navigator.serviceWorker.ready;
         
-        // Ta clé VAPID publique (indispensable)
-        const publicKey = "TON_CLE_PUBLIQUE_VAPID"; 
+        // TA CLÉ PUBLIQUE INTÉGRÉE
+        const publicKey = "BAs4HzcCnOFP6ePWnfTFJ7IW6y_kWjeftUnQtnImOp1jaGHc_MRXOBTjD3A00D403snaTgJhc4pxzAakZnGbxM4"; 
         
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(publicKey)
         });
 
-        // On enregistre ce token technique dans une table dédiée
         const { data: { user } } = await sb.auth.getUser();
-        await sb.from('user_push_subscriptions').upsert({ 
+        if (!user) return;
+
+        // On enregistre l'abonnement technique dans la nouvelle table
+        const { error } = await sb.from('user_push_subscriptions').upsert({ 
             user_id: user.id, 
             subscription: subscription,
-            device_type: navigator.userAgent // Optionnel : pour savoir quel appareil
-        });
+            device_type: navigator.userAgent,
+            updated_at: new Date()
+        }, { onConflict: 'user_id' }); // On met à jour si l'utilisateur change d'appareil ou réinitialise
 
-        console.log("Abonnement Push réussi !");
+        if (error) throw error;
+        console.log("✅ Abonnement Push enregistré avec succès !");
+
     } catch (err) {
-        console.error("Impossible de s'abonner au push", err);
+        console.error("❌ Erreur lors de l'abonnement Push:", err);
     }
 }
+
        
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -3423,6 +3446,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
