@@ -3000,41 +3000,45 @@ checkChanges(); // On vérifie l'état du bouton sauvegarder
 }
 
 async function saveNotificationPrefs() {
-// 1. On vérifie si l'utilisateur est connecté
-const { data: { user } } = await sb.auth.getUser();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return alert("Session expirée.");
 
-if (!user) {
-alert("Session expirée, veuillez vous reconnecter.");
-return;
-}
+    const isEnabled = document.getElementById('notif-master').checked;
 
-// 2. On récupère les valeurs actuelles de l'interface
-const settingsToSave = {
-notif_enable: document.getElementById('notif-master').checked,
-notif_week: document.getElementById('notif-1s').checked,
-notif_day: document.getElementById('notif-1j').checked,
-notif_hour: document.getElementById('notif-1h').checked,
-notif_custom: currentCustomReminders // Le tableau que tu gères déjà
-};
+    // --- NOUVEAU : GESTION DU PUSH API ---
+    if (isEnabled) {
+        // On demande l'autorisation au navigateur
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted') {
+            // Si autorisé, on crée l'abonnement technique
+            await subscribeUserToPush(); 
+        } else {
+            alert("Les notifications sont bloquées par votre navigateur. Veuillez les autoriser dans les réglages du site.");
+            // Optionnel : on décoche le bouton si le navigateur refuse
+            document.getElementById('notif-master').checked = false;
+            return;
+        }
+    }
 
-console.log("Sauvegarde en cours...", settingsToSave);
+    // --- TA LOGIQUE DE SAUVEGARDE HABITUELLE ---
+    const settingsToSave = {
+        notif_enable: isEnabled,
+        notif_week: document.getElementById('notif-1s').checked,
+        notif_day: document.getElementById('notif-1j').checked,
+        notif_hour: document.getElementById('notif-1h').checked,
+        notif_custom: currentCustomReminders 
+    };
 
-// 3. On envoie les données à Supabase (table profiles)
-const { error } = await sb
-.from('profiles')
-.update(settingsToSave)
-.eq('id', user.id);
+    const { error } = await sb.from('profiles').update(settingsToSave).eq('id', user.id);
 
-if (error) {
-console.error("Erreur de sauvegarde:", error);
-alert("Erreur lors de l'enregistrement : " + error.message);
-} else {
-alert("Vos préférences ont été enregistrées !");
-
-// 4. CRUCIAL : On met à jour la référence initiale pour que le bouton redevienne gris
-initialSettings = JSON.parse(JSON.stringify(settingsToSave));
-checkChanges(); // Cette fonction va griser le bouton car UI == initialSettings
-}
+    if (error) {
+        console.error("Erreur:", error);
+    } else {
+        alert("Préférences enregistrées !");
+        initialSettings = JSON.parse(JSON.stringify(settingsToSave));
+        checkChanges();
+    }
 }
 
 //Fonctions pour la boite de messages
@@ -3337,6 +3341,44 @@ document.addEventListener(event, resetInactivityTimer, true);
 });
 
 
+
+async function subscribeUserToPush() {
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        
+        // Ta clé VAPID publique (indispensable)
+        const publicKey = "TON_CLE_PUBLIQUE_VAPID"; 
+        
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+
+        // On enregistre ce token technique dans une table dédiée
+        const { data: { user } } = await sb.auth.getUser();
+        await sb.from('user_push_subscriptions').upsert({ 
+            user_id: user.id, 
+            subscription: subscription,
+            device_type: navigator.userAgent // Optionnel : pour savoir quel appareil
+        });
+
+        console.log("Abonnement Push réussi !");
+    } catch (err) {
+        console.error("Impossible de s'abonner au push", err);
+    }
+}
+       
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+       
 async function setupGlobalRealtimeSync() {
 // Si un canal existe, on se désabonne proprement avant d'en créer un nouveau
 if (globalChannel) {
@@ -3381,6 +3423,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
