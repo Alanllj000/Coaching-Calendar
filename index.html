@@ -1080,6 +1080,7 @@ setupAppRealtime(user.id);
 await loadProfile();
 await fetchEvents(); // Le calendrier s'affiche
 loadNotificationSettings();
+syncNotifToggleWithBrowser();
 loadInbox();
 }
 
@@ -3344,6 +3345,25 @@ console.log("✅ Système Realtime global opérationnel");
 });
 }
 
+function syncNotifToggleWithBrowser() {
+    const toggle = document.getElementById('notif-master');
+    const permission = Notification.permission; // 'default', 'granted', 'denied'
+
+    // Si la base de données dit "OUI" (toggle coché) 
+    // MAIS que le navigateur dit "NON" ou "JE SAIS PAS"
+    if (toggle.checked && permission !== 'granted') {
+        console.warn("Désynchronisation détectée : DB active, mais Navigateur inactif.");
+        // On force le switch à OFF visuellement pour refléter la réalité
+        toggle.checked = false; 
+    }
+
+    // Cas spécifique : Si le navigateur a bloqué définitivement (Denied)
+    if (permission === 'denied') {
+        toggle.disabled = true; // On empêche même de cliquer
+        // Optionnel : Afficher un petit message "Bloqué dans les réglages système"
+    }
+}
+
 async function forceLogout() {
 console.log("Session expirée pour inactivité.");
 if (window.sb) await sb.auth.signOut();
@@ -3446,6 +3466,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
