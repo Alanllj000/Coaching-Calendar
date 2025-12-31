@@ -805,23 +805,76 @@ let globalChannel = null;
 let isInboxOpen = false;
 let isRealtimeInitializing = false; 
 
-// --- GESTION DES CLICS GLOBAUX (REMPLACE HANDLEBODYCLICK) ---
-document.addEventListener('click', function(e) {
-const menu = document.getElementById('user-menu');
-if (menu && !e.target.closest('.group-menu')) {
-menu.classList.add('hidden');
+
+function captureDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get('event_id');
+    const date = params.get('date');
+
+    if (eventId && date) {
+        // On stocke l'intention de redirection
+        const redirectData = { eventId, date };
+        localStorage.setItem('pending_redirection', JSON.stringify(redirectData));
+        console.log("Deep link capturé et stocké :", redirectData);
+    }
 }
-const adminPanel = document.getElementById('admin-panel');
-if (e.target === adminPanel) closeAdminPanel();
 
-const settingsPanel = document.getElementById('settings-panel');
-if (e.target === settingsPanel) closeSettingsPanel();
+async function executePendingRedirection() {
+    const stored = localStorage.getItem('pending_redirection');
+    if (!stored) return;
 
-const mobilePip = document.getElementById('mobile-pip-zone');
-if (e.target === mobilePip) closeMobilePip();
-});
+    const { eventId, date } = JSON.parse(stored);
 
-console.log("Check DOM:", document.getElementById('auth-container-inner'));
+    // --- SÉCURITÉ : CHANGEMENT DE MOIS SI BESOIN ---
+    const targetDate = new Date(date);
+    const targetMonth = targetDate.getMonth();
+    const targetYear = targetDate.getFullYear();
+
+    // On compare avec 'currentDate' (ta variable globale du calendrier)
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
+    if (targetMonth !== currentMonth || targetYear !== currentYear) {
+        console.log("Le mois cible n'est pas affiché. Basculement...");
+        currentDate = new Date(targetYear, targetMonth, 1);
+        
+        // On relance fetchEvents qui appellera renderCalendar
+        // On NE SUPPRIME PAS encore le localStorage car on veut que la fonction
+        // s'exécute à nouveau une fois le nouveau mois chargé.
+        await fetchEvents();
+        return; 
+    }
+
+    try {
+        // --- EXÉCUTION DE LA REDIRECTION ---
+        console.log("Exécution de la redirection pour le jour :", date);
+
+        // 1. Ouvrir le détail de l'événement (PiP)
+        if (typeof openDayPip === 'function') {
+            const dayEvts = eventsCache.filter(e => e.date === date);
+            openDayPip(date, dayEvts);
+        }
+
+        // 2. Effet Stabilo (on cible l'ID qu'on a ajouté dans renderCalendar)
+        setTimeout(() => {
+            const element = document.getElementById(`calendar-day-${date}`);
+            if (element) {
+                element.classList.add('highlight-yellow');
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                setTimeout(() => element.classList.remove('highlight-yellow'), 3000);
+            }
+        }, 500);
+
+        // 3. NETTOYAGE
+        localStorage.removeItem('pending_redirection');
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+    } catch (err) {
+        console.error("Erreur redirection :", err);
+        localStorage.removeItem('pending_redirection'); // On nettoie quand même en cas d'erreur
+    }
+}
 // --- AUTHENTIFICATION ---
 function toggleAuthMode() {
 isRegisterMode = !isRegisterMode;
@@ -1066,22 +1119,26 @@ location.reload();
 
 // --- LOGIQUE APPLICATION ---
 async function initApp(user) {
-if (!user) return;
-currentUser = user;
+    if (!user) return;
+    currentUser = user;
 
-// Affichage de l'interface
-document.getElementById('auth-screen').style.display = 'none';
-document.getElementById('main-content').classList.remove('hidden');
+    // 1. Interface
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('main-content').classList.remove('hidden');
 
-// On lance LE canal unique (remplace les deux anciens appels)
-setupAppRealtime(user.id);
+    // 2. Temps réel
+    setupAppRealtime(user.id);
 
-// Chargement des données
-await loadProfile();
-await fetchEvents(); // Le calendrier s'affiche
-loadNotificationSettings();
-syncNotifToggleWithBrowser();
-loadInbox();
+    // 3. Chargement des données
+    await loadProfile();
+    await fetchEvents(); // Le calendrier est rendu ici (renderCalendar est appelé dedans)
+    
+    loadNotificationSettings();
+    syncNotifToggleWithBrowser();
+    loadInbox();
+
+    // 4. Exécution de la redirection (On utilise le nom exact de TA fonction)
+    await executePendingRedirection(); 
 }
 
 async function loadProfile() {
@@ -1114,151 +1171,130 @@ document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
 }
 
 async function fetchEvents() {
-// AJOUT de 'status' dans la sélection des registrations
-// AJOUT de 'notes' et 'is_private_request' pour que la Step 2 soit déjà pré-remplie
-const { data: evts, error } = await sb
-.from('events')
-.select(`
-           *, 
-           registrations (
-               id, 
-               user_id, 
-               status, 
-               notes, 
-               is_private_request
-           )
-       `)
-.eq('is_archived', false);
+    // 1. Récupération des données avec registrations
+    const { data: evts, error } = await sb
+        .from('events')
+        .select(`
+            *, 
+            registrations (
+                id, 
+                user_id, 
+                status, 
+                notes, 
+                is_private_request
+            )
+        `)
+        .eq('is_archived', false);
 
-if (error) {
-console.error("Erreur lors de la récupération des événements:", error);
-return;
-}
+    if (error) {
+        console.error("Erreur lors de la récupération des événements:", error);
+        return;
+    }
 
-if (evts) {
-eventsCache = evts;
+    if (evts) {
+        eventsCache = evts;
 
-// --- MISE À JOUR DU CACHE DE DÉTAILS ---
-// On en profite pour remplir registrationDetailsCache pour éviter les appels
-// réseaux inutiles quand on ouvre la Step 2
-evts.forEach(event => {
-const myId = currentUser?.id;
-const myReg = event.registrations?.find(r => r.user_id === myId);
-if (myReg) {
-registrationDetailsCache[event.id] = myReg;
-}
-});
-}
+        // 2. Mise à jour du cache local pour la Step 2
+        evts.forEach(event => {
+            const myId = currentUser?.id;
+            const myReg = event.registrations?.find(r => r.user_id === myId);
+            if (myReg) {
+                registrationDetailsCache[event.id] = myReg;
+            }
+        });
+    }
 
-renderCalendar();
-if (currentDayStr) {
-// On filtre notre cache tout neuf pour ne garder que les events du jour affiché
-const eventsForDay = eventsCache.filter(e => e.date === currentDayStr);
-// On relance l'affichage de la PiP avec les données fraîches
-openDayPip(currentDayStr, eventsForDay);
-}
+    // 3. Rendu du calendrier (Crucial : renderCalendar doit créer des IDs HTML)
+    renderCalendar();
+
+    // 4. Mise à jour de la vue actuelle (PiP)
+    if (currentDayStr) {
+        const eventsForDay = eventsCache.filter(e => e.date === currentDayStr);
+        openDayPip(currentDayStr, eventsForDay);
+    }
 }
 
 // --- RENDU CALENDRIER ---
 function renderCalendar() {
-const grid = document.getElementById('calendar-grid');
-if (!grid) return;
-grid.innerHTML = '';
+    const grid = document.getElementById('calendar-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
 
-// 1. Initialisation du temps
-const now = new Date(); // Définition de 'now' pour toute la fonction
-const y = currentDate.getFullYear();
-const m = currentDate.getMonth(); // m = mois du calendrier (0-11)
+    const now = new Date();
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
 
-document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { 
-month: 'long', 
-year: 'numeric' 
-}).format(currentDate);
+    document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { 
+        month: 'long', 
+        year: 'numeric' 
+    }).format(currentDate);
 
-const firstDay = (new Date(y, m, 1).getDay() || 7) - 1;
-const lastDate = new Date(y, m + 1, 0).getDate();
-const todayStr = now.toISOString().split('T')[0];
+    const firstDay = (new Date(y, m, 1).getDay() || 7) - 1;
+    const lastDate = new Date(y, m + 1, 0).getDate();
+    const todayStr = now.toISOString().split('T')[0];
 
-// Cases vides (début de mois)
-for (let i = 0; i < firstDay; i++) {
-grid.innerHTML += `<div class="calendar-day opacity-0 pointer-events-none"></div>`;
-}
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="calendar-day opacity-0 pointer-events-none"></div>`;
+    }
 
-// 2. Boucle des jours réels
-for (let d = 1; d <= lastDate; d++) {
-const dateStr = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-const loopD = new Date(y, m, d);
-const isToday = now.toDateString() === loopD.toDateString();
+    for (let d = 1; d <= lastDate; d++) {
+        const dateStr = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        const loopD = new Date(y, m, d);
+        const isToday = now.toDateString() === loopD.toDateString();
 
-// --- FILTRAGE DES EVENTS DU JOUR ---
-// (On le déplace ici pour pouvoir l'utiliser dans le calcul de isPast)
-const dayEvts = eventsCache.filter(function(e) {
-const isD = e.date === dateStr;
-const isNotExcluded = !e.excluded_dates || !e.excluded_dates.includes(dateStr);
-return isD && isNotExcluded;
-});
+        const dayEvts = eventsCache.filter(function(e) {
+            const isD = e.date === dateStr;
+            const isNotExcluded = !e.excluded_dates || !e.excluded_dates.includes(dateStr);
+            return isD && isNotExcluded;
+        });
 
-// --- CALCUL IS_PAST PRÉCIS ---
-// Par défaut, un jour est "passé" s'il est avant aujourd'hui
-let isPast = dateStr < todayStr;
+        let isPast = dateStr < todayStr;
 
-// Si c'est aujourd'hui, on vérifie si le dernier événement est fini
-if (dateStr === todayStr && dayEvts.length > 0) {
-const lastEventEndTime = dayEvts.reduce((latest, e) => {
-return (!latest || e.end_time > latest) ? e.end_time : latest;
-}, null);
+        const cell = document.createElement('div');
+        const isAdmin = currentProfile && currentProfile.role === 'admin';
 
-if (lastEventEndTime) {
-const [h, mins] = lastEventEndTime.split(':');
-const endDateTime = new Date(y, m, d, parseInt(h), parseInt(mins));
-if (now > endDateTime) {
-// Si tu veux griser la case quand tout est fini :
-// isPast = true; 
-}
-}
-}
+        // --- AJOUT CRUCIAL : L'ID POUR LE DEEP LINKING ---
+        // On met l'ID de la date pour pouvoir scroller dessus
+        cell.id = `calendar-day-${dateStr}`; 
+        
+        // Si tu veux aussi pouvoir cibler un événement précis dans la case :
+        // On pourrait ajouter des IDs aux dots, mais cibler la case jour est plus simple pour le scroll.
 
-const cell = document.createElement('div');
-const isAdmin = currentProfile && currentProfile.role === 'admin';
+        cell.className = `calendar-day border border-slate-100 transition-all ${isPast ? 'bg-slate-50/80' : 'bg-white shadow-sm'}`;
+        if (isToday) cell.classList.add('ring-2', 'ring-blue-500', 'ring-inset');
 
-// --- STYLE ---
-cell.className = `calendar-day border border-slate-100 transition-all ${isPast ? 'bg-slate-50/80' : 'bg-white shadow-sm'}`;
-if (isToday) cell.classList.add('ring-2', 'ring-blue-500', 'ring-inset');
+        if (dateStr < todayStr) {
+            if (isAdmin) {
+                cell.onclick = function() { openDayPip(dateStr, dayEvts); };
+                cell.style.cursor = 'pointer';
+            } else {
+                cell.style.cursor = 'not-allowed';
+            }
+        } else {
+            cell.onclick = function() { openDayPip(dateStr, dayEvts); };
+            cell.style.cursor = 'pointer';
+        }
 
-// --- LOGIQUE DE CLIC ---
-// On bloque le clic SEULEMENT si la date est strictement passée (hier ou avant)
-if (dateStr < todayStr) {
-if (isAdmin) {
-cell.onclick = function() { openDayPip(dateStr, dayEvts); };
-cell.style.cursor = 'pointer';
-} else {
-cell.style.cursor = 'not-allowed';
-}
-} else {
-cell.onclick = function() { openDayPip(dateStr, dayEvts); };
-cell.style.cursor = 'pointer';
-}
+        let dotsHtml = dayEvts.map(function(e) {
+            const regCount = (e.registrations && e.registrations.length) || 0;
+            const isFull = regCount >= e.max_participants;
+            const [endH, endMins] = (e.end_time || "23:59").split(':');
+            const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endMins));
+            const isThisEventPast = now > eFullDate;
 
-// --- POINTS (DOTS) ---
-let dotsHtml = dayEvts.map(function(e) {
-const regCount = (e.registrations && e.registrations.length) || 0;
-const isFull = regCount >= e.max_participants;
+            // On peut ajouter un ID sur le dot si on veut être très précis
+            const dotId = `event-dot-${e.id}`;
 
-// Calcul individuel par point
-const [endH, endMins] = (e.end_time || "23:59").split(':');
-const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endMins));
-const isThisEventPast = now > eFullDate;
+            if (isThisEventPast) return `<span id="${dotId}" class="event-dot bg-slate-300"></span>`;
+            return `<span id="${dotId}" class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
+        }).join('');
 
-if (isThisEventPast) return `<span class="event-dot bg-slate-300"></span>`;
-return `<span class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
-}).join('');
-
-cell.innerHTML = `
-           <span class="text-[10px] font-black ${isPast ? 'text-slate-300' : (isToday ? 'text-blue-600' : 'text-slate-500')}">${d}</span>
-           <div class="mt-auto flex flex-wrap gap-1">${dotsHtml}</div>
-       `;
-grid.appendChild(cell);
-}
+        cell.innerHTML = `
+            <span class="text-[10px] font-black ${isPast ? 'text-slate-300' : (isToday ? 'text-blue-600' : 'text-slate-500')}">${d}</span>
+            <div class="mt-auto flex flex-wrap gap-1">${dotsHtml}</div>
+        `;
+        grid.appendChild(cell);
+    }
 }
 // --- PIP DETAILS JOUR ---
 function openDayPip(dateStr, events = []) {
@@ -3520,6 +3556,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
