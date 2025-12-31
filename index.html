@@ -803,6 +803,7 @@ let globalRealtimeChannel = null;
 let currentDayStr = null;
 let globalChannel = null;
 let isInboxOpen = false;
+let isRealtimeInitializing = false; 
 
 // --- GESTION DES CLICS GLOBAUX (REMPLACE HANDLEBODYCLICK) ---
 document.addEventListener('click', function(e) {
@@ -901,15 +902,13 @@ cancelSignupConsent();
 
 
 async function handleAuth() {
-const email = document.getElementById('auth-email').value.trim();
-const password = document.getElementById('auth-password').value;
-if (!email || !password) return alert("Email et mot de passe requis");
-
-const { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
-if (error) return alert(error.message);
-initApp(data.user);
-await loadInbox();
-setupRealtimeNotifications(data.user.id)
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) return alert("Email et mot de passe requis");
+    const { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
+    if (error) return alert(error.message);
+    initApp(data.user); 
+    await loadInbox(); 
 }
 
 
@@ -3314,63 +3313,70 @@ unreadCount = 0;
 // On recharge l'inbox pour voir le changement de style (opacité/couleurs)
 loadInbox(); 
 }
+       
+
 async function setupAppRealtime(userId) {
-// 1. Nettoyage de sécurité pour éviter les doublons de WebSocket
-if (globalChannel) {
-try {
-await sb.removeChannel(globalChannel);
-} catch (e) {
-console.warn("Note: Erreur lors du nettoyage", e);
-}
-}
+    // 1. SÉCURITÉ ANTI-DOUBLON (Verrouillage)
+    if (isRealtimeInitializing) {
+        console.warn("⚠️ Initialisation Realtime déjà en cours, annulation de la demande concurrente.");
+        return;
+    }
+    isRealtimeInitializing = true;
 
-console.log("📡 Initialisation du canal unique (Notifs + Calendrier)...");
+    try {
+        console.log("♻️ Nettoyage complet des canaux Realtime...");
+        
+        // 2. NETTOYAGE RADICAL (On tue tous les canaux existants)
+        // C'est beaucoup plus sûr que removeChannel(globalChannel)
+        await sb.removeAllChannels();
+        globalChannel = null;
 
-// 2. Création du canal unique
-globalChannel = sb.channel('main-app-sync')
-// --- BLOC A : NOTIFICATIONS (Logique récupérée) ---
-.on('postgres_changes', { 
-event: 'INSERT', 
-schema: 'public', 
-table: 'notifications', 
-filter: `user_id=eq.${userId}` 
-}, payload => {
-console.log('🔔 Notification Realtime reçue !', payload.new);
+        console.log("📡 Démarrage du canal unique...");
 
-// On garde tes sécurités et effets :
-if (typeof isInboxLoading !== 'undefined') isInboxLoading = false; // Déverrouillage
-if (navigator.vibrate) navigator.vibrate(100); // Vibration téléphone
+        // 3. CRÉATION DU CANAL
+        globalChannel = sb.channel('main-app-sync')
+            // --- BLOC A : NOTIFICATIONS ---
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'notifications', 
+                filter: `user_id=eq.${userId}` 
+            }, payload => {
+                // On loggue l'ID du message pour vérifier qu'il est unique
+                console.log('🔔 Notification Realtime reçue ! ID:', payload.new.id);
 
-// Délai de 200ms pour laisser la DB respirer avant de lire
-setTimeout(() => {
-loadInbox(); 
-}, 200);
-})
+                if (typeof isInboxLoading !== 'undefined') isInboxLoading = false; 
+                if (navigator.vibrate) navigator.vibrate(100); 
 
-// --- BLOC B : ÉVÉNEMENTS (Calendrier) ---
-.on('postgres_changes', { 
-event: '*', 
-schema: 'public', 
-table: 'events' 
-}, async () => {
-console.log("📅 Mise à jour calendrier détectée");
-await fetchEvents();
-})
+                // Petit délai pour éviter les conflits de lecture
+                setTimeout(() => {
+                    loadInbox(); 
+                }, 200);
+            })
 
-// --- BLOC C : INSCRIPTIONS (Places & Mode Privé) ---
-.on('postgres_changes', { 
-event: '*', 
-schema: 'public', 
-table: 'registrations' 
-}, async () => {
-console.log("✍️ Mise à jour inscriptions détectée");
-await fetchEvents();
-})
-.subscribe((status) => {
-if (status === 'SUBSCRIBED') {
-console.log("✅ Système Realtime global opérationnel");
-}
-});
+            // --- BLOC B : ÉVÉNEMENTS ---
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, async () => {
+                console.log("📅 Mise à jour calendrier détectée");
+                if(typeof fetchEvents === 'function') await fetchEvents();
+            })
+
+            // --- BLOC C : INSCRIPTIONS ---
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, async () => {
+                console.log("✍️ Mise à jour inscriptions détectée");
+                if(typeof fetchEvents === 'function') await fetchEvents();
+            })
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log("✅ Canal Realtime connecté avec succès.");
+                }
+                // On libère le verrou une fois connecté (ou en cas d'erreur)
+                isRealtimeInitializing = false;
+            });
+
+    } catch (err) {
+        console.error("❌ Erreur critique Realtime:", err);
+        isRealtimeInitializing = false; // On libère le verrou même en cas d'erreur
+    }
 }
 
 function syncNotifToggleWithBrowser() {
@@ -3509,11 +3515,12 @@ if (session) {
 initApp(session.user);
 } else {
 document.getElementById('auth-screen').style.display = 'flex';
-}
 };
+}
 </script>
 </body>
 </html>
+
 
 
 
