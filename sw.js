@@ -1,13 +1,14 @@
 const CACHE_NAME = 'coachpro-v3';
 
-// On vide la liste pour le test : si ça marche, on rajoutera les fichiers après
+// On vide la liste pour le test
 const ASSETS_TO_CACHE = [
     './',
     './index.html'
 ];
 
 self.addEventListener('install', (event) => {
-    alert("SW: Installation en cours..."); // Alerte spéciale SW (si ton tel le permet)
+    // Note: l'alerte ne s'affichera pas sur mobile, mieux vaut console.log
+    console.log("SW: Installation en cours..."); 
     self.skipWaiting(); 
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -17,18 +18,55 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    // FORCE l'activation immédiate
     event.waitUntil(clients.claim());
     console.log("SW: Activé !");
 });
 
-// Le reste (Push et NotificationClick) tu peux le laisser tel quel
+// --- GESTION DU PUSH REÇU ---
 self.addEventListener('push', (event) => {
-    let data = event.data ? event.data.json() : { title: 'Coach Pro', body: 'Nouveau message' };
+    // On parse les données reçues
+    let data = event.data ? event.data.json() : { title: 'Coach Pro', body: 'Nouveau message', url: '/' };
+    
+    console.log("SW Push reçu:", data);
+
+    const options = {
+        body: data.body,
+        icon: './appicon-128x128.png',
+        badge: './appicon-128x128.png', // Petite icône dans la barre de statut
+        vibrate: [100, 50, 100],
+        data: {
+            url: data.url || '/' // IMPORTANT : On stocke l'URL dans la notification elle-même
+        }
+    };
+
     event.waitUntil(
-        self.registration.showNotification(data.title, {
-            body: data.body,
-            icon: './appicon-128x128.png'
+        self.registration.showNotification(data.title, options)
+    );
+});
+
+// --- GESTION DU CLIC SUR LA NOTIFICATION ---
+self.addEventListener('notificationclick', (event) => {
+    console.log("SW: Notification cliquée");
+    
+    event.notification.close(); // On ferme la notification visuelle
+
+    // On récupère l'URL qu'on a stockée dans 'options.data' juste au-dessus
+    const urlToOpen = event.notification.data.url;
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            // 1. Si l'application est déjà ouverte (même en arrière-plan)
+            for (let client of windowClients) {
+                // On vérifie si c'est notre URL de base (pour éviter de cibler d'autres sites)
+                if (client.url.includes(self.registration.scope) && 'focus' in client) {
+                    client.focus(); // On met la fenêtre au premier plan
+                    return client.navigate(urlToOpen); // On charge la bonne page
+                }
+            }
+            // 2. Si aucune fenêtre n'est ouverte, on en ouvre une nouvelle
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
         })
     );
 });
