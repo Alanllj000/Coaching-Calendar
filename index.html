@@ -280,6 +280,7 @@ onclick="event.stopPropagation()">
 
 <h2 class="text-xl font-bold mb-4 text-slate-900">Avant de commencer...</h2>
 
+
 <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-600 overflow-y-auto mb-6 border border-gray-100 flex-1">
 <h3 class="font-bold text-gray-900 mb-4 text-center text-sm">Conditions & Confidentialité</h3>
 
@@ -358,6 +359,32 @@ Poursuivre
 <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-left text-sm font-black"></i></button>
 <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-right text-sm font-black"></i></button>
 </div>
+</div>
+<div class="flex flex-col gap-2 p-4">
+    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400" data-i18n="settings_lang">Langue de l'application</p>
+    
+    <div class="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm">
+        <button onclick="changeLanguage('fr')" 
+            id="lang-fr"
+            class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <span class="text-lg">🇫🇷</span>
+            <span class="text-xs font-black uppercase tracking-tight">FR</span>
+        </button>
+
+        <button onclick="changeLanguage('en')" 
+            id="lang-en"
+            class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <span class="text-lg">🇬🇧</span>
+            <span class="text-xs font-black uppercase tracking-tight">EN</span>
+        </button>
+
+        <button onclick="changeLanguage('de')" 
+            id="lang-de"
+            class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <span class="text-lg">🇩🇪</span>
+            <span class="text-xs font-black uppercase tracking-tight">DE</span>
+        </button>
+    </div>
 </div>
 <div class="relative group-menu">
 <button onclick="toggleUserMenu(event)" class="relative flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-slate-200 active:scale-90 transition">
@@ -483,13 +510,6 @@ Supprimer l'événement
 <input id="set-lastname" oninput="checkProfileChanges()" placeholder="Nom" class="input-field" oninput="checkProfileChanges()">
 </div>
 <input id="set-phone" oninput="checkProfileChanges()" placeholder="Téléphone" class="input-field" oninput="checkProfileChanges()">
-<div class="language-picker p-4">
-    <select onchange="changeLanguage(this.value)" class="p-2 border rounded-xl font-bold">
-        <option value="fr" ${currentLang === 'fr' ? 'selected' : ''}>🇫🇷 Français</option>
-        <option value="en" ${currentLang === 'en' ? 'selected' : ''}>🇬🇧 English</option>
-        <option value="de" ${currentLang === 'de' ? 'selected' : ''}>🇩🇪 Deutsch</option>
-    </select>
-</div>
 <input id="set-email" type="email" class="input-field bg-slate-50 text-slate-400" disabled>
 <button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Mettre à jour le profil</button>
 </div>
@@ -3705,5 +3725,6 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
