@@ -1,5 +1,6 @@
 const translations = {
     fr: {
+        conect: "Se connecter",
         calendar: "Calendrier",
         location: "Lieu",
         coach_notes: "Notes du Coach",
@@ -23,7 +24,8 @@ const translations = {
         edit: "Edit",
         consultation: "View only",
         date_label: "Date & Time",
-        sheet_info: "Event Details"
+        sheet_info: "Event Details",
+        conect: "Log In"
     },
     de: {
         calendar: "Kalender",
@@ -36,7 +38,8 @@ const translations = {
         edit: "Bearbeiten",
         consultation: "Ansicht",
         date_label: "Datum & Uhrzeit",
-        sheet_info: "Event-Details"
+        sheet_info: "Event-Details",
+        conect: "Sich Anmelden"
     }
 };
 
