@@ -1284,16 +1284,25 @@ function renderCalendar() {
 
         let dotsHtml = dayEvts.map(function(e) {
             const regCount = (e.registrations && e.registrations.length) || 0;
-            const isFull = regCount >= e.max_participants;
+            const maxPlus = e.max_participants || 0;
+        
+            // --- LOGIQUE UNIFIÉE (Identique à openDayPip) ---
+            const hasPrivateReg = e.registrations && e.registrations.some(r => r.is_private_request === true);
+            const isPrivateTitle = e.title && e.title.toLowerCase().includes('privé');
+            
+            // Un événement est "Rouge" si : Max atteint OU Privé demandé OU Titre contient "Privé"
+            const isFullOrPrivate = (regCount >= maxPlus) || hasPrivateReg || isPrivateTitle;
+        
             const [endH, endMins] = (e.end_time || "23:59").split(':');
             const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endMins));
             const isThisEventPast = now > eFullDate;
-
-            // On peut ajouter un ID sur le dot si on veut être très précis
+        
             const dotId = `event-dot-${e.id}`;
-
+        
             if (isThisEventPast) return `<span id="${dotId}" class="event-dot bg-slate-300"></span>`;
-            return `<span id="${dotId}" class="event-dot ${isFull ? 'dot-red' : 'dot-blue'}"></span>`;
+            
+            // On utilise dot-red si complet/privé, sinon dot-blue (ou ta couleur par défaut)
+            return `<span id="${dotId}" class="event-dot ${isFullOrPrivate ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]' : 'bg-blue-500'}"></span>`;
         }).join('');
 
         cell.innerHTML = `
@@ -3636,6 +3645,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
