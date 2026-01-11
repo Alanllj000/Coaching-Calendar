@@ -3650,6 +3650,22 @@ setTimeout(setupGlobalRealtimeSync, 5000);
 
 resetInactivityTimer();
 // --- INITIALISATION ---
+// --- 1. GESTION DU SERVICE WORKER (MISE À JOUR AUTO) ---
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+        reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+                // Si une nouvelle version est installée, on recharge la page
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log("Nouveau script détecté, mise à jour de l'app...");
+                    window.location.reload();
+                }
+            });
+        });
+    });
+}
+// --- 2. Gestion du ServiceWorker
 window.onload = async function() {
 // 1. Cacher physiquement les éléments avant même de vérifier la session
 document.getElementById('admin-panel').style.display = 'none';
@@ -3667,48 +3683,3 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
