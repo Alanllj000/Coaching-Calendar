@@ -18,8 +18,23 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(clients.claim());
-    console.log("SW: Activé !");
+    console.log("SW: Nettoyage des anciennes versions...");
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    // Si le cache trouvé n'est pas la version actuelle (ex: v4)
+                    if (cacheName !== CACHE_NAME) {
+                        console.log("SW: Suppression du cache obsolète :", cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => {
+            // Prend le contrôle immédiatement pour éviter les bugs d'affichage
+            return self.clients.claim();
+        })
+    );
 });
 
 // --- GESTION DU PUSH REÇU ---
