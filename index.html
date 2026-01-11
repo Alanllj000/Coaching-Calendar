@@ -3689,6 +3689,42 @@ function applyStaticTranslations() {
         el.innerText = t(key);
     });
 }
+function updateLanguageUI() {
+    // 1. Liste des langues supportées
+    const langs = ['fr', 'en', 'de'];
+    
+    // 2. Récupérer la langue actuelle (déjà stockée en mémoire)
+    const current = localStorage.getItem('userLang') || 'fr';
+
+    langs.forEach(l => {
+        const btn = document.getElementById(`lang-${l}`);
+        if (!btn) return;
+
+        if (l === current) {
+            // Style sélectionné (Bleu foncé)
+            btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
+            btn.classList.remove('text-slate-500', 'bg-transparent');
+        } else {
+            // Style inactif
+            btn.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
+            btn.classList.add('text-slate-500', 'bg-transparent');
+        }
+    });
+}
+
+// Modifie ta fonction changeLanguage pour inclure la mise à jour visuelle
+function changeLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('userLang', lang);
+    
+    // Mise à jour visuelle immédiate avant le rechargement
+    updateLanguageUI();
+    
+    // On laisse un petit délai pour que l'utilisateur voit le clic, puis on recharge
+    setTimeout(() => {
+        location.reload();
+    }, 150);
+}
 
 resetInactivityTimer();
 // --- INITIALISATION ---
@@ -3721,10 +3757,12 @@ initApp(session.user);
 } else {
 document.getElementById('auth-screen').style.display = 'flex';
 };
+updateLanguageUI();
 }
 </script>
 </body>
 </html>
+
 
 
 
