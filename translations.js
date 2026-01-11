@@ -2,7 +2,8 @@ const translations = {
     fr: {
         conect: "Se connecter",
         CreerCompte: "Créer un compte",
-
+        Seconnecter: "Se connecter",
+        CreerCompte2: "Créer mon compte",
         
         calendar: "Calendrier",
         location: "Lieu",
@@ -17,8 +18,9 @@ const translations = {
         sheet_info: "Fiche de l'événement"
     },
     en: {
-        conect: "Log In",
         CreerCompte: "Create Account",
+        Seconnecter: "Log In ",
+        CreerCompte2: "Create my Account",
 
         
         calendar: "Calendar",
@@ -35,7 +37,8 @@ const translations = {
     },
     de: {
         CreerCompte: "Konto erstellen",
-        conect: "Sich Anmelden",
+        Seconnecter: "Sich Anmelden",
+        CreerCompte2: "Mein konto erstellen",
 
 
         
