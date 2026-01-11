@@ -242,6 +242,22 @@ user-select: none;
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
+<div class="absolute top-4 right-4 z-50">
+    <div class="flex bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-200 shadow-sm">
+        <button onclick="changeLanguage('fr')" id="auth-lang-fr" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
+            <img src="https://flagcdn.com/w40/fr.png" class="w-4 h-3 object-cover rounded-sm" alt="FR">
+            <span class="text-[10px] font-black">FR</span>
+        </button>
+        <button onclick="changeLanguage('en')" id="auth-lang-en" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
+            <img src="https://flagcdn.com/w40/gb.png" class="w-4 h-3 object-cover rounded-sm" alt="EN">
+            <span class="text-[10px] font-black">EN</span>
+        </button>
+        <button onclick="changeLanguage('de')" id="auth-lang-de" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
+            <img src="https://flagcdn.com/w40/de.png" class="w-4 h-3 object-cover rounded-sm" alt="DE">
+            <span class="text-[10px] font-black">DE</span>
+        </button>
+    </div>
+</div>
 <div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
 <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Pro Coach </h2>
 <div class="space-y-4 max-w-sm mx-auto w-full">
@@ -359,26 +375,6 @@ Poursuivre
 <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-left text-sm font-black"></i></button>
 <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-700 active:scale-90 shadow-sm transition"><i class="fas fa-chevron-right text-sm font-black"></i></button>
 </div>
-</div>
-<div class="flex flex-col gap-2 p-4">
-    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400" data-i18n="settings_lang">Langue de l'application</p>
-    
-    <div class="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm border border-slate-200">
-        <button onclick="changeLanguage('fr')" id="lang-fr" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
-            <img src="https://flagcdn.com/w40/fr.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="FR">
-            <span class="text-[10px] font-black uppercase">FR</span>
-        </button>
-
-        <button onclick="changeLanguage('en')" id="lang-en" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
-            <img src="https://flagcdn.com/w40/gb.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="EN">
-            <span class="text-[10px] font-black uppercase">EN</span>
-        </button>
-
-        <button onclick="changeLanguage('de')" id="lang-de" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
-            <img src="https://flagcdn.com/w40/de.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="DE">
-            <span class="text-[10px] font-black uppercase">DE</span>
-        </button>
-    </div>
 </div>
 <div class="relative group-menu">
 <button onclick="toggleUserMenu(event)" class="relative flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-slate-200 active:scale-90 transition">
@@ -504,6 +500,26 @@ Supprimer l'événement
 <input id="set-lastname" oninput="checkProfileChanges()" placeholder="Nom" class="input-field" oninput="checkProfileChanges()">
 </div>
 <input id="set-phone" oninput="checkProfileChanges()" placeholder="Téléphone" class="input-field" oninput="checkProfileChanges()">
+<div class="flex flex-col gap-2 p-4">
+    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400" data-i18n="settings_lang">Langue de l'application</p>
+    
+    <div class="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm border border-slate-200">
+        <button onclick="changeLanguage('fr')" id="lang-fr" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/fr.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="FR">
+            <span class="text-[10px] font-black uppercase">FR</span>
+        </button>
+
+        <button onclick="changeLanguage('en')" id="lang-en" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/gb.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="EN">
+            <span class="text-[10px] font-black uppercase">EN</span>
+        </button>
+
+        <button onclick="changeLanguage('de')" id="lang-de" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/de.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="DE">
+            <span class="text-[10px] font-black uppercase">DE</span>
+        </button>
+    </div>
+</div>
 <input id="set-email" type="email" class="input-field bg-slate-50 text-slate-400" disabled>
 <button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Mettre à jour le profil</button>
 </div>
@@ -3684,25 +3700,27 @@ function applyStaticTranslations() {
     });
 }
 function updateLanguageUI() {
-    // 1. Liste des langues supportées
-    const langs = ['fr', 'en', 'de'];
-    
-    // 2. Récupérer la langue actuelle (déjà stockée en mémoire)
     const current = localStorage.getItem('userLang') || 'fr';
+    const langs = ['fr', 'en', 'de'];
 
     langs.forEach(l => {
-        const btn = document.getElementById(`lang-${l}`);
-        if (!btn) return;
+        // IDs pour les paramètres ET pour l'écran d'auth
+        const btnSettings = document.getElementById(`lang-${l}`);
+        const btnAuth = document.getElementById(`auth-lang-${l}`);
+        
+        const updateStyle = (btn) => {
+            if (!btn) return;
+            if (l === current) {
+                btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
+                btn.classList.remove('text-slate-500', 'bg-transparent');
+            } else {
+                btn.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
+                btn.classList.add('text-slate-500', 'bg-transparent');
+            }
+        };
 
-        if (l === current) {
-            // Style sélectionné (Bleu foncé)
-            btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
-            btn.classList.remove('text-slate-500', 'bg-transparent');
-        } else {
-            // Style inactif
-            btn.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
-            btn.classList.add('text-slate-500', 'bg-transparent');
-        }
+        updateStyle(btnSettings);
+        updateStyle(btnAuth);
     });
 }
 
@@ -3756,6 +3774,7 @@ updateLanguageUI();
 </script>
 </body>
 </html>
+
 
 
 
