@@ -414,11 +414,20 @@ Poursuivre
 
 <!-- PANEL ADMIN -->
 <div id="admin-panel" class="fullscreen-pip">
-<div class="max-w-2xl mx-auto w-full p-6 pt-10">
-<div class="flex justify-between items-center mb-8">
-<h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
-<button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
-</div>
+    <div class="max-w-2xl mx-auto w-full p-6 pt-10">
+        
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
+                
+                <div class="relative group">
+                    <input type="color" id="event-color-input" value="#3b82f6" 
+                           class="w-8 h-8 rounded-full border-2 border-white shadow-sm cursor-pointer overflow-hidden p-0 bg-transparent appearance-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none">
+                </div>
+            </div>
+            
+            <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
+        </div>
 <div class="space-y-5 pb-20">
 <input id="admin-event-id" type="hidden">
 <input id="admin-title" placeholder="Titre" class="input-field">
@@ -1283,26 +1292,25 @@ function renderCalendar() {
         }
 
         let dotsHtml = dayEvts.map(function(e) {
+            // 1. Logique de priorité : si complet/privé -> Rouge, sinon couleur de l'évenement, sinon Bleu
             const regCount = (e.registrations && e.registrations.length) || 0;
             const maxPlus = e.max_participants || 0;
-        
-            // --- LOGIQUE UNIFIÉE (Identique à openDayPip) ---
             const hasPrivateReg = e.registrations && e.registrations.some(r => r.is_private_request === true);
             const isPrivateTitle = e.title && e.title.toLowerCase().includes('privé');
-            
-            // Un événement est "Rouge" si : Max atteint OU Privé demandé OU Titre contient "Privé"
             const isFullOrPrivate = (regCount >= maxPlus) || hasPrivateReg || isPrivateTitle;
         
+            // 2. Détermination de la couleur
+            let dotColor = e.color || '#3b82f6'; // Couleur de la BDD ou bleu par défaut
+            if (isFullOrPrivate) dotColor = '#ef4444'; // Le rouge reste prioritaire pour l'affichage
+        
+            // 3. Gestion de la date passée
             const [endH, endMins] = (e.end_time || "23:59").split(':');
             const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endMins));
-            const isThisEventPast = now > eFullDate;
+            if (now > eFullDate) dotColor = '#cbd5e1'; // Gris (slate-300) si terminé
         
-            const dotId = `event-dot-${e.id}`;
-        
-            if (isThisEventPast) return `<span id="${dotId}" class="event-dot bg-slate-300"></span>`;
-            
-            // On utilise dot-red si complet/privé, sinon dot-blue (ou ta couleur par défaut)
-            return `<span id="${dotId}" class="event-dot ${isFullOrPrivate ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]' : 'bg-blue-500'}"></span>`;
+            return `<span class="event-dot" 
+                          style="background-color: ${dotColor}; box-shadow: 0 0 4px ${dotColor}80;">
+                    </span>`;
         }).join('');
 
         cell.innerHTML = `
@@ -1461,6 +1469,7 @@ closeMobilePip();
 
 // --- ADMINISTRATION & MODIFICATION ---
 async function openEventDetails(eventId) {
+document.getElementById('event-color-input').value = event.color || '#3b82f6';
 const event = eventsCache.find(e => e.id === eventId);
 if (!event) return;
 
@@ -1609,6 +1618,7 @@ const delBtn = document.getElementById('admin-delete-btn');
 if (delBtn) delBtn.classList.remove('hidden');
 }
 async function requestAdminSubmit(isConfirmed = false) {
+const colorValue = document.getElementById('event-color-input').value;
 const dateStr = document.getElementById('admin-date').value;
 const title = document.getElementById('admin-title').value; 
 const startTime = document.getElementById('admin-start').value;
@@ -1654,6 +1664,7 @@ const { data: createdEvents, error: pError } = await sb.from('events').insert([{
 title, 
 location,
 notes,
+color: colorValue,
 date: dateStr, 
 start_time: startTime, 
 end_time: endTime, 
@@ -1701,6 +1712,7 @@ occs.push({
 title, 
 location,
 notes,
+color: colorValue,
 date: nextDateStr, 
 start_time: startTime, 
 end_time: endTime, 
@@ -1732,6 +1744,7 @@ alert("Erreur lors de la création : " + (err.message || "vérifiez la console")
 async function handleUpdate(eventId) {
 // 1. On récupère l'événement dans le cache pour connaître sa date et son type
 const event = eventsCache.find(e => e.id === eventId);
+const colorValue = document.getElementById('event-color-input').value;
 
 if (!event) return;
 
@@ -1764,6 +1777,7 @@ const startTime = document.getElementById('admin-start').value;
 const endTime = document.getElementById('admin-end').value;
 const maxParticipants = document.getElementById('admin-max').value;
 const notes = document.getElementById('event-notes').value;
+const colorValue = document.getElementById('event-color-input').value;
 
 try {
 let result;
@@ -1777,6 +1791,7 @@ result = await sb.from('events')
 title, 
 location,
 notes,
+color: colorValue,
 start_time: startTime, 
 end_time: endTime, 
 max_participants: maxParticipants 
@@ -1790,6 +1805,7 @@ result = await sb.from('events')
 title, 
 location,
 notes,
+color: colorValue,
 date: dateStr, 
 start_time: startTime, 
 end_time: endTime, 
@@ -2339,46 +2355,50 @@ await processUpdate(eventId, isSeries);
 cancelEditChoice();
 }
 function resetAdminForm() {
-// 1. ON VIDE L'ID (Indispensable pour débloquer la création)
-const idField = document.getElementById('admin-event-id');
-if (idField) idField.value = "";
+    // 1. ON VIDE L'ID
+    const idField = document.getElementById('admin-event-id');
+    if (idField) idField.value = "";
 
-// 2. ON VIDE VISUELLEMENT LES CHAMPS TEXTES
-// On cible précisément les IDs que tu utilises dans requestAdminSubmit
-const fieldsToClear = [
-'admin-title',
-'admin-start',
-'admin-end',
-'admin-loc', // <-- Ajout du lieu ici
-'admin-max'  // On peut aussi reset le max à 99 par défaut
-];
+    // 2. ON VIDE LES CHAMPS TEXTES ET NUMÉRIQUES
+    const fieldsToClear = [
+        'admin-title',
+        'admin-start',
+        'admin-end',
+        'admin-loc',
+        'admin-max',
+        'event-notes' // <--- AJOUT DES NOTES ICI
+    ];
 
-fieldsToClear.forEach(id => {
-const el = document.getElementById(id);
-if (el) {
-// Pour le nombre de participants, on remet la valeur par défaut
-if (id === 'admin-max') {
-el.value = 99;
-} else {
-el.value = ""; // Vide le texte visuellement
+    fieldsToClear.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === 'admin-max') {
+                el.value = 99;
+            } else {
+                el.value = "";
+            }
+        }
+    });
+
+    // 3. RESET DE LA COULEUR (Retour au bleu par défaut)
+    const colorInput = document.getElementById('event-color-input');
+    if (colorInput) {
+        colorInput.value = "#3b82f6"; 
+    }
+
+    // 4. ON DÉCOCHE LES JOURS
+    document.querySelectorAll('.day-checkbox').forEach(cb => {
+        cb.checked = false;
+        // Optionnel : si tu as des labels qui changent de couleur quand on coche
+        const label = cb.nextElementSibling;
+        if (label && label.classList.contains('day-label')) {
+            // Remplace par tes classes de style par défaut si nécessaire
+            label.classList.remove('bg-blue-600', 'text-white'); 
+        }
+    });
+
+    console.log("Formulaire réinitialisé : ID vidé, notes effacées et couleur remise à zéro.");
 }
-}
-});
-
-// 3. ON DÉCOCHE LES JOURS (VISUEL)
-document.querySelectorAll('.day-checkbox').forEach(cb => {
-cb.checked = false;
-// Si tu utilises un style CSS sur le parent (ex: bg-blue quand coché)
-// assure-toi de retirer la classe ici si nécessaire.
-});
-
-// 4. ON GARDE LA DATE
-// On ne touche pas à document.getElementById('admin-date').value
-// pour que l'admin garde son repère temporel.
-
-console.log("Formulaire réinitialisé visuellement.");
-}
-
 // Ouverture de la PiP
 function openDeleteAccountPip() {
 // On ferme d'abord la PiP réglages si elle est ouverte
@@ -3645,6 +3665,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
