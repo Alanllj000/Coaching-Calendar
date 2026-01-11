@@ -59,3 +59,5 @@ const translations = {
 // Initialisation de la langue (mémoire locale ou navigateur)
 let currentLang = localStorage.getItem('userLang') || navigator.language.slice(0, 2) || 'fr';
 if (!translations[currentLang]) currentLang = 'fr';
+
+
