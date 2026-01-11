@@ -3688,11 +3688,7 @@ function t(key) {
     return translations[currentLang][key] || key;
 }
 
-function changeLanguage(lang) {
-    currentLang = lang;
-    localStorage.setItem('userLang', lang);
-    location.reload(); // La méthode la plus sûre pour rafraîchir tout le calendrier proprement
-}
+
         
 function applyStaticTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -3725,20 +3721,14 @@ function updateLanguageUI() {
     });
 }
 
-// Modifie ta fonction changeLanguage pour inclure la mise à jour visuelle
 function changeLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('userLang', lang);
-    
-    // Mise à jour visuelle immédiate avant le rechargement
     updateLanguageUI();
-    
-    // On laisse un petit délai pour que l'utilisateur voit le clic, puis on recharge
     setTimeout(() => {
         location.reload();
     }, 150);
 }
-
 resetInactivityTimer();
 // --- INITIALISATION ---
 // --- 1. GESTION DU SERVICE WORKER (MISE À JOUR AUTO) ---
@@ -3758,6 +3748,7 @@ if ('serviceWorker' in navigator) {
 }
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
+applyStaticTranslations()
 // 1. Cacher physiquement les éléments avant même de vérifier la session
 document.getElementById('admin-panel').style.display = 'none';
 const pipZone = document.getElementById('mobile-pip-zone');
@@ -3775,6 +3766,7 @@ updateLanguageUI();
 </script>
 </body>
 </html>
+
 
 
 
