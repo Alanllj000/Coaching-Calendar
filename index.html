@@ -363,26 +363,20 @@ Poursuivre
 <div class="flex flex-col gap-2 p-4">
     <p class="text-[10px] font-black uppercase tracking-widest text-slate-400" data-i18n="settings_lang">Langue de l'application</p>
     
-    <div class="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm">
-        <button onclick="changeLanguage('fr')" 
-            id="lang-fr"
-            class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
-            <span class="text-lg">🇫🇷</span>
-            <span class="text-xs font-black uppercase tracking-tight">FR</span>
+    <div class="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm border border-slate-200">
+        <button onclick="changeLanguage('fr')" id="lang-fr" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/fr.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="FR">
+            <span class="text-[10px] font-black uppercase">FR</span>
         </button>
 
-        <button onclick="changeLanguage('en')" 
-            id="lang-en"
-            class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
-            <span class="text-lg">🇬🇧</span>
-            <span class="text-xs font-black uppercase tracking-tight">EN</span>
+        <button onclick="changeLanguage('en')" id="lang-en" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/gb.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="EN">
+            <span class="text-[10px] font-black uppercase">EN</span>
         </button>
 
-        <button onclick="changeLanguage('de')" 
-            id="lang-de"
-            class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
-            <span class="text-lg">🇩🇪</span>
-            <span class="text-xs font-black uppercase tracking-tight">DE</span>
+        <button onclick="changeLanguage('de')" id="lang-de" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/de.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="DE">
+            <span class="text-[10px] font-black uppercase">DE</span>
         </button>
     </div>
 </div>
@@ -3762,6 +3756,7 @@ updateLanguageUI();
 </script>
 </body>
 </html>
+
 
 
 
