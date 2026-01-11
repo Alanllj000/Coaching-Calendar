@@ -1,3 +1,4 @@
+
 const translations = {
     fr: {
         conect: "Se connecter",
