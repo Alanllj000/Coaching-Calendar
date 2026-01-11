@@ -3403,7 +3403,18 @@ window.addEventListener('click', (event) => {
     if (target.id === 'gdpr-step-pip') {
         closeGdprOnOutsideClick(event);
     }
+    //menu déroulant principal 
+    const userMenu = document.getElementById('user-menu');
+    const userButton = document.querySelector('[onclick*="toggleUserMenu"]'); // On essaie de cibler le bouton
+    
+    if (userMenu && !userMenu.classList.contains('hidden')) {
+        // Si le clic n'est PAS sur le menu ET n'est PAS sur le bouton d'ouverture
+        if (!userMenu.contains(target) && (userButton && !userButton.contains(target))) {
+            userMenu.classList.add('hidden');
+        }
+    }
 });
+    
 
 
 
@@ -3621,6 +3632,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
