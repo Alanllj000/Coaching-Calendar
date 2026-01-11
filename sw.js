@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coachpro-v3';
+const CACHE_NAME = 'coachpro-v4';
 
 // On vide la liste pour le test
 const ASSETS_TO_CACHE = [
