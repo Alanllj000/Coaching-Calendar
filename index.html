@@ -2436,13 +2436,6 @@ if (settingsPip) settingsPip.classList.add('hidden');
 document.getElementById('delete-account-pip').classList.remove('hidden');
 }
 
-function closeDeleteAccountPip() {
-document.getElementById('delete-account-pip').classList.add('hidden');
-// On peut rouvrir les réglages ici
-const settingsPip = document.getElementById('settings-pip');
-if (settingsPip) settingsPip.classList.remove('hidden');
-}
-
 let inactivityTimer;
 const INACTIVITY_LIMIT = 600000; // 10 minutes en millisecondes
 
@@ -3563,6 +3556,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
