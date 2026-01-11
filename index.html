@@ -1473,7 +1473,7 @@ const event = eventsCache.find(e => e.id === eventId);
 if (!event) return;
 const colorInput = document.getElementById('event-color-input');
 if (colorInput) {
-    colorInput.value = targetEvent.color || '#3b82f6';
+    colorInput.value = event.color || '#3b82f6'; 
 }
 // 1. Récupération de l'utilisateur actuel via Supabase
 const { data: { user } } = await sb.auth.getUser();
@@ -3667,6 +3667,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
