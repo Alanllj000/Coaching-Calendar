@@ -8,8 +8,8 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="appicon-128x128.png">
 <meta name="theme-color" content="#0a0b0c">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1469,10 +1469,12 @@ closeMobilePip();
 
 // --- ADMINISTRATION & MODIFICATION ---
 async function openEventDetails(eventId) {
-document.getElementById('event-color-input').value = event.color || '#3b82f6';
 const event = eventsCache.find(e => e.id === eventId);
 if (!event) return;
-
+const colorInput = document.getElementById('event-color-input');
+if (colorInput) {
+    colorInput.value = targetEvent.color || '#3b82f6';
+}
 // 1. Récupération de l'utilisateur actuel via Supabase
 const { data: { user } } = await sb.auth.getUser();
 const currentUserId = user?.id;
@@ -3665,6 +3667,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
