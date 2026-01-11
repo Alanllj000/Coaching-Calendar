@@ -1344,6 +1344,10 @@ function openDayPip(dateStr, events = []) {
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-10 custom-scrollbar">`;
 
+    //4.5 Tri des événements par heure
+    if (events && events.length > 0) {
+        events.sort((a, b) => a.start_time.localeCompare(b.start_time));
+    }
     // 5. Boucle sur les événements
     if (!events || !events.length) {
         html += `<div class="py-10 text-center text-slate-300 italic text-sm">Rien de prévu ce jour-là</div>`;
@@ -3632,6 +3636,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
