@@ -3349,8 +3349,73 @@ unreadCount = 0;
 // On recharge l'inbox pour voir le changement de style (opacité/couleurs)
 loadInbox(); 
 }
-       
 
+
+
+
+
+
+
+
+
+    
+// --- GESTION DES CLICS EXTÉRIEURS POUR FERMER LES PIPs ---
+window.addEventListener('click', (event) => {
+    const target = event.target;
+
+    // 1. Admin Panel
+    const adminPanel = document.getElementById('admin-panel');
+    if (adminPanel && target === adminPanel) {
+        closeAdminPanel();
+    }
+
+    // 2. Custom Reminder
+    const reminderPip = document.getElementById('pip-custom-reminder');
+    if (reminderPip && target === reminderPip) {
+        closeCustomReminderPip();
+    }
+
+    // 3. Password PIP
+    const passwordPip = document.getElementById('password-pip');
+    if (passwordPip && target === passwordPip) {
+        closePasswordPip();
+    }
+
+    // 4. Delete Account PIP
+    const deleteAccountPip = document.getElementById('delete-account-pip');
+    if (deleteAccountPip && target === deleteAccountPip) {
+        closeDeleteAccountPip();
+    }
+
+    // 5. Mobile PIP (Zone)
+    const mobilePipZone = document.getElementById('mobile-pip-zone');
+    if (mobilePipZone && target === mobilePipZone) {
+        closeMobilePip();
+    }
+
+    // 6. Inbox PIP
+    const inboxPip = document.getElementById('pip-inbox');
+    if (inboxPip && target === inboxPip) {
+        closeInboxPip();
+    }
+
+    // 7. GDPR (Gestion spécifique car tu as déjà une fonction dédiée)
+    if (target.id === 'gdpr-step-pip') {
+        closeGdprOnOutsideClick(event);
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+    
 async function setupAppRealtime(userId) {
     // 1. SÉCURITÉ ANTI-DOUBLON (Verrouillage)
     if (isRealtimeInitializing) {
@@ -3556,6 +3621,7 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
 
 
 
