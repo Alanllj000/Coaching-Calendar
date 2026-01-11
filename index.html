@@ -3646,7 +3646,15 @@ setTimeout(setupGlobalRealtimeSync, 5000);
 }
 });
 }
+function t(key) {
+    return translations[currentLang][key] || key;
+}
 
+function changeLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('userLang', lang);
+    location.reload(); // La méthode la plus sûre pour rafraîchir tout le calendrier proprement
+}
 
 resetInactivityTimer();
 // --- INITIALISATION ---
@@ -3683,3 +3691,4 @@ document.getElementById('auth-screen').style.display = 'flex';
 </script>
 </body>
 </html>
+
