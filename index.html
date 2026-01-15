@@ -3121,7 +3121,6 @@ async function loadNotificationSettings() {
 
 async function saveNotificationPrefs() {
     try {
-        alert("1. Début de la fonction saveNotificationPrefs");
 
         // 1. On vérifie l'utilisateur
         const { data: { user }, error: authError } = await sb.auth.getUser();
@@ -3135,28 +3134,22 @@ async function saveNotificationPrefs() {
             alert("2. Session expirée ou aucun utilisateur trouvé");
             return;
         }
-        alert("2. Utilisateur détecté : " + user.email);
 
         // 2. Récupération de l'état du switch principal
         const masterSwitch = document.getElementById('notif-master');
         if (!masterSwitch) {
-            alert("Erreur : Elément 'notif-master' introuvable dans le HTML");
             return;
         }
         const isEnabled = masterSwitch.checked;
-        alert("3. Switch master est sur : " + isEnabled);
 
         // --- LOGIQUE PUSH API ---
         if (isEnabled) {
-            alert("4. Demande de permission au navigateur...");
             const permission = await Notification.requestPermission();
-            alert("5. Permission navigateur : " + permission);
+            alert("3. Permission navigateur : " + permission);
             
             if (permission === 'granted') {
-                alert("6. Lancement de subscribeUserToPush()...");
                 // Attention : vérifie bien que cette fonction a aussi des alertes !
                 await subscribeUserToPush(); 
-                alert("7. Retour de subscribeUserToPush");
             } else {
                 alert("Notifications bloquées par l'appareil.");
                 document.getElementById('notif-master').checked = false;
@@ -3172,7 +3165,6 @@ async function saveNotificationPrefs() {
             notif_hour: document.getElementById('notif-1h')?.checked || false,
             notif_custom: typeof currentCustomReminders !== 'undefined' ? currentCustomReminders : []
         };
-        alert("8. Données prêtes pour l'update profiles");
 
         // 4. Mise à jour du profil Supabase
         const { error: updateError } = await sb
@@ -3181,9 +3173,9 @@ async function saveNotificationPrefs() {
             .eq('id', user.id);
 
         if (updateError) {
-            alert("9. ERREUR UPDATE : " + updateError.message);
+            alert(" ERREUR UPDATE : " + updateError.message);
         } else {
-            alert("10. SUCCÈS : Préférences enregistrées dans la base !");
+            alert(" SUCCÈS : Préférences enregistrées dans la base !");
             
             if (typeof initialSettings !== 'undefined') {
                 initialSettings = JSON.parse(JSON.stringify(settingsToSave));
@@ -3767,6 +3759,7 @@ updateLanguageUI();
 </script>
 </body>
 </html>
+
 
 
 
