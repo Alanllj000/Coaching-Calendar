@@ -5,6 +5,7 @@ const translations = {
         CreerCompte: "Créer un compte",
         Seconnecter: "Se connecter",
         CreerCompte2: "Créer mon compte",
+        settings_lang: "Langue de l'app",
         
         calendar: "Calendrier",
         location: "Lieu",
@@ -22,6 +23,7 @@ const translations = {
         CreerCompte: "Create Account",
         Seconnecter: "Log In ",
         CreerCompte2: "Create my Account",
+        settings_lang: "App Language",
 
         
         calendar: "Calendar",
@@ -40,6 +42,7 @@ const translations = {
         CreerCompte: "Konto erstellen",
         Seconnecter: "Sich Anmelden",
         CreerCompte2: "Mein konto erstellen",
+        settings_lang: "App Sprache",
 
 
         
