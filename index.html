@@ -3630,7 +3630,7 @@ async function subscribeUserToPush() {
         // Cela évite les erreurs de "doublons" sur l'ID user
         const { error } = await sb.from('user_push_subscriptions').upsert({
             user_id: user.id,
-            subscription: subscription
+            subscription: subscription.toJSON()
         }, { onConflict: 'user_id' });
 
         if (error) throw error;
@@ -3759,6 +3759,7 @@ updateLanguageUI();
 </script>
 </body>
 </html>
+
 
 
 
