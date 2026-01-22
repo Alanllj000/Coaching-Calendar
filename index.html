@@ -3696,7 +3696,7 @@ function applyStaticTranslations() {
         if (translation !== key) {
             
             // 2. CAS PARTICULIER : Si c'est un champ de saisie (input)
-            if (el.tagName === 'INPUT') {
+            if (el.tagName.toUpperCase() === 'INPUT') {
                 el.placeholder = translation;
             } 
             // 3. CAS GÉNÉRAL : Pour tout le reste (p, span, h1, button, etc.)
@@ -3777,6 +3777,7 @@ updateLanguageUI();
 </script>
 </body>
 </html>
+
 
 
 
