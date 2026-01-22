@@ -11,7 +11,6 @@ const translations = {
         placeholder_nom:"Nom",
         placeholder_tel:"Téléphone",
 
-
         
         
         calendar: "Calendrier",
