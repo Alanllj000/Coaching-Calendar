@@ -6,6 +6,13 @@ const translations = {
         Seconnecter: "Se connecter",
         CreerCompte2: "Créer mon compte",
         settings_lang: "Langue de l'app",
+        placeholder_password: "Mot de Passe",
+        placeholder_prenom:"Prénom",
+        placeholder_nom:"Nom",
+        placeholder_tel:"Téléphone",
+
+
+        
         
         calendar: "Calendrier",
         location: "Lieu",
@@ -24,6 +31,10 @@ const translations = {
         Seconnecter: "Log In ",
         CreerCompte2: "Create my Account",
         settings_lang: "App Language",
+        placeholder_password:"Password",
+        placeholder_prenom:"First Name",
+        placeholder_nom:"Last Name",
+        placeholder_tel:"Phone Number",
 
         
         calendar: "Calendar",
@@ -43,6 +54,10 @@ const translations = {
         Seconnecter: "Sich Anmelden",
         CreerCompte2: "Mein konto erstellen",
         settings_lang: "App Sprache",
+        placeholder_password:"Passwort",
+        placeholder_prenom:"Vorname",
+        placeholder_nom:"Name",
+        placeholder_tel:"Handy Nummer",
 
 
         
