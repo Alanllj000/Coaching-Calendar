@@ -263,12 +263,12 @@ user-select: none;
 <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Pro Coach </h2>
 <div class="space-y-4 max-w-sm mx-auto w-full">
 <input id="auth-email" type="email" placeholder="Email" class="input-field">
-<input id="auth-password" type="password" placeholder="Mot de passe" class="input-field">
+<input id="auth-password" type="password" data-i18n="placeholder_password" placeholder="Mot de passe" class="input-field">
 
 <div id="register-fields" class="hidden space-y-4">
-<input id="auth-firstname" type="text" placeholder="Prénom" class="input-field">
-<input id="auth-lastname" type="text" placeholder="Nom" class="input-field">
-<input id="auth-phone" type="tel" placeholder="Téléphone" class="input-field">
+<input id="auth-firstname" type="text" data-i18n="placeholder_prenom" placeholder="Prénom" class="input-field">
+<input id="auth-lastname" type="text" data-i18n="placeholder_nom" placeholder="Nom" class="input-field">
+<input id="auth-phone" type="tel" data-i18n="placeholder_tel"placeholder="Téléphone" class="input-field">
 </div>
 
 <button id="auth-btn" onclick="handleAuth()" data-i18n="Seconnecter" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
@@ -3684,14 +3684,29 @@ function t(key) {
 
         
 function applyStaticTranslations() {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
+    // 1. On récupère tous les éléments marqués pour la traduction
+    const elements = document.querySelectorAll('[data-i18n]');
+    
+    elements.forEach(el => {
         const key = el.getAttribute('data-i18n');
         const translation = t(key);
-        if (translation !== key) { // On ne change que si on a trouvé une traduction
-            el.textContent = translation; 
+
+        // Sécurité : si t(key) retourne la clé elle-même, c'est que la traduction manque.
+        // On ne fait rien dans ce cas pour laisser le texte par défaut du HTML.
+        if (translation !== key) {
+            
+            // 2. CAS PARTICULIER : Si c'est un champ de saisie (input)
+            if (el.tagName === 'INPUT') {
+                el.placeholder = translation;
+            } 
+            // 3. CAS GÉNÉRAL : Pour tout le reste (p, span, h1, button, etc.)
+            else {
+                el.textContent = translation;
+            }
         }
     });
 }
+
 function updateLanguageUI() {
     const current = localStorage.getItem('userLang') || 'fr';
     const langs = ['fr', 'en', 'de'];
@@ -3762,6 +3777,7 @@ updateLanguageUI();
 </script>
 </body>
 </html>
+
 
 
 
