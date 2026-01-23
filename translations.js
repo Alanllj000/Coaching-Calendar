@@ -16,6 +16,9 @@ const translations = {
         menu_inbox: "Boîte de réception",
         menu_create: "Créer Event",
         menu_logout: "Déconnexion",
+        notif_same_day: "Le jour même",
+        at: "à",
+        delete: "Supprimer",
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -221,6 +224,9 @@ Poursuivre
         menu_inbox: "Inbox",
         menu_create: "Create Event",
         menu_logout: "Logout",
+        notif_same_day: "Same day",
+        at: "at",
+        delete: "Delete",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile</p>
@@ -411,6 +417,9 @@ Continue
         menu_inbox: "Posteingang",
         menu_create: "Event erstellen",
         menu_logout: "Abmelden",
+        notif_same_day: "Am selben Tag",
+        at: "um",
+        delete: "Löschen",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
