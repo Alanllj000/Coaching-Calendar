@@ -3585,8 +3585,14 @@ if ('serviceWorker' in navigator) {
 }
 
 function fillProfileInputs() {
-    if (!currentProfile) return; // Si les données ne sont pas chargées, on ne fait rien
+    console.log("Tentative de remplissage... Profil actuel :", currentProfile);
 
+    if (!currentProfile) {
+        console.error("ERREUR : currentProfile est vide !");
+        return;
+    }
+
+    // 1. Remplissage des champs texte
     const fields = {
         'set-firstname': currentProfile.first_name,
         'set-lastname': currentProfile.last_name,
@@ -3599,6 +3605,12 @@ function fillProfileInputs() {
         if (el) {
             el.value = value || '';
         }
+    }
+
+    // 2. Correction de l'initiale (Le "?" qui devient la lettre)
+    const initialEl = document.getElementById('user-initials');
+    if (initialEl && currentProfile.first_name) {
+        initialEl.textContent = currentProfile.first_name.charAt(0).toUpperCase();
     }
 }
 // --- 2. Gestion du ServiceWorker
@@ -3629,6 +3641,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
