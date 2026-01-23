@@ -3584,27 +3584,36 @@ if ('serviceWorker' in navigator) {
 }
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-    // Premier passage pour l'interface de base
+    // 1. Premier passage : Injecte le HTML traduit (dont reglages_all)
     applyStaticTranslations();
+    
+    // 2. Met à jour l'apparence des boutons de langue fraîchement injectés
+    updateLanguageUI();
 
-    document.getElementById('admin-panel').style.display = 'none';
+    // 3. Cache les éléments administratifs par défaut
+    if(document.getElementById('admin-panel')) {
+        document.getElementById('admin-panel').style.display = 'none';
+    }
     const pipZone = document.getElementById('mobile-pip-zone');
     if(pipZone) pipZone.style.display = 'none';
 
+    // 4. Vérification de la session Supabase
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
+        // initApp va probablement afficher le calendrier et charger le profil
         await initApp(session.user);
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
     };
 
-    // DEUXIÈME PASSAGE : Très important pour traduire ce que initApp a pu afficher
-    updateLanguageUI();
+    // 5. DEUXIÈME PASSAGE : Pour traduire les éléments générés dynamiquement par initApp
     applyStaticTranslations(); 
+    updateLanguageUI();
 }
 </script>
 </body>
 </html>
+
 
 
 
