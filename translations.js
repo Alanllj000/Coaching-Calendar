@@ -41,6 +41,10 @@ const translations = {
         edit_mode_series: "Modifier toute la série",
         btn_confirm_edit: "Confirmer la modification",
         btn_cancel: "Annuler",
+        pip_delete_title: "Supprimer l'événement",
+        pip_delete_desc: "Voulez-vous supprimer cet événement ?",
+        delete_mode_single: "Cet événement seulement",
+        delete_mode_series: "Toute la série",
                 reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -271,6 +275,10 @@ Poursuivre
         edit_mode_series: "Edit entire series",
         btn_confirm_edit: "Confirm modification",
         btn_cancel: "Cancel",
+        pip_delete_title: "Delete Event",
+        pip_delete_desc: "Do you want to delete this event?",
+        delete_mode_single: "This event only",
+        delete_mode_series: "Entire series",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile</p>
@@ -486,6 +494,10 @@ Continue
         edit_mode_series: "Ganze Serie bearbeiten",
         btn_confirm_edit: "Änderung bestätigen",
         btn_cancel: "Abbrechen",
+        pip_delete_title: "Ereignis löschen",
+        pip_delete_desc: "Möchten Sie dieses Ereignis löschen?",
+        delete_mode_single: "Nur dieses Ereignis",
+        delete_mode_series: "Ganze Serie",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
