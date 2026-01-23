@@ -357,7 +357,7 @@ onclick="event.stopPropagation()">
 <div class="calendar-container px-3 md:px-8 pt-4">
 <div class="max-w-6xl mx-auto">
 <div class="grid grid-cols-7 gap-px mb-2 text-[9px] md:text-xs font-black uppercase text-slate-400 tracking-widest text-center">
-<div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+    </div>
 </div>
 <div id="calendar-grid" class="calendar-grid shadow-xl"></div>
 </div>
@@ -1210,15 +1210,18 @@ function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     if (!grid) return;
     grid.innerHTML = '';
+    const dayHeader = document.getElementById('calendar-days-header');
+    if (dayHeader) {
+        const days = t('days_short');
+        dayHeader.innerHTML = days.map(d => `<div>${d}</div>`).join('');
+    }
 
     const now = new Date();
     const y = currentDate.getFullYear();
     const m = currentDate.getMonth();
 
-    document.getElementById('month-label').textContent = new Intl.DateTimeFormat('fr-FR', { 
-        month: 'long', 
-        year: 'numeric' 
-    }).format(currentDate);
+    const monthNames = t('months');
+    document.getElementById('month-label').textContent = monthNames[m] + ' ' + y;
 
     const firstDay = (new Date(y, m, 1).getDay() || 7) - 1;
     const lastDate = new Date(y, m + 1, 0).getDate();
@@ -3717,6 +3720,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
