@@ -45,6 +45,13 @@ const translations = {
         pip_delete_desc: "Voulez-vous supprimer cet événement ?",
         delete_mode_single: "Cet événement seulement",
         delete_mode_series: "Toute la série",
+        pip_email_title: "Modifier votre email",
+        placeholder_email_new: "Nouvel email",
+        placeholder_pwd_verif: "Mot de passe",
+        pip_del_acc_title: "Supprimer le Compte ?",
+        pip_del_acc_desc: "Cette action va définitivement supprimer votre compte ainsi que toutes vos données. Cette action est irréversible.",
+        pip_del_acc_confirm: "Veuillez confirmer l'action.",
+        btn_confirm_del_acc: "Oui, Supprimer",
                 reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -279,6 +286,13 @@ Poursuivre
         pip_delete_desc: "Do you want to delete this event?",
         delete_mode_single: "This event only",
         delete_mode_series: "Entire series",
+        pip_email_title: "Change your email",
+        placeholder_email_new: "New email",
+        placeholder_pwd_verif: "Password",
+        pip_del_acc_title: "Delete Account?",
+        pip_del_acc_desc: "This action will permanently delete your account and all your data. This action is irreversible.",
+        pip_del_acc_confirm: "Please confirm this action.",
+        btn_confirm_del_acc: "Yes, Delete",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile</p>
@@ -498,6 +512,13 @@ Continue
         pip_delete_desc: "Möchten Sie dieses Ereignis löschen?",
         delete_mode_single: "Nur dieses Ereignis",
         delete_mode_series: "Ganze Serie",
+        pip_email_title: "E-Mail ändern",
+        placeholder_email_new: "Neue E-Mail",
+        placeholder_pwd_verif: "Passwort",
+        pip_del_acc_title: "Konto löschen?",
+        pip_del_acc_desc: "Diese Aktion wird Ihr Konto und alle Ihre Daten dauerhaft löschen. Diese Aktion ist nicht rückgängig zu machen.",
+        pip_del_acc_confirm: "Bitte bestätigen Sie diese Aktion.",
+        btn_confirm_del_acc: "Ja, Löschen",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
