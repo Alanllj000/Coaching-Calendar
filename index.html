@@ -3327,7 +3327,16 @@ window.addEventListener('click', (event) => {
         }
     }
 });
+function updateDeleteModeText() {
+    const toggle = document.getElementById('delete-series-toggle');
+    const textEl = document.getElementById('delete-mode-text');
     
+    if (toggle && textEl) {
+        const isSeries = toggle.checked;
+        // On utilise les clés qu'on a ajoutées à la bibliothèque juste avant
+        textEl.innerText = isSeries ? t('delete_mode_series') : t('delete_mode_single');
+    }
+}
 
 
 
@@ -3737,6 +3746,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
