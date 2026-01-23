@@ -1019,34 +1019,38 @@ async function initApp(user) {
 }
 
 async function loadProfile() {
-if (!currentUser) return;
-document.getElementById('set-email').value = currentUser.email || '';
+    if (!currentUser) return;
 
-const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
-if (error) return console.error("Erreur profil:", error.message);
+    const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+    
+    if (error) {
+        console.error("Erreur profil:", error.message);
+        return;
+    }
 
-if (profile) {
-currentProfile = profile;
-document.getElementById('set-firstname').value = profile.first_name || '';
-document.getElementById('set-lastname').value = profile.last_name || '';
-document.getElementById('set-phone').value = profile.phone || '';
+    if (profile) {
+        // 1. On stocke dans la variable globale
+        currentProfile = profile;
 
-initialProfileData = {
-first_name: profile.first_name || '',
-last_name: profile.last_name || '',
-phone: profile.phone || ''
-};
-checkProfileChanges();
+        // 2. On prépare l'objet de comparaison pour les changements
+        initialProfileData = {
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            phone: profile.phone || ''
+        };
 
-if (profile.first_name) {
-document.getElementById('user-initials').textContent = profile.first_name[0].toUpperCase();
+        // 3. On remplit l'UI (Champs + Initiale + Admin)
+        fillProfileInputs();
+
+        // 4. Affichage du bouton admin si nécessaire
+        const adminBtn = document.getElementById('btn-admin-panel-menu');
+        if (adminBtn && profile.role === 'admin') {
+            adminBtn.classList.remove('hidden');
+        }
+        
+        checkProfileChanges();
+    }
 }
-if (profile.role === 'admin') {
-document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
-}
-}
-}
-
 async function fetchEvents() {
     // 1. Récupération des données avec registrations
     const { data: evts, error } = await sb
@@ -3585,62 +3589,73 @@ if ('serviceWorker' in navigator) {
 }
 
 function fillProfileInputs() {
-    console.log("Tentative de remplissage... Profil actuel :", currentProfile);
+    // On vérifie si on a les données et l'utilisateur
+    if (!currentProfile && !currentUser) return;
 
-    if (!currentProfile) {
-        console.error("ERREUR : currentProfile est vide !");
-        return;
-    }
+    // 1. Remplissage de l'Email (vient de la session Auth)
+    const emailField = document.getElementById('set-email');
+    if (emailField) emailField.value = currentUser?.email || '';
 
-    // 1. Remplissage des champs texte
-    const fields = {
-        'set-firstname': currentProfile.first_name,
-        'set-lastname': currentProfile.last_name,
-        'set-phone': currentProfile.phone,
-        'set-email': currentProfile.email
-    };
+    // 2. Si on a le profil, on remplit le reste
+    if (currentProfile) {
+        const fields = {
+            'set-firstname': currentProfile.first_name,
+            'set-lastname': currentProfile.last_name,
+            'set-phone': currentProfile.phone
+        };
 
-    for (const [id, value] of Object.entries(fields)) {
-        const el = document.getElementById(id);
-        if (el) {
-            el.value = value || '';
+        for (const [id, value] of Object.entries(fields)) {
+            const el = document.getElementById(id);
+            if (el) el.value = value || '';
         }
-    }
 
-    // 2. Correction de l'initiale (Le "?" qui devient la lettre)
-    const initialEl = document.getElementById('user-initials');
-    if (initialEl && currentProfile.first_name) {
-        initialEl.textContent = currentProfile.first_name.charAt(0).toUpperCase();
+        // 3. Gestion de l'initiale (Le "?" qui disparaît)
+        const initialEl = document.getElementById('user-initials');
+        if (initialEl && currentProfile.first_name) {
+            initialEl.textContent = currentProfile.first_name[0].toUpperCase();
+        }
     }
 }
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-    // 1. Injection initiale (pour l'écran d'accueil/auth)
+    // 1. Premier passage pour l'interface de base (Auth screen)
     applyStaticTranslations();
     updateLanguageUI();
 
-    // 2. Gestion Admin/PiP
-    if(document.getElementById('admin-panel')) document.getElementById('admin-panel').style.display = 'none';
+    // 2. Initialisation de l'affichage
+    const adminPanel = document.getElementById('admin-panel');
+    if (adminPanel) adminPanel.style.display = 'none';
+    
     const pipZone = document.getElementById('mobile-pip-zone');
-    if(pipZone) pipZone.style.display = 'none';
+    if (pipZone) pipZone.style.display = 'none';
 
-    // 3. Session & Profil
+    // 3. Vérification de la session
     const { data: { session } } = await sb.auth.getSession();
+    
     if (session) {
+        // On charge l'application (appelle loadProfile en interne)
         await initApp(session.user);
-        // --- AJOUT CRUCIAL ICI ---
-        // Une fois que initApp a chargé les données dans currentProfile,
-        // on ré-injecte les traductions ET on remplit les champs.
-        applyStaticTranslations();
-        updateLanguageUI();
-        fillProfileInputs(); 
+
+        // --- SYNCHRONISATION TRADUCTION & DONNÉES ---
+        // On attend un micro-délai pour être sûr que le DOM est stable
+        setTimeout(() => {
+            // On ré-injecte pour être sûr que tout est dans la bonne langue
+            applyStaticTranslations();
+            updateLanguageUI();
+            
+            // On remet les données par-dessus le HTML traduit
+            fillProfileInputs();
+            console.log("Interface traduite et profil synchronisé.");
+        }, 50);
+
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
-    };
-}
+    }
+};
 </script>
 </body>
 </html>
+
 
 
 
