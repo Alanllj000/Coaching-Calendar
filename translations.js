@@ -16,6 +16,7 @@ const translations = {
         menu_inbox: "Boîte de réception",
         menu_create: "Créer Event",
         menu_logout: "Déconnexion",
+        reglages_profil:"Profil",
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Avant de commencer...</h2>
 
 
@@ -100,6 +101,7 @@ Poursuivre
         menu_inbox: "Inbox",
         menu_create: "Create Event",
         menu_logout: "Logout",
+        reglages_profil:"Profile",
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Before starting...</h2>
 
 
@@ -184,6 +186,7 @@ Continue
         menu_inbox: "Posteingang",
         menu_create: "Event erstellen",
         menu_logout: "Abmelden",
+        reglages_profil:"Profil",
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Bevor wir anfangen...</h2>
 
 
