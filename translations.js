@@ -16,7 +16,127 @@ const translations = {
         menu_inbox: "Boîte de réception",
         menu_create: "Créer Event",
         menu_logout: "Déconnexion",
-        reglages_profil:"Profil",
+        reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+<p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
+<div class="grid grid-cols-2 gap-4">
+<input id="set-firstname" oninput="checkProfileChanges()" placeholder="Prénom" class="input-field" oninput="checkProfileChanges()">
+<input id="set-lastname" oninput="checkProfileChanges()" placeholder="Nom" class="input-field" oninput="checkProfileChanges()">
+</div>
+<input id="set-phone" oninput="checkProfileChanges()" placeholder="Téléphone" class="input-field" oninput="checkProfileChanges()">
+<div class="flex flex-col gap-2 p-4">
+    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400" data-i18n="settings_lang">Langue de l'application</p>
+    
+    <div class="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm border border-slate-200">
+        <button onclick="changeLanguage('fr')" id="lang-fr" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/fr.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="FR">
+            <span class="text-[10px] font-black uppercase">FR</span>
+        </button>
+
+        <button onclick="changeLanguage('en')" id="lang-en" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/gb.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="EN">
+            <span class="text-[10px] font-black uppercase">EN</span>
+        </button>
+
+        <button onclick="changeLanguage('de')" id="lang-de" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+            <img src="https://flagcdn.com/w40/de.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="DE">
+            <span class="text-[10px] font-black uppercase">DE</span>
+        </button>
+    </div>
+</div>
+<input id="set-email" type="email" class="input-field bg-slate-50 text-slate-400" disabled>
+<button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Mettre à jour le profil</button>
+</div>
+
+<div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+<p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sécurité</p>
+<button onclick="openPasswordPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre mot de passe</button>
+<button onclick="openEmailPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Modifier votre email</button>
+</div>
+
+<!-- Notifications !-->
+<div id="notif-section" class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 relative">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-bold text-slate-800">Autoriser les Notifications</p>
+<p class="text-xs text-slate-400">Recevoir des rappels sur cet appareil</p>
+</div>
+<label class="switch">
+<input type="checkbox" id="notif-master" onchange="toggleNotifUI(); checkChanges()">
+<span class="slider"></span>
+</label>
+</div>
+
+<div id="notif-content-wrapper" class="space-y-4 pt-2 border-t border-slate-50 transition-all duration-300">
+<p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Rappels avant un event</p>
+
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-slate-600">1 semaine avant</span>
+<label class="switch scale-75">
+<input type="checkbox" id="notif-1s" onchange="checkChanges()">
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-slate-600">1 jour avant</span>
+<label class="switch scale-75">
+<input type="checkbox" id="notif-1j" onchange="checkChanges()">
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold text-slate-600">1 heure avant</span>
+<label class="switch scale-75">
+<input type="checkbox" id="notif-1h" onchange="checkChanges()">
+<span class="slider"></span>
+</label>
+</div>
+
+<div id="custom-reminders-list" class="space-y-3"></div>
+
+<button id="btn-open-custom" onclick="openCustomReminderPip()" class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition">
++ Rappel personnalisé
+</button>
+
+
+</div>
+</div>
+<button id="btn-save-notif" onclick="saveNotificationPrefs()" disabled class="w-full py-4 bg-slate-200 text-slate-400 font-bold rounded-2xl transition mt-4 cursor-not-allowed">
+Sauvegarder mes préférences
+</button>
+
+<div id="pip-custom-reminder" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[200] p-6">
+<div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl animate-in zoom-in duration-200">
+<p class="font-black text-slate-800 uppercase text-xs tracking-widest mb-6">Nouveau Rappel</p>
+
+<div class="space-y-6">
+<div>
+<label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Combien de jours avant ?</label>
+<div class="flex items-center gap-3">
+<input type="number" id="in-remind-days" value="1" min="0" max="99" class="w-20 bg-slate-50 border-none rounded-xl p-3 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500">
+<span class="text-xs font-bold text-slate-500">jours avant</span>
+</div>
+</div>
+<div>
+<label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">À quelle heure ?</label>
+<input type="time" id="in-remind-time" value="09:00" class="w-full bg-slate-50 border-none rounded-xl p-3 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500">
+</div>
+</div>
+
+<div class="flex gap-3 mt-8">
+<button onclick="closeCustomReminderPip()" class="flex-1 py-3 text-slate-400 font-bold text-xs uppercase">Annuler</button>
+<button onclick="addCustomReminderToUI()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase shadow-lg shadow-blue-200">Ajouter</button>
+</div>
+</div>
+</div>
+
+
+<div class="pt-4">
+<button onclick="openDeleteAccountPip()" class="w-full py-4 text-red-500 font-bold text-sm border border-red-100 rounded-2xl hover:bg-red-50 transition">Supprimer le Compte</button>
+</div>`,
+        
+        
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Avant de commencer...</h2>
 
 
@@ -101,7 +221,112 @@ Poursuivre
         menu_inbox: "Inbox",
         menu_create: "Create Event",
         menu_logout: "Logout",
-        reglages_profil:"Profile",
+        reglages_all: `
+<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+    <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile</p>
+    <div class="grid grid-cols-2 gap-4">
+        <input id="set-firstname" oninput="checkProfileChanges()" placeholder="First Name" class="input-field">
+        <input id="set-lastname" oninput="checkProfileChanges()" placeholder="Last Name" class="input-field">
+    </div>
+    <input id="set-phone" oninput="checkProfileChanges()" placeholder="Phone" class="input-field">
+    <div class="flex flex-col gap-2 p-4">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">App Language</p>
+        <div class="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm border border-slate-200">
+            <button onclick="changeLanguage('fr')" id="lang-fr" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+                <img src="https://flagcdn.com/w40/fr.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="FR">
+                <span class="text-[10px] font-black uppercase">FR</span>
+            </button>
+            <button onclick="changeLanguage('en')" id="lang-en" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+                <img src="https://flagcdn.com/w40/gb.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="EN">
+                <span class="text-[10px] font-black uppercase">EN</span>
+            </button>
+            <button onclick="changeLanguage('de')" id="lang-de" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+                <img src="https://flagcdn.com/w40/de.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="DE">
+                <span class="text-[10px] font-black uppercase">DE</span>
+            </button>
+        </div>
+    </div>
+    <input id="set-email" type="email" class="input-field bg-slate-50 text-slate-400" disabled>
+    <button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Update Profile</button>
+</div>
+
+<div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+    <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Security</p>
+    <button onclick="openPasswordPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Change your password</button>
+    <button onclick="openEmailPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Change your email</button>
+</div>
+
+<div id="notif-section" class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 relative">
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="font-bold text-slate-800">Enable Notifications</p>
+            <p class="text-xs text-slate-400">Receive reminders on this device</p>
+        </div>
+        <label class="switch">
+            <input type="checkbox" id="notif-master" onchange="toggleNotifUI(); checkChanges()">
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div id="notif-content-wrapper" class="space-y-4 pt-2 border-t border-slate-50 transition-all duration-300">
+        <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Reminders before an event</p>
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">1 week before</span>
+            <label class="switch scale-75">
+                <input type="checkbox" id="notif-1s" onchange="checkChanges()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">1 day before</span>
+            <label class="switch scale-75">
+                <input type="checkbox" id="notif-1j" onchange="checkChanges()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">1 hour before</span>
+            <label class="switch scale-75">
+                <input type="checkbox" id="notif-1h" onchange="checkChanges()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div id="custom-reminders-list" class="space-y-3"></div>
+        <button id="btn-open-custom" onclick="openCustomReminderPip()" class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition">
+            + Custom reminder
+        </button>
+    </div>
+</div>
+<button id="btn-save-notif" onclick="saveNotificationPrefs()" disabled class="w-full py-4 bg-slate-200 text-slate-400 font-bold rounded-2xl transition mt-4 cursor-not-allowed">
+    Save my preferences
+</button>
+
+<div id="pip-custom-reminder" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[200] p-6">
+    <div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl animate-in zoom-in duration-200">
+        <p class="font-black text-slate-800 uppercase text-xs tracking-widest mb-6">New Reminder</p>
+        <div class="space-y-6">
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">How many days before?</label>
+                <div class="flex items-center gap-3">
+                    <input type="number" id="in-remind-days" value="1" min="0" max="99" class="w-20 bg-slate-50 border-none rounded-xl p-3 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500">
+                    <span class="text-xs font-bold text-slate-500">days before</span>
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">At what time?</label>
+                <input type="time" id="in-remind-time" value="09:00" class="w-full bg-slate-50 border-none rounded-xl p-3 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500">
+            </div>
+        </div>
+        <div class="flex gap-3 mt-8">
+            <button onclick="closeCustomReminderPip()" class="flex-1 py-3 text-slate-400 font-bold text-xs uppercase">Cancel</button>
+            <button onclick="addCustomReminderToUI()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase shadow-lg shadow-blue-200">Add</button>
+        </div>
+    </div>
+</div>
+
+<div class="pt-4">
+    <button onclick="openDeleteAccountPip()" class="w-full py-4 text-red-500 font-bold text-sm border border-red-100 rounded-2xl hover:bg-red-50 transition">Delete Account</button>
+</div>
+`,
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Before starting...</h2>
 
 
@@ -186,7 +411,112 @@ Continue
         menu_inbox: "Posteingang",
         menu_create: "Event erstellen",
         menu_logout: "Abmelden",
-        reglages_profil:"Profil",
+        reglages_all: `
+<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+    <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
+    <div class="grid grid-cols-2 gap-4">
+        <input id="set-firstname" oninput="checkProfileChanges()" placeholder="Vorname" class="input-field">
+        <input id="set-lastname" oninput="checkProfileChanges()" placeholder="Nachname" class="input-field">
+    </div>
+    <input id="set-phone" oninput="checkProfileChanges()" placeholder="Telefon" class="input-field">
+    <div class="flex flex-col gap-2 p-4">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">App-Sprache</p>
+        <div class="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm border border-slate-200">
+            <button onclick="changeLanguage('fr')" id="lang-fr" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+                <img src="https://flagcdn.com/w40/fr.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="FR">
+                <span class="text-[10px] font-black uppercase">FR</span>
+            </button>
+            <button onclick="changeLanguage('en')" id="lang-en" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+                <img src="https://flagcdn.com/w40/gb.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="EN">
+                <span class="text-[10px] font-black uppercase">EN</span>
+            </button>
+            <button onclick="changeLanguage('de')" id="lang-de" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300">
+                <img src="https://flagcdn.com/w40/de.png" class="w-5 h-4 object-cover rounded-sm shadow-sm" alt="DE">
+                <span class="text-[10px] font-black uppercase">DE</span>
+            </button>
+        </div>
+    </div>
+    <input id="set-email" type="email" class="input-field bg-slate-50 text-slate-400" disabled>
+    <button id="btn-update-profile" onclick="saveProfileInfo()" class="w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300">Profil aktualisieren</button>
+</div>
+
+<div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+    <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sicherheit</p>
+    <button onclick="openPasswordPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">Passwort ändern</button>
+    <button onclick="openEmailPip()" class="w-full py-4 bg-slate-50 text-slate-900 font-bold rounded-2xl border border-slate-100 hover:bg-slate-100 transition">E-Mail ändern</button>
+</div>
+
+<div id="notif-section" class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 relative">
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="font-bold text-slate-800">Benachrichtigungen erlauben</p>
+            <p class="text-xs text-slate-400">Erinnerungen auf cehserem Gerät erhalten</p>
+        </div>
+        <label class="switch">
+            <input type="checkbox" id="notif-master" onchange="toggleNotifUI(); checkChanges()">
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div id="notif-content-wrapper" class="space-y-4 pt-2 border-t border-slate-50 transition-all duration-300">
+        <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Erinnerungen vor einem Event</p>
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">1 Woche vorher</span>
+            <label class="switch scale-75">
+                <input type="checkbox" id="notif-1s" onchange="checkChanges()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">1 Tag vorher</span>
+            <label class="switch scale-75">
+                <input type="checkbox" id="notif-1j" onchange="checkChanges()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">1 Stunde vorher</span>
+            <label class="switch scale-75">
+                <input type="checkbox" id="notif-1h" onchange="checkChanges()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div id="custom-reminders-list" class="space-y-3"></div>
+        <button id="btn-open-custom" onclick="openCustomReminderPip()" class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition">
+            + Eigene Erinnerung
+        </button>
+    </div>
+</div>
+<button id="btn-save-notif" onclick="saveNotificationPrefs()" disabled class="w-full py-4 bg-slate-200 text-slate-400 font-bold rounded-2xl transition mt-4 cursor-not-allowed">
+    Einstellungen speichern
+</button>
+
+<div id="pip-custom-reminder" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[200] p-6">
+    <div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl animate-in zoom-in duration-200">
+        <p class="font-black text-slate-800 uppercase text-xs tracking-widest mb-6">Neue Erinnerung</p>
+        <div class="space-y-6">
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Wie viele Tage vorher?</label>
+                <div class="flex items-center gap-3">
+                    <input type="number" id="in-remind-days" value="1" min="0" max="99" class="w-20 bg-slate-50 border-none rounded-xl p-3 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500">
+                    <span class="text-xs font-bold text-slate-500">Tage vorher</span>
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Um wie viel Uhr?</label>
+                <input type="time" id="in-remind-time" value="09:00" class="w-full bg-slate-50 border-none rounded-xl p-3 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500">
+            </div>
+        </div>
+        <div class="flex gap-3 mt-8">
+            <button onclick="closeCustomReminderPip()" class="flex-1 py-3 text-slate-400 font-bold text-xs uppercase">Abbrechen</button>
+            <button onclick="addCustomReminderToUI()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase shadow-lg shadow-blue-200">Hinzufügen</button>
+        </div>
+    </div>
+</div>
+
+<div class="pt-4">
+    <button onclick="openDeleteAccountPip()" class="w-full py-4 text-red-500 font-bold text-sm border border-red-100 rounded-2xl hover:bg-red-50 transition">Konto löschen</button>
+</div>
+`,
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Bevor wir anfangen...</h2>
 
 
