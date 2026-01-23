@@ -35,6 +35,12 @@ const translations = {
         day_mon: "Lun", day_tue: "Mar", day_wed: "Mer", day_thu: "Jeu", day_fri: "Ven", day_sat: "Sam", day_sun: "Dim",
         btn_save: "Enregistrer",
         btn_delete_event: "Supprimer l'événement",
+        edit_choice_title: "Modifier l'événement",
+        edit_choice_subtitle: "Cet événement fait partie d'une série.",
+        edit_mode_single: "Modifier cette séance uniquement",
+        edit_mode_series: "Modifier toute la série",
+        btn_confirm_edit: "Confirmer la modification",
+        btn_cancel: "Annuler",
                 reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -259,6 +265,12 @@ Poursuivre
         day_mon: "Mon", day_tue: "Tue", day_wed: "Wed", day_thu: "Thu", day_fri: "Fri", day_sat: "Sat", day_sun: "Sun",
         btn_save: "Save",
         btn_delete_event: "Delete event",
+        edit_choice_title: "Edit Event",
+        edit_choice_subtitle: "This event is part of a series.",
+        edit_mode_single: "Edit this session only",
+        edit_mode_series: "Edit entire series",
+        btn_confirm_edit: "Confirm modification",
+        btn_cancel: "Cancel",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile</p>
@@ -468,6 +480,12 @@ Continue
         day_mon: "Mo", day_tue: "Di", day_wed: "Mi", day_thu: "Do", day_fri: "Fr", day_sat: "Sa", day_sun: "So",
         btn_save: "Speichern",
         btn_delete_event: "Ereignis löschen",
+        edit_choice_title: "Ereignis bearbeiten",
+        edit_choice_subtitle: "Dieses Ereignis ist Teil einer Serie.",
+        edit_mode_single: "Nur diese Sitzung bearbeiten",
+        edit_mode_series: "Ganze Serie bearbeiten",
+        btn_confirm_edit: "Änderung bestätigen",
+        btn_cancel: "Abbrechen",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
