@@ -3699,6 +3699,9 @@ function applyStaticTranslations() {
             if (el.tagName.toUpperCase() === 'INPUT') {
                 el.placeholder = translation;
             } 
+            else if (translation.includes('<') && translation.includes('>')) {
+                el.innerHTML = translation; // Conserve le gras, les liens, etc.
+            }
             // 3. CAS GÉNÉRAL : Pour tout le reste (p, span, h1, button, etc.)
             else {
                 el.textContent = translation;
@@ -3777,6 +3780,7 @@ updateLanguageUI();
 </script>
 </body>
 </html>
+
 
 
 
