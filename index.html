@@ -1020,28 +1020,24 @@ async function initApp(user) {
 
 async function loadProfile() {
     if (!currentUser) return;
-    
+
+    // 1. Récupération propre
     const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
     
-    if (error) return console.error("Erreur profil:", error.message);
+    if (error) {
+        console.error("Erreur chargement profil:", error);
+        return;
+    }
 
     if (profile) {
-        // ON FORCE LE STOCKAGE GLOBAL
-        window.currentProfile = profile; 
-        
-        initialProfileData = {
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            phone: profile.phone || ''
-        };
+        // 2. Stockage GLOBAL explicite (c'est ça qui manquait)
+        window.currentProfile = profile;
 
-        // On remplit les champs maintenant que l'objet est créé
-        fillProfileInputs();
-
-        // Gestion du bouton admin
+        // 3. Gestion spécifique Admin
         const adminBtn = document.getElementById('btn-admin-panel-menu');
-        if (adminBtn && profile.role === 'admin') {
-            adminBtn.classList.remove('hidden');
+        if (adminBtn) {
+            if (profile.role === 'admin') adminBtn.classList.remove('hidden');
+            else adminBtn.classList.add('hidden');
         }
     }
 }
@@ -3509,24 +3505,20 @@ function t(key) {
 
         
 function applyStaticTranslations() {
+    // 1. On traduit tout
     const elements = document.querySelectorAll('[data-i18n]');
     
     elements.forEach(el => {
         const key = el.getAttribute('data-i18n');
-        const translation = t(key);
+        const translation = t(key); // Ta fonction t() existante
 
         if (translation !== key) {
-            if (el.tagName.toUpperCase() === 'INPUT') {
+            if (el.tagName === 'INPUT') {
                 el.placeholder = translation;
             } 
-            else if (key === 'conditions_utilisation_pip' || key === 'reglages_all' || (translation.includes('<') && translation.includes('>'))) {
+            // Cas spécial : injection de gros blocs HTML (Réglages)
+            else if (key === 'reglages_all' || (translation.includes('<') && translation.includes('>'))) {
                 el.innerHTML = translation;
-                
-                // SI ON VIENT D'INJECTER LES RÉGLAGES, ON REMPLIT LES INPUTS IMMÉDIATEMENT
-                if (key === 'reglages_all') {
-                    console.log("Injection reglages_all détectée, remplissage immédiat...");
-                    fillProfileInputs();
-                }
             } 
             else {
                 el.textContent = translation;
@@ -3534,10 +3526,33 @@ function applyStaticTranslations() {
         }
     });
 
-    // On s'assure que les jours du calendrier sont aussi traduits
+    // 2. Traduction des jours du calendrier (Lun, Mar...)
     if (typeof renderDayHeaders === "function") renderDayHeaders();
-}
 
+    // 3. REMPLISSAGE FORCÉ DES DONNÉES (Le correctif majeur)
+    // On le fait ICI, juste après avoir injecté le HTML, pour être sûr que les champs existent.
+    if (window.currentProfile) {
+        const p = window.currentProfile;
+        
+        // Helper pour remplir sans erreur si l'élément n'existe pas
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val || '';
+        };
+
+        setVal('set-firstname', p.first_name);
+        setVal('set-lastname', p.last_name);
+        setVal('set-phone', p.phone);
+        // L'email vient souvent de currentUser, on gère les deux cas
+        setVal('set-email', (window.currentUser?.email || p.email));
+
+        // L'initiale dans le menu
+        const initialEl = document.getElementById('user-initials');
+        if (initialEl && p.first_name) {
+            initialEl.textContent = p.first_name[0].toUpperCase();
+        }
+    }
+}
 function updateLanguageUI() {
     const current = localStorage.getItem('userLang') || 'fr';
     const langs = ['fr', 'en', 'de'];
@@ -3616,34 +3631,43 @@ function fillProfileInputs() {
 }
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-    // 1. On cache tout de suite la PiP au cas où le HTML injecté l'ouvrirait
-    const adminPanel = document.getElementById('admin-panel');
-    if (adminPanel) adminPanel.style.display = 'none';
-
-    // 2. Première traduction (Auth / Header)
-    applyStaticTranslations();
-    updateLanguageUI();
-
-    const { data: { session } } = await sb.auth.getSession();
+    // A. Masquer toutes les interfaces critiques au démarrage
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('main-content').classList.add('hidden');
     
+    // Sécurité : on cache les panneaux qui pourraient s'ouvrir tout seuls
+    if(document.getElementById('admin-panel')) document.getElementById('admin-panel').style.display = 'none';
+    const pipZone = document.getElementById('mobile-pip-zone');
+    if(pipZone) pipZone.style.display = 'none';
+
+    // B. Vérification de la session Supabase
+    const { data: { session } } = await sb.auth.getSession();
+
     if (session) {
-        currentUser = session.user; // On définit currentUser globalement
+        // --- CAS 1 : UTILISATEUR CONNECTÉ ---
+        window.currentUser = session.user;
+
+        // 1. On charge les données (Bloquant, on attend d'avoir le profil)
+        await initApp(session.user);
         
-        // 3. ON ATTEND le chargement du profil
-        await loadProfile(); 
-        
-        // 4. Une fois le profil chargé en mémoire (window.currentProfile),
-        // on injecte les réglages qui vont déclencher fillProfileInputs()
-        applyStaticTranslations();
+        // 2. UNE FOIS LES DONNÉES LÀ, on traduit et on affiche l'interface
+        // initApp a chargé window.currentProfile via loadProfile
+        // applyStaticTranslations va utiliser window.currentProfile pour remplir les champs
+        applyStaticTranslations(); 
         updateLanguageUI();
-        
+
     } else {
+        // --- CAS 2 : UTILISATEUR NON CONNECTÉ ---
+        // On affiche l'écran de connexion et on le traduit
         document.getElementById('auth-screen').style.display = 'flex';
+        applyStaticTranslations(); // Traduit "Email", "Mot de passe"...
+        updateLanguageUI();
     }
 };
 </script>
 </body>
 </html>
+
 
 
 
