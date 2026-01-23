@@ -3641,35 +3641,47 @@ profileObserver.observe(document.body, { childList: true, subtree: true });
     
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-    // 1. Premier passage : Injecte le HTML traduit (dont reglages_all)
+    // 1. Premier passage : Traduction initiale (Auth, etc.)
     applyStaticTranslations();
-    
-    // 2. Met à jour l'apparence des boutons de langue fraîchement injectés
     updateLanguageUI();
 
-    // 3. Cache les éléments administratifs par défaut
+    // 2. Cache les éléments administratifs
     if(document.getElementById('admin-panel')) {
         document.getElementById('admin-panel').style.display = 'none';
     }
     const pipZone = document.getElementById('mobile-pip-zone');
     if(pipZone) pipZone.style.display = 'none';
 
-    // 4. Vérification de la session Supabase
+    // 3. Vérification de la session
     const { data: { session } } = await sb.auth.getSession();
+    
     if (session) {
-        // initApp va probablement afficher le calendrier et charger le profil
+        // initApp charge le calendrier, le profil, etc.
         await initApp(session.user);
+
+        // 4. DEUXIÈME PASSAGE : Traduit ce qui a été généré par initApp (comme reglages_all)
+        // ON LE FAIT AVANT LE REMPLISSAGE
+        applyStaticTranslations(); 
+        updateLanguageUI();
+
+        // 5. REMPLISSAGE FINAL : Maintenant que le HTML est traduit ET injecté
+        setTimeout(() => {
+            if (typeof fillProfileInputs === 'function') {
+                console.log("Appel de sécurité pour remplir les champs...");
+                fillProfileInputs();
+            }
+        }, 300); // 300ms suffisent largement après l'injection
+
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
-    };
-
-    // 5. DEUXIÈME PASSAGE : Pour traduire les éléments générés dynamiquement par initApp
-    applyStaticTranslations(); 
-    updateLanguageUI();
-}
+        // On traduit l'écran d'auth si pas de session
+        applyStaticTranslations();
+    }
+};
 </script>
 </body>
 </html>
+
 
 
 
