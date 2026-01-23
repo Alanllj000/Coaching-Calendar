@@ -10,6 +10,12 @@ const translations = {
         placeholder_prenom:"Prénom",
         placeholder_nom:"Nom",
         placeholder_tel:"Téléphone",
+        months: ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"],
+        days_short: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+        menu_settings: "Réglages",
+        menu_inbox: "Boîte de réception",
+        menu_create: "Créer Event",
+        menu_logout: "Déconnexion",
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Avant de commencer...</h2>
 
 
@@ -88,6 +94,12 @@ Poursuivre
         placeholder_prenom:"First Name",
         placeholder_nom:"Last Name",
         placeholder_tel:"Phone Number",
+        months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        days_short: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        menu_settings: "Settings",
+        menu_inbox: "Inbox",
+        menu_create: "Create Event",
+        menu_logout: "Logout",
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Before starting...</h2>
 
 
@@ -166,6 +178,12 @@ Continue
         placeholder_prenom:"Vorname",
         placeholder_nom:"Name",
         placeholder_tel:"Handy Nummer",
+        months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+        days_short: ["Mon", "Die", "Mit", "Don", "Fre", "Sam", "Son"],
+        menu_settings: "Einstellungen",
+        menu_inbox: "Posteingang",
+        menu_create: "Event erstellen",
+        menu_logout: "Abmelden",
         conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Bevor wir anfangen...</h2>
 
 
