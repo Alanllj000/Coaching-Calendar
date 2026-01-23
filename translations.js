@@ -25,7 +25,17 @@ const translations = {
         placeholder_pwd_confirm: "Confirmer le nouveau mot de passe",
         btn_confirm: "Confirmer",
         btn_cancel: "Annuler",
-        reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+        admin_panel_title: "Nouvel Événement",
+        placeholder_title: "Titre",
+        placeholder_loc: "Lieu",
+        label_notes: "Notes Complémentaires",
+        placeholder_notes: "Détails du coaching, matériel à prévoir...",
+        placeholder_max: "Places Max",
+        label_recurrence: "Récurrence",
+        day_mon: "Lun", day_tue: "Mar", day_wed: "Mer", day_thu: "Jeu", day_fri: "Ven", day_sat: "Sam", day_sun: "Dim",
+        btn_save: "Enregistrer",
+        btn_delete_event: "Supprimer l'événement",
+                reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
 <input id="set-firstname" oninput="checkProfileChanges()" placeholder="Prénom" class="input-field" oninput="checkProfileChanges()">
@@ -239,6 +249,16 @@ Poursuivre
         placeholder_pwd_confirm: "Confirm new password",
         btn_confirm: "Confirm",
         btn_cancel: "Cancel",
+        admin_panel_title: "New Event",
+        placeholder_title: "Title",
+        placeholder_loc: "Location",
+        label_notes: "Additional Notes",
+        placeholder_notes: "Coaching details, equipment needed...",
+        placeholder_max: "Max Slots",
+        label_recurrence: "Recurrence",
+        day_mon: "Mon", day_tue: "Tue", day_wed: "Wed", day_thu: "Thu", day_fri: "Fri", day_sat: "Sat", day_sun: "Sun",
+        btn_save: "Save",
+        btn_delete_event: "Delete event",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile</p>
@@ -438,6 +458,16 @@ Continue
         placeholder_pwd_confirm: "Neues Passwort bestätigen",
         btn_confirm: "Bestätigen",
         btn_cancel: "Abbrechen",
+        admin_panel_title: "Neues Ereignis",
+        placeholder_title: "Titel",
+        placeholder_loc: "Ort",
+        label_notes: "Zusätzliche Notizen",
+        placeholder_notes: "Coaching-Details, Ausrüstung...",
+        placeholder_max: "Max. Plätze",
+        label_recurrence: "Wiederholung",
+        day_mon: "Mo", day_tue: "Di", day_wed: "Mi", day_thu: "Do", day_fri: "Fr", day_sat: "Sa", day_sun: "So",
+        btn_save: "Speichern",
+        btn_delete_event: "Ereignis löschen",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
