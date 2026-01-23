@@ -3614,31 +3614,29 @@ setTimeout(setupGlobalRealtimeSync, 5000);
 });
 }
 function t(key) {
-    return translations[currentLang][key] || key;
+    const lang = localStorage.getItem('userLang') || 'fr'; 
+    if (!translations[lang]) return key;
+    return translations[lang][key] || key;
 }
 
 
         
 function applyStaticTranslations() {
-    // 1. On récupère tous les éléments marqués pour la traduction
     const elements = document.querySelectorAll('[data-i18n]');
     
     elements.forEach(el => {
         const key = el.getAttribute('data-i18n');
         const translation = t(key);
 
-        // Sécurité : si t(key) retourne la clé elle-même, c'est que la traduction manque.
-        // On ne fait rien dans ce cas pour laisser le texte par défaut du HTML.
+        // Si la traduction est trouvée (différente de la clé)
         if (translation !== key) {
-            
-            // 2. CAS PARTICULIER : Si c'est un champ de saisie (input)
             if (el.tagName.toUpperCase() === 'INPUT') {
                 el.placeholder = translation;
             } 
-            else if (translation.includes('<') && translation.includes('>')) {
-                el.innerHTML = translation; // Conserve le gras, les liens, etc.
-            }
-            // 3. CAS GÉNÉRAL : Pour tout le reste (p, span, h1, button, etc.)
+            // On vérifie si c'est ton gros bloc ou s'il y a du HTML
+            else if (key === 'conditions_utilisation_pip' || (translation.includes('<') && translation.includes('>'))) {
+                el.innerHTML = translation; 
+            } 
             else {
                 el.textContent = translation;
             }
@@ -3698,24 +3696,28 @@ if ('serviceWorker' in navigator) {
 }
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-applyStaticTranslations()
-// 1. Cacher physiquement les éléments avant même de vérifier la session
-document.getElementById('admin-panel').style.display = 'none';
-const pipZone = document.getElementById('mobile-pip-zone');
-if(pipZone) pipZone.style.display = 'none';
+    // Premier passage pour l'interface de base
+    applyStaticTranslations();
 
-// 2. Vérification de la session
-const { data: { session } } = await sb.auth.getSession();
-if (session) {
-initApp(session.user);
-} else {
-document.getElementById('auth-screen').style.display = 'flex';
-};
-updateLanguageUI();
+    document.getElementById('admin-panel').style.display = 'none';
+    const pipZone = document.getElementById('mobile-pip-zone');
+    if(pipZone) pipZone.style.display = 'none';
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+        await initApp(session.user);
+    } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+    };
+
+    // DEUXIÈME PASSAGE : Très important pour traduire ce que initApp a pu afficher
+    updateLanguageUI();
+    applyStaticTranslations(); 
 }
 </script>
 </body>
 </html>
+
 
 
 
