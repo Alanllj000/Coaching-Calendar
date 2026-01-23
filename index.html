@@ -1015,6 +1015,7 @@ async function initApp(user) {
 
     // 4. Exécution de la redirection (On utilise le nom exact de TA fonction)
     await executePendingRedirection(); 
+    fillProfileInputs()
 }
 
 async function loadProfile() {
@@ -3582,6 +3583,24 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
+
+function fillProfileInputs() {
+    if (!currentProfile) return; // Si les données ne sont pas chargées, on ne fait rien
+
+    const fields = {
+        'set-firstname': currentProfile.first_name,
+        'set-lastname': currentProfile.last_name,
+        'set-phone': currentProfile.phone,
+        'set-email': currentProfile.email
+    };
+
+    for (const [id, value] of Object.entries(fields)) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value || '';
+        }
+    }
+}
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
     // 1. Injection initiale (pour l'écran d'accueil/auth)
@@ -3602,7 +3621,7 @@ window.onload = async function() {
         // on ré-injecte les traductions ET on remplit les champs.
         applyStaticTranslations();
         updateLanguageUI();
-        fillProfileInputs(); // On appelle la fonction qui remplit les champs
+        fillProfileInputs(); 
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
     };
@@ -3610,6 +3629,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
