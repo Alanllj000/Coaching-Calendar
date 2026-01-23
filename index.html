@@ -3582,6 +3582,50 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
+
+
+
+
+
+
+
+
+// Ce script surveille l'apparition des champs de réglages et les remplit dès qu'ils sont injectés
+const profileObserver = new MutationObserver((mutations) => {
+    const firstNameInput = document.getElementById('set-firstname');
+    
+    // Si l'input existe et qu'il est vide, on le remplit avec les données en mémoire
+    if (firstNameInput && firstNameInput.value === "" && window.currentProfile) {
+        console.log("Observer : Champs détectés, remplissage automatique...");
+        
+        const p = window.currentProfile;
+        const u = window.currentUser;
+
+        if (document.getElementById('set-firstname')) document.getElementById('set-firstname').value = p.first_name || '';
+        if (document.getElementById('set-lastname')) document.getElementById('set-lastname').value = p.last_name || '';
+        if (document.getElementById('set-phone')) document.getElementById('set-phone').value = p.phone || '';
+        if (document.getElementById('set-email')) document.getElementById('set-email').value = u?.email || p.email || '';
+        
+        const initialEl = document.getElementById('user-initials');
+        if (initialEl && p.first_name) {
+            initialEl.textContent = p.first_name[0].toUpperCase();
+        }
+    }
+});
+
+// On lance la surveillance sur tout le document
+profileObserver.observe(document.body, { childList: true, subtree: true });
+
+
+
+
+
+
+
+
+
+
+    
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
     // 1. Premier passage : Injecte le HTML traduit (dont reglages_all)
@@ -3613,6 +3657,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
