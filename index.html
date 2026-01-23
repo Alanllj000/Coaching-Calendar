@@ -536,22 +536,23 @@ onclick="event.stopPropagation()">
 
 <!-- PiP SUPPRESSION DE COMPTE -->
 <div id="delete-account-pip" class="pip-overlay hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
-<div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
-<h3 class="text-xl font-bold text-gray-900 mb-2">Supprimer le Compte ?</h3>
-<p class="text-gray-500 text-sm mb-6">
-Cette action va définitivement supprimer votre compte ainsi que toutes vos données. Cette action est irréverssible.
-<br><b>Veuillez confirmer l'action.</b>
-</p>
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+        <h3 class="text-xl font-bold text-gray-900 mb-2" data-i18n="pip_del_acc_title">Supprimer le Compte ?</h3>
+        
+        <p class="text-gray-500 text-sm mb-6" data-i18n="pip_del_acc_desc">
+            Cette action va définitivement supprimer votre compte ainsi que toutes vos données. Cette action est irréversible.
+            <br><b data-i18n="pip_del_acc_confirm">Veuillez confirmer l'action.</b>
+        </p>
 
-<div class="space-y-3">
-<button onclick="handleDeleteAccount()" class="w-full py-4 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition">
-Oui, Supprimer
-</button>
-<button onclick="closeDeleteAccountPip()" class="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">
-Non, Annuler
-</button>
-</div>
-</div>
+        <div class="space-y-3">
+            <button onclick="handleDeleteAccount()" class="w-full py-4 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition" data-i18n="btn_confirm_del_acc">
+                Oui, Supprimer
+            </button>
+            <button onclick="closeDeleteAccountPip()" class="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition" data-i18n="btn_cancel">
+                Non, Annuler
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- PiP confirmation de mot de passe-->
@@ -2269,19 +2270,26 @@ function resetAdminForm() {
 }
 // Ouverture de la PiP
 function openDeleteAccountPip() {
-// On ferme d'abord la PiP réglages si elle est ouverte
-const settingsPip = document.getElementById('settings-pip'); // remplace par l'ID exact de ta PiP réglages
-if (settingsPip) settingsPip.classList.add('hidden');
+    // 1. Traduction de sécurité
+    applyStaticTranslations();
 
-document.getElementById('delete-account-pip').classList.remove('hidden');
+    // 2. On cache la PiP des réglages (si c'est ton souhait)
+    const settingsPip = document.getElementById('settings-pip'); 
+    if (settingsPip) settingsPip.classList.add('hidden');
+
+    // 3. On affiche la PiP de suppression
+    const delPip = document.getElementById('delete-account-pip');
+    if (delPip) delPip.classList.remove('hidden');
 }
 
-// Fermeture et retour aux réglages
 function closeDeleteAccountPip() {
-document.getElementById('delete-account-pip').classList.add('hidden');
-// On peut rouvrir les réglages ici si nécessaire
-const settingsPip = document.getElementById('settings-pip');
-if (settingsPip) settingsPip.classList.remove('hidden');
+    // 1. On cache la PiP de suppression
+    const delPip = document.getElementById('delete-account-pip');
+    if (delPip) delPip.classList.add('hidden');
+
+    // 2. On RÉAFFICHE la PiP des réglages pour ne pas perdre l'utilisateur
+    const settingsPip = document.getElementById('settings-pip');
+    if (settingsPip) settingsPip.classList.remove('hidden');
 }
 
 // Logique de suppression
@@ -3737,6 +3745,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
