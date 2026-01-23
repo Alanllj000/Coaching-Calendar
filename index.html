@@ -369,13 +369,12 @@ onclick="event.stopPropagation()">
 
 <div id="mobile-pip-zone"></div>
 
-<!-- PANEL ADMIN -->
 <div id="admin-panel" class="fullscreen-pip">
     <div class="max-w-2xl mx-auto w-full p-6 pt-10">
         
         <div class="flex justify-between items-center mb-8">
             <div class="flex items-center gap-4">
-                <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight">Nouvel Événement</h2>
+                <h2 id="admin-panel-title" class="text-3xl font-black tracking-tight" data-i18n="admin_panel_title">Nouvel Événement</h2>
                 
                 <div class="relative group">
                     <input type="color" id="event-color-input" value="#3b82f6" 
@@ -385,43 +384,51 @@ onclick="event.stopPropagation()">
             
             <button onclick="closeAdminPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold">&times;</button>
         </div>
-<div class="space-y-5 pb-20">
-<input id="admin-event-id" type="hidden">
-<input id="admin-title" placeholder="Titre" class="input-field">
-<input id="admin-loc" placeholder="Lieu" class="input-field">
-<div class="mt-4">
-<label class="text-[10px] font-black uppercase text-slate-400 ml-1">Notes Complémentaires</label>
-<textarea id="event-notes" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[80px]" placeholder="Détails du coaching, matériel à prévoir..."></textarea>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<input id="admin-date" type="date" class="input-field">
-<input id="admin-max" type="number" placeholder="Places Max" class="input-field">
-</div>
-<div class="grid grid-cols-2 gap-4">
-<input id="admin-start" type="time" class="input-field">
-<input id="admin-end" type="time" class="input-field">
-</div>
-<div id="recurrence-section" class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-<p class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-wider text-center">Récurrence</p>
-<div class="flex flex-wrap gap-2">
-<label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Lun</div></label>
-<label class="flex-1"><input type="checkbox" value="tuesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Mar</div></label>
-<label class="flex-1"><input type="checkbox" value="wednesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Mer</div></label>
-<label class="flex-1"><input type="checkbox" value="thursday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Jeu</div></label>
-<label class="flex-1"><input type="checkbox" value="friday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Ven</div></label>
-<label class="flex-1"><input type="checkbox" value="saturday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Sam</div></label>
-<label class="flex-1"><input type="checkbox" value="sunday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer">Dim</div></label>
-</div>
-</div>
-<button id="admin-save-btn" onclick="requestAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl">Enregistrer</button>
-<button 
-id="admin-delete-btn" 
-onclick="handleDelete(document.getElementById('admin-event-id').value)" 
-class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition mt-2">
-Supprimer l'événement
-</button>
-</div>
-</div>
+
+        <div class="space-y-5 pb-20">
+            <input id="admin-event-id" type="hidden">
+            <input id="admin-title" data-i18n="placeholder_title" placeholder="Titre" class="input-field">
+            <input id="admin-loc" data-i18n="placeholder_loc" placeholder="Lieu" class="input-field">
+            
+            <div class="mt-4">
+                <label class="text-[10px] font-black uppercase text-slate-400 ml-1" data-i18n="label_notes">Notes Complémentaires</label>
+                <textarea id="event-notes" data-i18n="placeholder_notes" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[80px]" placeholder="Détails du coaching, matériel à prévoir..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <input id="admin-date" type="date" class="input-field">
+                <input id="admin-max" type="number" data-i18n="placeholder_max" placeholder="Places Max" class="input-field">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <input id="admin-start" type="time" class="input-field">
+                <input id="admin-end" type="time" class="input-field">
+            </div>
+
+            <div id="recurrence-section" class="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-wider text-center" data-i18n="label_recurrence">Récurrence</p>
+                <div class="flex flex-wrap gap-2">
+                    <label class="flex-1"><input type="checkbox" value="monday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer" data-i18n="day_mon">Lun</div></label>
+                    <label class="flex-1"><input type="checkbox" value="tuesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer" data-i18n="day_tue">Mar</div></label>
+                    <label class="flex-1"><input type="checkbox" value="wednesday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer" data-i18n="day_wed">Mer</div></label>
+                    <label class="flex-1"><input type="checkbox" value="thursday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer" data-i18n="day_thu">Jeu</div></label>
+                    <label class="flex-1"><input type="checkbox" value="friday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer" data-i18n="day_fri">Ven</div></label>
+                    <label class="flex-1"><input type="checkbox" value="saturday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer" data-i18n="day_sat">Sam</div></label>
+                    <label class="flex-1"><input type="checkbox" value="sunday" class="day-checkbox hidden"><div class="day-label py-3 text-center border border-slate-200 rounded-xl font-bold text-[10px] transition cursor-pointer" data-i18n="day_sun">Dim</div></label>
+                </div>
+            </div>
+
+            <button id="admin-save-btn" onclick="requestAdminSubmit()" class="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl shadow-xl" data-i18n="btn_save">Enregistrer</button>
+            
+            <button 
+                id="admin-delete-btn" 
+                onclick="handleDelete(document.getElementById('admin-event-id').value)" 
+                class="hidden w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-xl hover:bg-red-100 transition mt-2" 
+                data-i18n="btn_delete_event">
+                Supprimer l'événement
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- PANEL REGLAGES -->
@@ -440,39 +447,40 @@ Supprimer l'événement
 
 <!-- Day PiP et modification  -->
 <div id="edit-choice-pip" class="overlay-pip" style="display:none;">
-<div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-<div class="w-16 h-16 bg-slate-50 text-slate-900 rounded-full flex items-center justify-center mx-auto mb-6">
-<i class="fas fa-layer-group text-2xl"></i>
-</div>
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <div class="w-16 h-16 bg-slate-50 text-slate-900 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-layer-group text-2xl"></i>
+        </div>
 
-<h3 class="text-xl font-black text-center text-slate-900 mb-2 uppercase tracking-tight">Modifier l'événement</h3>
-<p class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed uppercase font-bold tracking-widest">
-Cet événement fait partie d'une série.
-</p>
+        <h3 class="text-xl font-black text-center text-slate-900 mb-2 uppercase tracking-tight" data-i18n="edit_choice_title">Modifier l'événement</h3>
+        <p class="text-slate-400 text-[10px] text-center mb-6 leading-relaxed uppercase font-bold tracking-widest" data-i18n="edit_choice_subtitle">
+            Cet événement fait partie d'une série.
+        </p>
 
-<div class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between border border-slate-100">
-<span id="edit-mode-text" class="text-[10px] font-black text-slate-700 uppercase tracking-tighter">
-Modifier cette séance uniquement
-</span>
-<label class="switch">
-<input type="checkbox" id="edit-series-toggle" onchange="updateEditModeText()">
-<span class="slider"></span>
-</label>
-</div>
+        <div class="bg-slate-50 rounded-2xl p-4 mb-8 flex items-center justify-between border border-slate-100">
+            <span id="edit-mode-text" class="text-[10px] font-black text-slate-700 uppercase tracking-tighter" data-i18n="edit_mode_single">
+                Modifier cette séance uniquement
+            </span>
+            <label class="switch">
+                <input type="checkbox" id="edit-series-toggle" onchange="updateEditModeText()">
+                <span class="slider"></span>
+            </label>
+        </div>
 
-<div class="flex flex-col gap-3">
-<button onclick="confirmAdminUpdate()" 
-class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition uppercase text-xs tracking-widest">
-Confirmer la modification
-</button>
-<button onclick="cancelEditChoice()" 
-class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl text-xs uppercase tracking-widest hover:text-slate-600 transition">
-Annuler
-</button>
+        <div class="flex flex-col gap-3">
+            <button onclick="confirmAdminUpdate()" 
+                class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition uppercase text-xs tracking-widest"
+                data-i18n="btn_confirm_edit">
+                Confirmer la modification
+            </button>
+            <button onclick="cancelEditChoice()" 
+                class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl text-xs uppercase tracking-widest hover:text-slate-600 transition"
+                data-i18n="btn_cancel">
+                Annuler
+            </button>
+        </div>
+    </div>
 </div>
-</div>
-</div>
-
 <!-- PiP SUPPRESSION -->
 <div id="delete-confirmation-pip" class="overlay-pip">
 <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
@@ -2200,9 +2208,11 @@ zone.innerHTML = `
 
 // Change le texte dynamiquement selon la position du toggle
 function updateEditModeText() {
-const isSeries = document.getElementById('edit-series-toggle').checked;
-const textEl = document.getElementById('edit-mode-text');
-textEl.innerText = isSeries ? "Modifier toute la série (à venir)" : "Modifier cette séance uniquement";
+    const isSeries = document.getElementById('edit-series-toggle').checked;
+    const textEl = document.getElementById('edit-mode-text');
+    
+    // On utilise les clés qu'on a définies dans la bibliothèque
+    textEl.innerText = isSeries ? t('edit_mode_series') : t('edit_mode_single');
 }
 
 // Ferme la PiP de choix
@@ -3727,6 +3737,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
