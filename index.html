@@ -1021,20 +1021,20 @@ async function initApp(user) {
 
 async function loadProfile() {
     if (!window.currentUser) return;
+    console.log("Chargement du profil pour ID:", window.currentUser.id);
 
     const { data: profile, error } = await sb.from('profiles').select('*').eq('id', window.currentUser.id).maybeSingle();
     
-    if (error) return console.error("Erreur profil:", error.message);
+    if (error) {
+        console.error("Erreur Supabase Profiles:", error.message);
+        return;
+    }
 
     if (profile) {
-        window.currentProfile = profile; // Stockage global
-        
-        // Gestion bouton admin
-        const adminBtn = document.getElementById('btn-admin-panel-menu');
-        if (adminBtn) {
-            if (profile.role === 'admin') adminBtn.classList.remove('hidden');
-            else adminBtn.classList.add('hidden');
-        }
+        window.currentProfile = profile;
+        console.log("Profil chargé avec succès:", window.currentProfile);
+    } else {
+        console.warn("Aucun profil trouvé en base de données pour cet utilisateur.");
     }
 }
 async function fetchEvents() {
@@ -3501,7 +3501,6 @@ function t(key) {
 
         
 function applyStaticTranslations() {
-    console.log("--- Traduction & Remplissage en cours ---");
     const elements = document.querySelectorAll('[data-i18n]');
     
     elements.forEach(el => {
@@ -3511,44 +3510,16 @@ function applyStaticTranslations() {
         if (translation !== key) {
             if (el.tagName === 'INPUT') {
                 el.placeholder = translation;
-            } 
-            else if (key === 'reglages_all' || (translation.includes('<') && translation.includes('>'))) {
+            } else if (key === 'reglages_all' || (translation.includes('<') && translation.includes('>'))) {
                 el.innerHTML = translation;
-            } 
-            else {
+            } else {
                 el.textContent = translation;
             }
         }
     });
 
-    // TRÈS IMPORTANT : Une fois le HTML injecté, on remplit les données
-    const profile = window.currentProfile;
-    if (profile) {
-        console.log("Données profil trouvées, injection dans les champs...");
-        
-        const fields = {
-            'set-firstname': profile.first_name,
-            'set-lastname': profile.last_name,
-            'set-phone': profile.phone,
-            'set-email': window.currentUser?.email || profile.email
-        };
-
-        for (const [id, value] of Object.entries(fields)) {
-            const input = document.getElementById(id);
-            if (input) {
-                input.value = value || '';
-            }
-        }
-
-        const initialEl = document.getElementById('user-initials');
-        if (initialEl && profile.first_name) {
-            initialEl.textContent = profile.first_name[0].toUpperCase();
-        }
-    } else {
-        console.warn("Attention : window.currentProfile est vide !");
-    }
-
-    if (typeof renderDayHeaders === "function") renderDayHeaders();
+    // Appel direct au remplissage
+    fillProfileInputs();
 }
 function updateLanguageUI() {
     const current = localStorage.getItem('userLang') || 'fr';
@@ -3602,28 +3573,39 @@ if ('serviceWorker' in navigator) {
 }
 
 function fillProfileInputs() {
-    const profile = window.currentProfile || currentProfile;
-    const user = window.currentUser || currentUser;
+    const p = window.currentProfile;
+    const u = window.currentUser;
 
-    if (!profile) return; // On ne log plus l'erreur pour ne pas polluer si c'est normal (au début)
+    if (!p) {
+        console.log("Remplissage impossible : window.currentProfile est encore vide.");
+        return;
+    }
 
+    console.log("Remplissage des champs avec :", p.first_name, p.last_name);
+
+    // Dictionnaire de correspondance ID HTML <=> Nom Colonne SQL
     const mapping = {
-        'set-firstname': profile.first_name,
-        'set-lastname': profile.last_name,
-        'set-phone': profile.phone,
-        'set-email': user?.email || profile.email
+        'set-firstname': p.first_name,
+        'set-lastname': p.last_name,
+        'set-phone': p.phone,
+        'set-email': u?.email || p.email
     };
 
     for (const [id, value] of Object.entries(mapping)) {
-        const input = document.getElementById(id);
-        if (input) {
-            input.value = value || '';
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value || '';
+            console.log(`Champ ${id} mis à jour.`);
+        } else {
+            console.warn(`Attention : l'élément #${id} n'existe pas dans le HTML.`);
         }
     }
 
+    // Initiale
     const initialEl = document.getElementById('user-initials');
-    if (initialEl && profile.first_name) {
-        initialEl.textContent = profile.first_name[0].toUpperCase();
+    if (initialEl && p.first_name) {
+        initialEl.textContent = p.first_name[0].toUpperCase();
+        console.log("Initiale mise à jour :", p.first_name[0]);
     }
 }
 // --- 2. Gestion du ServiceWorker
@@ -3664,6 +3646,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
