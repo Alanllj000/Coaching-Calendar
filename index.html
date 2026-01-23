@@ -3591,29 +3591,42 @@ if ('serviceWorker' in navigator) {
 
 
 // Ce script surveille l'apparition des champs de réglages et les remplit dès qu'ils sont injectés
-const profileObserver = new MutationObserver((mutations) => {
-    const firstNameInput = document.getElementById('set-firstname');
+const profileObserver = new MutationObserver(() => {
+    // On cherche le conteneur principal des réglages
+    const profileSection = document.getElementById('profile-section');
     
-    // Si l'input existe et qu'il est vide, on le remplit avec les données en mémoire
-    if (firstNameInput && firstNameInput.value === "" && window.currentProfile) {
-        console.log("Observer : Champs détectés, remplissage automatique...");
-        
+    if (profileSection && window.currentProfile) {
         const p = window.currentProfile;
         const u = window.currentUser;
 
-        if (document.getElementById('set-firstname')) document.getElementById('set-firstname').value = p.first_name || '';
-        if (document.getElementById('set-lastname')) document.getElementById('set-lastname').value = p.last_name || '';
-        if (document.getElementById('set-phone')) document.getElementById('set-phone').value = p.phone || '';
-        if (document.getElementById('set-email')) document.getElementById('set-email').value = u?.email || p.email || '';
-        
+        // On définit les correspondances
+        const mapping = {
+            'set-firstname': p.first_name,
+            'set-lastname': p.last_name,
+            'set-phone': p.phone,
+            'set-email': u?.email || p.email
+        };
+
+        // On remplit
+        Object.entries(mapping).forEach(([id, value]) => {
+            const input = document.getElementById(id);
+            // On remplit si l'input existe ET qu'il n'a pas encore été traité par l'observer
+            if (input && input.getAttribute('data-filled') !== 'true') {
+                input.value = value || '';
+                input.setAttribute('data-filled', 'true'); // Marqueur pour éviter une boucle infinie
+            }
+        });
+
+        // Mise à jour de l'initiale
         const initialEl = document.getElementById('user-initials');
-        if (initialEl && p.first_name) {
+        if (initialEl && p.first_name && initialEl.getAttribute('data-filled') !== 'true') {
             initialEl.textContent = p.first_name[0].toUpperCase();
+            initialEl.setAttribute('data-filled', 'true');
         }
     }
 });
 
-// On lance la surveillance sur tout le document
+// Surveillance active
 profileObserver.observe(document.body, { childList: true, subtree: true });
 
 
@@ -3657,6 +3670,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
