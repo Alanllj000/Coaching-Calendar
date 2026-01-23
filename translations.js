@@ -19,6 +19,12 @@ const translations = {
         notif_same_day: "Le jour même",
         at: "à",
         delete: "Supprimer",
+        pip_pwd_title: "Modifier votre mot de passe",
+        placeholder_pwd_current: "Mot de passe actuel",
+        placeholder_pwd_new: "Nouveau mot de passe",
+        placeholder_pwd_confirm: "Confirmer le nouveau mot de passe",
+        btn_confirm: "Confirmer",
+        btn_cancel: "Annuler",
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -227,6 +233,12 @@ Poursuivre
         notif_same_day: "Same day",
         at: "at",
         delete: "Delete",
+        pip_pwd_title: "Change your password",
+        placeholder_pwd_current: "Current password",
+        placeholder_pwd_new: "New password",
+        placeholder_pwd_confirm: "Confirm new password",
+        btn_confirm: "Confirm",
+        btn_cancel: "Cancel",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile</p>
@@ -420,6 +432,12 @@ Continue
         notif_same_day: "Am selben Tag",
         at: "um",
         delete: "Löschen",
+        pip_pwd_title: "Passwort ändern",
+        placeholder_pwd_current: "Aktuelles Passwort",
+        placeholder_pwd_new: "Neues Passwort",
+        placeholder_pwd_confirm: "Neues Passwort bestätigen",
+        btn_confirm: "Bestätigen",
+        btn_cancel: "Abbrechen",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
