@@ -52,6 +52,15 @@ const translations = {
         pip_del_acc_desc: "Cette action va définitivement supprimer votre compte ainsi que toutes vos données. Cette action est irréversible.",
         pip_del_acc_confirm: "Veuillez confirmer l'action.",
         btn_confirm_del_acc: "Oui, Supprimer",
+        pip_confirm_pwd_title: "Confirmer le mot de passe",
+        pip_confirm_pwd_desc: "Veuillez confirmer votre mot de passe pour des raisons de sécurité.",
+        placeholder_pwd: "Mot de passe",
+        btn_confirm: "Confirmer",
+        btn_cancel: "Annuler",
+        pip_signup_confirm_title: "Confirmer le compte",
+    pip_signup_confirm_desc: "Veuillez confirmer votre mot de passe pour finaliser l'inscription.",
+    placeholder_confirm_pwd: "Confirmer le mot de passe",
+    btn_confirm_access: "Confirmer et Accéder",
                 reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -293,6 +302,15 @@ Poursuivre
         pip_del_acc_desc: "This action will permanently delete your account and all your data. This action is irreversible.",
         pip_del_acc_confirm: "Please confirm this action.",
         btn_confirm_del_acc: "Yes, Delete",
+        pip_confirm_pwd_title: "Confirm Password",
+        pip_confirm_pwd_desc: "Please confirm your password for security reasons.",
+        placeholder_pwd: "Password",
+        btn_confirm: "Confirm",
+        btn_cancel: "Cancel",
+        pip_signup_confirm_title: "Confirm Account",
+        pip_signup_confirm_desc: "Please confirm your password to finalize your registration.",
+        placeholder_confirm_pwd: "Confirm password",
+        btn_confirm_access: "Confirm and Access",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile</p>
@@ -519,6 +537,15 @@ Continue
         pip_del_acc_desc: "Diese Aktion wird Ihr Konto und alle Ihre Daten dauerhaft löschen. Diese Aktion ist nicht rückgängig zu machen.",
         pip_del_acc_confirm: "Bitte bestätigen Sie diese Aktion.",
         btn_confirm_del_acc: "Ja, Löschen",
+        pip_confirm_pwd_title: "Passwort bestätigen",
+        pip_confirm_pwd_desc: "Bitte bestätigen Sie votre Passwort aus Sicherheitsgründen.",
+        placeholder_pwd: "Passwort",
+        btn_confirm: "Bestätigen",
+        btn_cancel: "Abbrechen",
+        pip_signup_confirm_title: "Konto bestätigen",
+        pip_signup_confirm_desc: "Bitte bestätigen Sie Ihr Passwort, um die Registrierung abzuschließen.",
+        placeholder_confirm_pwd: "Passwort bestätigen",
+        btn_confirm_access: "Bestätigen und Beitreten",
         reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
     <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
