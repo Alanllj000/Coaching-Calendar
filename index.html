@@ -3584,35 +3584,33 @@ if ('serviceWorker' in navigator) {
 }
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-    // 1. Premier passage : Injecte le HTML traduit (dont reglages_all)
+    // 1. Injection initiale (pour l'écran d'accueil/auth)
     applyStaticTranslations();
-    
-    // 2. Met à jour l'apparence des boutons de langue fraîchement injectés
     updateLanguageUI();
 
-    // 3. Cache les éléments administratifs par défaut
-    if(document.getElementById('admin-panel')) {
-        document.getElementById('admin-panel').style.display = 'none';
-    }
+    // 2. Gestion Admin/PiP
+    if(document.getElementById('admin-panel')) document.getElementById('admin-panel').style.display = 'none';
     const pipZone = document.getElementById('mobile-pip-zone');
     if(pipZone) pipZone.style.display = 'none';
 
-    // 4. Vérification de la session Supabase
+    // 3. Session & Profil
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
-        // initApp va probablement afficher le calendrier et charger le profil
         await initApp(session.user);
+        // --- AJOUT CRUCIAL ICI ---
+        // Une fois que initApp a chargé les données dans currentProfile,
+        // on ré-injecte les traductions ET on remplit les champs.
+        applyStaticTranslations();
+        updateLanguageUI();
+        fillProfileInputs(); // On appelle la fonction qui remplit les champs
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
     };
-
-    // 5. DEUXIÈME PASSAGE : Pour traduire les éléments générés dynamiquement par initApp
-    applyStaticTranslations(); 
-    updateLanguageUI();
 }
 </script>
 </body>
 </html>
+
 
 
 
