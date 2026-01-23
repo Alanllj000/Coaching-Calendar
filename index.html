@@ -2797,29 +2797,40 @@ checkChanges();
 
 // 4. Afficher la liste des rappels personnalisés
 function renderCustomReminders() {
-const container = document.getElementById('custom-reminders-list');
-container.innerHTML = "";
+    const container = document.getElementById('custom-reminders-list');
+    if (!container) return; // Sécurité si l'élément n'est pas encore là
+    container.innerHTML = "";
 
-currentCustomReminders.forEach((rem, index) => {
-const label = rem.days == 0 ? `Le jour même à ${rem.time}` : `J-${rem.days} à ${rem.time}`;
+    currentCustomReminders.forEach((rem, index) => {
+        // Traduction dynamique du label
+        let label;
+        if (rem.days == 0) {
+            // "Le jour même à 09:00"
+            label = `${t('notif_same_day')} ${t('at')} ${rem.time}`;
+        } else {
+            // "J-2 à 09:00"
+            label = `J-${rem.days} ${t('at')} ${rem.time}`;
+        }
 
-const div = document.createElement('div');
-div.className = "flex items-center justify-between p-3 bg-slate-50 rounded-2xl animate-in slide-in-from-right-2";
-div.innerHTML = `
-           <div>
-               <p class="text-xs font-black text-slate-700">${label}</p>
-               <button onclick="removeReminder('${rem.id}')" class="text-[9px] font-bold text-red-400 uppercase tracking-tighter">Supprimer</button>
-           </div>
-           <label class="switch scale-75">
-               <input type="checkbox" ${rem.active ? 'checked' : ''} onchange="toggleReminderActive('${rem.id}')">
-               <span class="slider"></span>
-           </label>
-       `;
-container.appendChild(div);
-});
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between p-3 bg-slate-50 rounded-2xl animate-in slide-in-from-right-2";
+        div.innerHTML = `
+            <div>
+                <p class="text-xs font-black text-slate-700">${label}</p>
+                <button onclick="removeReminder('${rem.id}')" class="text-[9px] font-bold text-red-400 uppercase tracking-tighter">${t('delete')}</button>
+            </div>
+            <label class="switch scale-75">
+                <input type="checkbox" ${rem.active ? 'checked' : ''} onchange="toggleReminderActive('${rem.id}')">
+                <span class="slider"></span>
+            </label>
+        `;
+        container.appendChild(div);
+    });
 
-// Masquer le bouton ajouter si 3 rappels
-document.getElementById('btn-open-custom').style.display = currentCustomReminders.length >= 3 ? 'none' : 'block';
+    const btnAdd = document.getElementById('btn-open-custom');
+    if (btnAdd) {
+        btnAdd.style.display = currentCustomReminders.length >= 3 ? 'none' : 'block';
+    }
 }
 
 function removeReminder(id) {
@@ -3714,6 +3725,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
