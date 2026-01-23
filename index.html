@@ -517,35 +517,22 @@ onclick="event.stopPropagation()">
 
 <!-- Email Pip -->
 <div id="email-pip" class="overlay-pip">
-<div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-<h3 class="text-xl font-black text-center text-slate-900 mb-6">Modifier votre email</h3>
-<div class="space-y-4 mb-8">
-<input id="email-current-display" type="text" readonly class="input-field bg-slate-100 text-slate-400">
-<input id="email-new" type="email" placeholder="Nouvel email" class="input-field">
-<input id="email-pwd-verif" type="password" placeholder="Mot de passe" class="input-field">
-</div>
-<div class="flex flex-col gap-3">
-<button onclick="updateEmail()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
-<button onclick="closeEmailPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-</div>
-</div>
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-center text-slate-900 mb-6" data-i18n="pip_email_title">Modifier votre email</h3>
+        <div class="space-y-4 mb-8">
+            <input id="email-current-display" type="text" readonly class="input-field bg-slate-100 text-slate-400">
+            
+            <input id="email-new" type="email" data-i18n="placeholder_email_new" placeholder="Nouvel email" class="input-field">
+            <input id="email-pwd-verif" type="password" data-i18n="placeholder_pwd_verif" placeholder="Mot de passe" class="input-field">
+        </div>
+        <div class="flex flex-col gap-3">
+            <button onclick="updateEmail()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition" data-i18n="btn_confirm">Confirmer</button>
+            <button onclick="closeEmailPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl" data-i18n="btn_cancel">Annuler</button>
+        </div>
+    </div>
 </div>
 
-<!-- PiP RAPPELS PERSONNALISÉS -->
-<div id="custom-reminders-pip" class="overlay-pip">
-<div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-<h3 class="text-xl font-black text-slate-900 mb-6 text-center">Rappel Personnalisé</h3>
-<div class="grid grid-cols-3 gap-3 mb-8">
-<div class="flex flex-col items-center"><input id="custom-days" type="number" value="0" min="0" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Jours</span></div>
-<div class="flex flex-col items-center"><input id="custom-hours" type="number" value="0" min="0" max="23" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Heures</span></div>
-<div class="flex flex-col items-center"><input id="custom-minutes" type="number" value="30" min="0" max="59" class="input-field text-center p-3 text-lg"><span class="text-[9px] font-bold text-slate-400 mt-2">Mins</span></div>
-</div>
-<div class="flex flex-col gap-3">
-<button onclick="addCustomReminder()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Ajouter</button>
-<button onclick="closeCustomReminders()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-</div>
-</div>
-</div>
+
 
 <!-- PiP SUPPRESSION DE COMPTE -->
 <div id="delete-account-pip" class="pip-overlay hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
@@ -1878,18 +1865,22 @@ if (pip) pip.style.display = 'none';
 }
 
 function openEmailPip() {
-const emailInput = document.getElementById('email-current-display');
-// Correction du ?. ici pour éviter le crash
-if (currentUser && currentUser.email && emailInput) {
-emailInput.value = currentUser.email;
-}
-const pip = document.getElementById('email-pip');
-if (pip) pip.style.display = 'flex';
+    const emailInput = document.getElementById('email-current-display');
+    
+    if (currentUser && currentUser.email && emailInput) {
+        emailInput.value = currentUser.email;
+    }
+
+    // AJOUT : On s'assure que les placeholders sont dans la bonne langue à l'ouverture
+    applyStaticTranslations();
+
+    const pip = document.getElementById('email-pip');
+    if (pip) pip.style.display = 'flex';
 }
 
 function closeEmailPip() { 
-const pip = document.getElementById('email-pip');
-if (pip) pip.style.display = 'none'; 
+    const pip = document.getElementById('email-pip');
+    if (pip) pip.style.display = 'none'; 
 }
 
 // --- CHANGE PASSWORD ---
@@ -3746,6 +3737,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
