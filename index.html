@@ -334,7 +334,7 @@ onclick="event.stopPropagation()">
 <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 </svg>
-<span>Boîte de réception</span>
+<span data-i18n="menu_inbox">Boîte de réception</span>
 </div>
 <span id="inbox-badge-main" class="hidden w-5 h-5 bg-red-600 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black shadow-sm">
 0
@@ -342,13 +342,15 @@ onclick="event.stopPropagation()">
 </button>
 
 <button id="btn-admin-panel-menu" onclick="openAdminPanel()" class="hidden w-full text-left p-3 hover:bg-blue-50 rounded-xl font-bold text-sm text-blue-600 flex items-center gap-3 transition">
-<i class="fas fa-plus-circle w-5 text-center"></i> Créer Event
+<i class="fas fa-plus-circle w-5 text-center"></i> 
+<span data-i18n="menu_create">Créer Event</span>
 </button>
 
 <div class="border-t border-slate-100 my-2 mx-2"></div>
 
 <button onclick="logout()" class="w-full text-left p-3 hover:bg-red-50 rounded-xl font-bold text-sm text-red-500 flex items-center gap-3 transition">
-<i class="fas fa-sign-out-alt w-5 text-center"></i> Déconnexion
+<i class="fas fa-sign-out-alt w-5 text-center"></i> 
+<span data-i18n="menu_logout">Déconnexion</span>
 </button>
 </div>
 </div>
@@ -3721,6 +3723,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
