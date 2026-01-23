@@ -996,26 +996,27 @@ location.reload();
 // --- LOGIQUE APPLICATION ---
 async function initApp(user) {
     if (!user) return;
-    currentUser = user;
+    window.currentUser = user;
 
-    // 1. Interface
+    // 1. Interface de base
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-content').classList.remove('hidden');
 
-    // 2. Temps réel
-    setupAppRealtime(user.id);
+    // 2. Charger les données en mémoire (SANS toucher au DOM pour l'instant)
+    await loadProfile(); 
+    await fetchEvents(); 
 
-    // 3. Chargement des données
-    await loadProfile();
-    await fetchEvents(); // Le calendrier est rendu ici (renderCalendar est appelé dedans)
-    
+    // 3. ICI : On injecte le HTML des réglages AVANT de charger les paramètres de notifs
+    applyStaticTranslations();
+
+    // 4. Maintenant que le HTML est là, on peut remplir les réglages
     loadNotificationSettings();
     syncNotifToggleWithBrowser();
     loadInbox();
 
-    // 4. Exécution de la redirection (On utilise le nom exact de TA fonction)
-    await executePendingRedirection(); 
-    fillProfileInputs()
+    if (typeof executePendingRedirection === 'function') {
+        await executePendingRedirection(); 
+    }
 }
 
 async function loadProfile() {
