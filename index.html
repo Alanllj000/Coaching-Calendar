@@ -3632,7 +3632,40 @@ profileObserver.observe(document.body, { childList: true, subtree: true });
 
 
 
+function fillProfileInputs() {
+    // 1. On récupère les données
+    const p = window.currentProfile || currentProfile;
+    const u = window.currentUser || currentUser;
 
+    if (!p) {
+        console.warn("fillProfileInputs: Aucun profil en mémoire.");
+        return;
+    }
+
+    // 2. On définit ce qu'on veut remplir
+    const mapping = {
+        'set-firstname': p.first_name,
+        'set-lastname': p.last_name,
+        'set-phone': p.phone,
+        'set-email': u?.email || p.email
+    };
+
+    console.log("Tentative de remplissage des inputs...");
+
+    // 3. On remplit les champs s'ils existent dans le DOM
+    Object.entries(mapping).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value || '';
+        }
+    });
+
+    // 4. Mise à jour de l'initiale
+    const initialEl = document.getElementById('user-initials');
+    if (initialEl && p.first_name) {
+        initialEl.textContent = p.first_name[0].toUpperCase();
+    }
+}
 
 
 
@@ -3681,6 +3714,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
