@@ -490,20 +490,21 @@ Annuler
 </div>
 </div>
 
-<!-- Password Pip -->
 <div id="password-pip" class="overlay-pip">
-<div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
-<h3 class="text-xl font-black text-center text-slate-900 mb-6">Modifier votre mot de passe</h3>
-<div class="space-y-4 mb-8">
-<input id="pwd-current" type="password" placeholder="Mot de passe actuel" class="input-field">
-<input id="pwd-new" type="password" placeholder="Nouveau mot de passe" class="input-field">
-<input id="pwd-confirm" type="password" placeholder="Confirmer le nouveau mot de passe" class="input-field">
-</div>
-<div class="flex flex-col gap-3">
-<button onclick="validateAndChangePassword()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition">Confirmer</button>
-<button onclick="closePasswordPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl">Annuler</button>
-</div>
-</div>
+    <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-center text-slate-900 mb-6" data-i18n="pip_pwd_title">Modifier votre mot de passe</h3>
+        
+        <div class="space-y-4 mb-8">
+            <input id="pwd-current" type="password" data-i18n="placeholder_pwd_current" placeholder="Mot de passe actuel" class="input-field">
+            <input id="pwd-new" type="password" data-i18n="placeholder_pwd_new" placeholder="Nouveau mot de passe" class="input-field">
+            <input id="pwd-confirm" type="password" data-i18n="placeholder_pwd_confirm" placeholder="Confirmer le nouveau mot de passe" class="input-field">
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <button onclick="validateAndChangePassword()" class="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg active:scale-95 transition" data-i18n="btn_confirm">Confirmer</button>
+            <button onclick="closePasswordPip()" class="w-full py-4 bg-white text-slate-400 font-bold rounded-2xl" data-i18n="btn_cancel">Annuler</button>
+        </div>
+    </div>
 </div>
 
 <!-- Email Pip -->
@@ -3725,6 +3726,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
