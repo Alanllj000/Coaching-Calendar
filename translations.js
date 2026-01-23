@@ -10,7 +10,7 @@ const translations = {
         placeholder_prenom:"Prénom",
         placeholder_nom:"Nom",
         placeholder_tel:"Téléphone",
-        conditions_utilisation_pip=`<h2 class="text-xl font-bold mb-4 text-slate-900">Avant de commencer...</h2>
+        conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Avant de commencer...</h2>
 
 
 <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-600 overflow-y-auto mb-6 border border-gray-100 flex-1">
@@ -88,7 +88,7 @@ Poursuivre
         placeholder_prenom:"First Name",
         placeholder_nom:"Last Name",
         placeholder_tel:"Phone Number",
-        conditions_utilisation_pip=`<h2 class="text-xl font-bold mb-4 text-slate-900">Before starting...</h2>
+        conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Before starting...</h2>
 
 
 <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-600 overflow-y-auto mb-6 border border-gray-100 flex-1">
@@ -166,7 +166,7 @@ Continue
         placeholder_prenom:"Vorname",
         placeholder_nom:"Name",
         placeholder_tel:"Handy Nummer",
-        conditions_utilisation_pip=`<h2 class="text-xl font-bold mb-4 text-slate-900">Bevor wir anfangen...</h2>
+        conditions_utilisation_pip:`<h2 class="text-xl font-bold mb-4 text-slate-900">Bevor wir anfangen...</h2>
 
 
 <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-600 overflow-y-auto mb-6 border border-gray-100 flex-1">
