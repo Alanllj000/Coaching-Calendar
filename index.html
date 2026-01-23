@@ -1020,35 +1020,29 @@ async function initApp(user) {
 
 async function loadProfile() {
     if (!currentUser) return;
-
+    
     const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
     
-    if (error) {
-        console.error("Erreur profil:", error.message);
-        return;
-    }
+    if (error) return console.error("Erreur profil:", error.message);
 
     if (profile) {
-        // 1. On stocke dans la variable globale
-        currentProfile = profile;
-
-        // 2. On prépare l'objet de comparaison pour les changements
+        // ON FORCE LE STOCKAGE GLOBAL
+        window.currentProfile = profile; 
+        
         initialProfileData = {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
             phone: profile.phone || ''
         };
 
-        // 3. On remplit l'UI (Champs + Initiale + Admin)
+        // On remplit les champs maintenant que l'objet est créé
         fillProfileInputs();
 
-        // 4. Affichage du bouton admin si nécessaire
+        // Gestion du bouton admin
         const adminBtn = document.getElementById('btn-admin-panel-menu');
         if (adminBtn && profile.role === 'admin') {
             adminBtn.classList.remove('hidden');
         }
-        
-        checkProfileChanges();
     }
 }
 async function fetchEvents() {
@@ -3596,16 +3590,10 @@ if ('serviceWorker' in navigator) {
 }
 
 function fillProfileInputs() {
-    console.warn("--- DEBUG FILL PROFILE ---");
-    
-    // On vérifie les deux sources de données possibles
-    const profile = window.currentProfile;
-    const user = window.currentUser;
+    const profile = window.currentProfile || currentProfile;
+    const user = window.currentUser || currentUser;
 
-    if (!profile) {
-        console.error("Pas de profile trouvé dans window.currentProfile");
-        return;
-    }
+    if (!profile) return; // On ne log plus l'erreur pour ne pas polluer si c'est normal (au début)
 
     const mapping = {
         'set-firstname': profile.first_name,
@@ -3618,13 +3606,9 @@ function fillProfileInputs() {
         const input = document.getElementById(id);
         if (input) {
             input.value = value || '';
-            console.log(`Champ ${id} rempli avec : ${value}`);
-        } else {
-            console.error(`Élément #${id} introuvable dans le DOM !`);
         }
     }
 
-    // Initiale
     const initialEl = document.getElementById('user-initials');
     if (initialEl && profile.first_name) {
         initialEl.textContent = profile.first_name[0].toUpperCase();
@@ -3632,21 +3616,27 @@ function fillProfileInputs() {
 }
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-    // 1. On traduit l'interface statique (Auth, etc.)
+    // 1. On cache tout de suite la PiP au cas où le HTML injecté l'ouvrirait
+    const adminPanel = document.getElementById('admin-panel');
+    if (adminPanel) adminPanel.style.display = 'none';
+
+    // 2. Première traduction (Auth / Header)
     applyStaticTranslations();
     updateLanguageUI();
 
-    // 2. Vérification Session
     const { data: { session } } = await sb.auth.getSession();
     
     if (session) {
-        // 3. initApp va charger le profil et les événements
-        await initApp(session.user);
+        currentUser = session.user; // On définit currentUser globalement
         
-        // 4. Une fois tout chargé, on relance applyStaticTranslations
-        // Elle va injecter reglages_all ET déclencher fillProfileInputs automatiquement
+        // 3. ON ATTEND le chargement du profil
+        await loadProfile(); 
+        
+        // 4. Une fois le profil chargé en mémoire (window.currentProfile),
+        // on injecte les réglages qui vont déclencher fillProfileInputs()
         applyStaticTranslations();
         updateLanguageUI();
+        
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
     }
@@ -3654,6 +3644,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
