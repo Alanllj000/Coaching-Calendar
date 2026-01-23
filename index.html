@@ -3521,20 +3521,27 @@ function applyStaticTranslations() {
         const key = el.getAttribute('data-i18n');
         const translation = t(key);
 
-        // Si la traduction est trouvée (différente de la clé)
         if (translation !== key) {
             if (el.tagName.toUpperCase() === 'INPUT') {
                 el.placeholder = translation;
             } 
-            // On vérifie si c'est ton gros bloc ou s'il y a du HTML
-            else if (key === 'conditions_utilisation_pip' || (translation.includes('<') && translation.includes('>'))) {
-                el.innerHTML = translation; 
+            else if (key === 'conditions_utilisation_pip' || key === 'reglages_all' || (translation.includes('<') && translation.includes('>'))) {
+                el.innerHTML = translation;
+                
+                // SI ON VIENT D'INJECTER LES RÉGLAGES, ON REMPLIT LES INPUTS IMMÉDIATEMENT
+                if (key === 'reglages_all') {
+                    console.log("Injection reglages_all détectée, remplissage immédiat...");
+                    fillProfileInputs();
+                }
             } 
             else {
                 el.textContent = translation;
             }
         }
     });
+
+    // On s'assure que les jours du calendrier sont aussi traduits
+    if (typeof renderDayHeaders === "function") renderDayHeaders();
 }
 
 function updateLanguageUI() {
@@ -3589,65 +3596,57 @@ if ('serviceWorker' in navigator) {
 }
 
 function fillProfileInputs() {
-    // On vérifie si on a les données et l'utilisateur
-    if (!currentProfile && !currentUser) return;
+    console.warn("--- DEBUG FILL PROFILE ---");
+    
+    // On vérifie les deux sources de données possibles
+    const profile = window.currentProfile;
+    const user = window.currentUser;
 
-    // 1. Remplissage de l'Email (vient de la session Auth)
-    const emailField = document.getElementById('set-email');
-    if (emailField) emailField.value = currentUser?.email || '';
+    if (!profile) {
+        console.error("Pas de profile trouvé dans window.currentProfile");
+        return;
+    }
 
-    // 2. Si on a le profil, on remplit le reste
-    if (currentProfile) {
-        const fields = {
-            'set-firstname': currentProfile.first_name,
-            'set-lastname': currentProfile.last_name,
-            'set-phone': currentProfile.phone
-        };
+    const mapping = {
+        'set-firstname': profile.first_name,
+        'set-lastname': profile.last_name,
+        'set-phone': profile.phone,
+        'set-email': user?.email || profile.email
+    };
 
-        for (const [id, value] of Object.entries(fields)) {
-            const el = document.getElementById(id);
-            if (el) el.value = value || '';
+    for (const [id, value] of Object.entries(mapping)) {
+        const input = document.getElementById(id);
+        if (input) {
+            input.value = value || '';
+            console.log(`Champ ${id} rempli avec : ${value}`);
+        } else {
+            console.error(`Élément #${id} introuvable dans le DOM !`);
         }
+    }
 
-        // 3. Gestion de l'initiale (Le "?" qui disparaît)
-        const initialEl = document.getElementById('user-initials');
-        if (initialEl && currentProfile.first_name) {
-            initialEl.textContent = currentProfile.first_name[0].toUpperCase();
-        }
+    // Initiale
+    const initialEl = document.getElementById('user-initials');
+    if (initialEl && profile.first_name) {
+        initialEl.textContent = profile.first_name[0].toUpperCase();
     }
 }
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-    // 1. Premier passage pour l'interface de base (Auth screen)
+    // 1. On traduit l'interface statique (Auth, etc.)
     applyStaticTranslations();
     updateLanguageUI();
 
-    // 2. Initialisation de l'affichage
-    const adminPanel = document.getElementById('admin-panel');
-    if (adminPanel) adminPanel.style.display = 'none';
-    
-    const pipZone = document.getElementById('mobile-pip-zone');
-    if (pipZone) pipZone.style.display = 'none';
-
-    // 3. Vérification de la session
+    // 2. Vérification Session
     const { data: { session } } = await sb.auth.getSession();
     
     if (session) {
-        // On charge l'application (appelle loadProfile en interne)
+        // 3. initApp va charger le profil et les événements
         await initApp(session.user);
-
-        // --- SYNCHRONISATION TRADUCTION & DONNÉES ---
-        // On attend un micro-délai pour être sûr que le DOM est stable
-        setTimeout(() => {
-            // On ré-injecte pour être sûr que tout est dans la bonne langue
-            applyStaticTranslations();
-            updateLanguageUI();
-            
-            // On remet les données par-dessus le HTML traduit
-            fillProfileInputs();
-            console.log("Interface traduite et profil synchronisé.");
-        }, 50);
-
+        
+        // 4. Une fois tout chargé, on relance applyStaticTranslations
+        // Elle va injecter reglages_all ET déclencher fillProfileInputs automatiquement
+        applyStaticTranslations();
+        updateLanguageUI();
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
     }
@@ -3655,6 +3654,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
