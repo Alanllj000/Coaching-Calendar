@@ -1899,15 +1899,6 @@ document.getElementById('admin-panel').style.display = 'flex';
 if(document.getElementById('admin-delete-btn')) document.getElementById('admin-delete-btn').classList.add('hidden');
 }
 
-// 2. Reset de l'ID pour être sûr qu'on est en mode "Nouveau"
-document.getElementById('admin-event-id').value = '';
-
-// 3. Affichage du panel
-document.getElementById('admin-panel').style.display = 'flex'; 
-
-// 4. Masquer le bouton supprimer
-const delBtn = document.getElementById('admin-delete-btn');
-if(delBtn) delBtn.classList.add('hidden');
 
 function closeAdminPanel() { document.getElementById('admin-panel').style.display = 'none'; }
 function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
@@ -3733,6 +3724,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
