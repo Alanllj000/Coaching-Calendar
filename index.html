@@ -1044,40 +1044,54 @@ async function initApp(user) {
 
 async function loadProfile() {
     if (!currentUser) return;
-    document.getElementById('set-email').value = currentUser.email || '';
+
+    // Sécurité : Vérifier si le champ email existe
+    const setEmail = document.getElementById('set-email');
+    if (setEmail) setEmail.value = currentUser.email || '';
 
     const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
     if (error) return console.error("Erreur profil:", error.message);
 
     if (profile) {
-        // --- NOUVEAU : SYNCHRONISATION DE LA LANGUE ---
+        // --- SYNCHRONISATION DE LA LANGUE ---
         const localLang = localStorage.getItem('userLang') || 'fr';
-        // Si le profil en base de données a une langue différente de celle stockée localement
         if (profile.language && profile.language !== localLang) {
             localStorage.setItem('userLang', profile.language);
-            location.reload(); // On recharge pour appliquer la langue du profil partout
-            return; // On stoppe l'exécution ici car la page va se rafraîchir
+            location.reload(); 
+            return; 
         }
-        // ----------------------------------------------
 
         currentProfile = profile;
-        document.getElementById('set-firstname').value = profile.first_name || '';
-        document.getElementById('set-lastname').value = profile.last_name || '';
-        document.getElementById('set-phone').value = profile.phone || '';
+
+        // Sécurité pour les champs des paramètres
+        const setFirst = document.getElementById('set-firstname');
+        const setLast = document.getElementById('set-lastname');
+        const setPhone = document.getElementById('set-phone');
+        
+        if (setFirst) setFirst.value = profile.first_name || '';
+        if (setLast) setLast.value = profile.last_name || '';
+        if (setPhone) setPhone.value = profile.phone || '';
 
         initialProfileData = {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
             phone: profile.phone || ''
         };
+        
         checkProfileChanges();
 
+        // Sécurité pour les initiales
         if (profile.first_name) {
-            document.getElementById('user-initials').textContent = profile.first_name[0].toUpperCase();
+            const initialsEl = document.getElementById('user-initials');
+            if (initialsEl) {
+                initialsEl.textContent = profile.first_name[0].toUpperCase();
+            }
         }
         
+        // Sécurité pour le bouton admin
         if (profile.role === 'admin') {
-            document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+            const adminBtn = document.getElementById('btn-admin-panel-menu');
+            if (adminBtn) adminBtn.classList.remove('hidden');
         }
     }
 }
@@ -3740,6 +3754,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
