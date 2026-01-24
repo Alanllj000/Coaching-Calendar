@@ -35,6 +35,10 @@ const translations = {
     btn_cancel: "Annuler",
     btn_save: "Enregistrer",
     delete: "Supprimer",
+    status_full: "Complet",
+    status_finished: "Terminé",
+    status_pending: "En attente",
+    btn_edit_reg: "Modifier Réservation",
 
     // --- ADMIN PANEL ---
     admin_panel_title: "Nouvel Événement",
@@ -352,6 +356,9 @@ Poursuivre
     btn_cancel: "Cancel",
     btn_save: "Save",
     delete: "Delete",
+    status_finished: "Finished",
+    status_pending: "Pending",
+    btn_edit_reg: "Edit Reservation",
 
     // --- ADMIN PANEL ---
     admin_panel_title: "New Event",
@@ -653,6 +660,9 @@ Continue
     btn_cancel: "Abbrechen",
     btn_save: "Speichern",
     delete: "Löschen",
+    status_finished: "Beendet",
+    status_pending: "Ausstehend",
+    btn_edit_reg: "Reservierung bearbeiten",
 
     // --- ADMIN PANEL ---
     admin_panel_title: "Neues Ereignis",
