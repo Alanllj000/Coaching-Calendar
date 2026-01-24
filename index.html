@@ -240,50 +240,31 @@ user-select: none;
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
-<div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
-<div class="absolute top-4 right-4 z-50">
-    <div class="flex bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-200 shadow-sm">
-        <button onclick="changeLanguage('fr')" id="auth-lang-fr" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
-            <img src="https://flagcdn.com/w40/fr.png" class="w-4 h-3 object-cover rounded-sm" alt="FR">
-            <span class="text-[10px] font-black">FR</span>
+<div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
+    <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Pro Coach</h2>
+    
+    <div class="space-y-4 max-w-sm mx-auto w-full">
+        <input id="auth-email" type="email" data-i18n="placeholder_email" placeholder="Email" class="input-field">
+        <input id="auth-password" type="password" data-i18n="placeholder_password" placeholder="Mot de passe" class="input-field">
+
+        <div id="register-fields" class="hidden space-y-4">
+            <input id="auth-firstname" type="text" data-i18n="placeholder_prenom" placeholder="Prénom" class="input-field">
+            <input id="auth-lastname" type="text" data-i18n="placeholder_nom" placeholder="Nom" class="input-field">
+            <input id="auth-phone" type="tel" data-i18n="placeholder_tel" placeholder="Téléphone" class="input-field">
+        </div>
+
+        <button id="auth-btn" onclick="handleAuth()" data-i18n="auth_btn_login" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
+            Se connecter
         </button>
-        <button onclick="changeLanguage('en')" id="auth-lang-en" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
-            <img src="https://flagcdn.com/w40/gb.png" class="w-4 h-3 object-cover rounded-sm" alt="EN">
-            <span class="text-[10px] font-black">EN</span>
-        </button>
-        <button onclick="changeLanguage('de')" id="auth-lang-de" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
-            <img src="https://flagcdn.com/w40/de.png" class="w-4 h-3 object-cover rounded-sm" alt="DE">
-            <span class="text-[10px] font-black">DE</span>
+
+        <p onclick="toggleAuthMode()" id="auth-toggle" data-i18n="auth_toggle_to_register" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">
+            Créer un compte
+        </p>
+
+        <button id="auth-submit-btn" onclick="handleRegisterStep1()" data-i18n="auth_btn_register" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
+            Créer mon compte
         </button>
     </div>
-    <text>(En cour de création)</text>
-</div>
-<div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
-<h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Pro Coach </h2>
-<div class="space-y-4 max-w-sm mx-auto w-full">
-<input id="auth-email" type="email" placeholder="Email" class="input-field">
-<input id="auth-password" type="password" data-i18n="placeholder_password" placeholder="Mot de passe" class="input-field">
-
-<div id="register-fields" class="hidden space-y-4">
-<input id="auth-firstname" type="text" data-i18n="placeholder_prenom" placeholder="Prénom" class="input-field">
-<input id="auth-lastname" type="text" data-i18n="placeholder_nom" placeholder="Nom" class="input-field">
-<input id="auth-phone" type="tel" data-i18n="placeholder_tel"placeholder="Téléphone" class="input-field">
-</div>
-
-<button id="auth-btn" onclick="handleAuth()" data-i18n="Seconnecter" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
-Se connecter
-</button>
-
-<p onclick="toggleAuthMode()" id="auth-toggle" data-i18n="CreerCompte" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">
-Créer un compte
-</p>
-
-<button id="auth-submit-btn" onclick="handleRegisterStep1()" data-i18n="CreerCompte2"class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
-Créer mon compte
-</button>
-</div>
-</div>
 </div>
 
 <!-- PiP Conditions d'utilisation  -->
@@ -775,51 +756,45 @@ async function executePendingRedirection() {
 }
 // --- AUTHENTIFICATION ---
 function toggleAuthMode() {
-isRegisterMode = !isRegisterMode;
+    isRegisterMode = !isRegisterMode;
 
-// On récupère tous les éléments nécessaires
-const container = document.getElementById('auth-container-inner');
-const regFields = document.getElementById('register-fields');
-const pip = document.getElementById('gdpr-step-pip');
-const btnSubmit = document.getElementById('auth-submit-btn');
-const btnLogin = document.getElementById('auth-btn');
-const toggleTxt = document.getElementById('auth-toggle');
+    const container = document.getElementById('auth-container-inner');
+    const regFields = document.getElementById('register-fields');
+    const pip = document.getElementById('gdpr-step-pip');
+    const btnSubmit = document.getElementById('auth-submit-btn');
+    const btnLogin = document.getElementById('auth-btn');
+    const toggleTxt = document.getElementById('auth-toggle');
 
-// SÉCURITÉ : Si l'élément principal n'est pas trouvé, on arrête avant de planter
-if (!container) {
-console.error("ERREUR : 'auth-container-inner' introuvable dans le DOM.");
-return;
-}
+    if (!container) {
+        console.error("ERREUR : 'auth-container-inner' introuvable dans le DOM.");
+        return;
+    }
 
-if (isRegisterMode) {
-// 1. On affiche les champs d'inscription
-if (regFields) regFields.classList.remove('hidden');
-if (btnSubmit) btnSubmit.classList.remove('hidden');
-if (btnLogin) btnLogin.classList.add('hidden');
+    if (isRegisterMode) {
+        if (regFields) regFields.classList.remove('hidden');
+        if (btnSubmit) btnSubmit.classList.remove('hidden');
+        if (btnLogin) btnLogin.classList.add('hidden');
 
-// 2. On floute l'arrière-plan
-container.classList.add('auth-blur');
+        container.classList.add('auth-blur');
 
-// 3. On affiche la PiP des conditions
-if (pip) {
-pip.classList.remove('hidden');
-} else {
-console.error("ERREUR : 'gdpr-step-pip' introuvable.");
-}
+        if (pip) {
+            pip.classList.remove('hidden');
+        }
 
-if (toggleTxt) toggleTxt.textContent = "Déjà un compte ? Se connecter";
-} else {
-// Retour au mode connexion
-if (regFields) regFields.classList.add('hidden');
-if (btnSubmit) btnSubmit.classList.add('hidden');
-if (btnLogin) btnLogin.classList.remove('hidden');
+        // TRADUCTION DYNAMIQUE
+        if (toggleTxt) toggleTxt.textContent = t('auth_toggle_to_login');
+        
+    } else {
+        if (regFields) regFields.classList.add('hidden');
+        if (btnSubmit) btnSubmit.classList.add('hidden');
+        if (btnLogin) btnLogin.classList.remove('hidden');
 
-// ON RETIRE LE FLOU (C'est ici que ça plantait)
-container.classList.remove('auth-blur');
-if (pip) pip.classList.add('hidden');
+        container.classList.remove('auth-blur');
+        if (pip) pip.classList.add('hidden');
 
-if (toggleTxt) toggleTxt.textContent = "Créer un compte";
-}
+        // TRADUCTION DYNAMIQUE
+        if (toggleTxt) toggleTxt.textContent = t('auth_toggle_to_register');
+    }
 }
 
 function proceedToSignupForm() {
@@ -3770,6 +3745,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
