@@ -1386,124 +1386,130 @@ closeMobilePip();
 
 // --- ADMINISTRATION & MODIFICATION ---
 async function openEventDetails(eventId) {
-const event = eventsCache.find(e => e.id === eventId);
-if (!event) return;
-const colorInput = document.getElementById('event-color-input');
-if (colorInput) {
-    colorInput.value = event.color || '#3b82f6'; 
-}
-// 1. Récupération de l'utilisateur actuel via Supabase
-const { data: { user } } = await sb.auth.getUser();
-const currentUserId = user?.id;
-const isOwner = (event.owner_id === currentUserId);
+    const event = eventsCache.find(e => e.id === eventId);
+    if (!event) return;
+    
+    const colorInput = document.getElementById('event-color-input');
+    if (colorInput) {
+        colorInput.value = event.color || '#3b82f6'; 
+    }
 
-const detailZone = document.getElementById('mobile-pip-zone');
-if (!detailZone) return;
+    // 1. Récupération de l'utilisateur actuel
+    const { data: { user } } = await sb.auth.getUser();
+    const currentUserId = user?.id;
+    const isOwner = (event.owner_id === currentUserId);
 
-// 2. Configuration de l'affichage de la PiP
-detailZone.classList.add('modal-mode');
-detailZone.style.display = 'flex';
-detailZone.style.pointerEvents = 'auto';
+    const detailZone = document.getElementById('mobile-pip-zone');
+    if (!detailZone) return;
 
-// 3. Injection du HTML structuré
-       // --- 1. LOGIQUE DE CALCUL ---
-       const regCount = event.registrations ? event.registrations.length : 0;
-       const maxPlus = event.max_participants || 0;
-       const hasPrivateReg = event.registrations && event.registrations.some(r => r.is_private_request === true);
-       const isFull = (regCount >= maxPlus) || hasPrivateReg;
-       // --- 2. INJECTION DU HTML ---
-       detailZone.innerHTML = `
-           <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
-               
-               <div class="flex justify-between items-start mb-8">
-                   <div>
-                       <h3 class="text-2xl font-black text-slate-800 uppercase tracking-tight">${event.title}</h3>
-                       <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Fiche de l'événement</p>
-                   </div>
-                   
-                   ${isOwner ? `
-                       <button onclick="startEditing('${event.id}')" 
-                               class="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all duration-300 group p-2 rounded-lg hover:bg-slate-50">
-                           <span class="text-[10px] font-black uppercase tracking-widest">Modifier</span>
-                           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                           </svg>
-                       </button>
-                   ` : `
-                       <div class="px-3 py-1 rounded-full">
-                            <span class="text-[9px] text-slate-400 uppercase font-black tracking-tighter">Consultation</span>
-                       </div>
-                   `}
-               </div>
-       
-               <div class="grid grid-cols-1 gap-6 mb-10">
-                   
-                   <div class="grid grid-cols-1 ${event.notes ? 'md:grid-cols-2' : ''} gap-6">
-                       <div class="flex items-center gap-4">
-                           <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm shrink-0 border border-slate-100">
-                               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                               </svg>
-                           </div>
-                           <div class="min-w-0">
-                               <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Lieu</p>
-                               <p class="font-bold text-slate-700 text-xs truncate">${event.location}</p>
-                           </div>
-                       </div>
-       
-                       ${event.notes ? `
-                       <div class="flex items-center gap-4">
-                           <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm shrink-0 border border-slate-100">
-                               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                               </svg>
-                           </div>
-                           <div class="min-w-0">
-                               <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Notes du Coach</p>
-                               <p class="font-bold text-slate-700 text-xs leading-tight">${event.notes}</p>
-                           </div>
-                       </div>
-                       ` : ''}
-                   </div>
-       
-                   <div class="flex items-center gap-4">
-                       <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 border border-slate-100 shadow-sm shrink-0">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                           </svg>
-                       </div>
-                       <div>
-                           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Date & Horaire</p>
-                           <p class="font-bold text-slate-700 text-sm">
-                               ${new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} • ${event.start_time.substring(0, 5)} - ${event.end_time.substring(0, 5)}
-                           </p>
-                       </div>
-                   </div>
-       
-                   <div class="flex items-center gap-4">
-                       <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center ${isFull ? 'text-red-500' : 'text-slate-900'} border border-slate-100 shadow-sm shrink-0">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                           </svg>
-                       </div>
-                       <div>
-                           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Capacité</p>
-                           <p class="font-bold text-sm ${isFull ? 'text-red-600' : 'text-slate-700'}">
-                               ${isFull ? 'Complet' : `${regCount} / ${maxPlus} membres`}
-                           </p>
-                       </div>
-                   </div>
-               </div>
-       
-               <div class="flex flex-col gap-3">
-                   <button onclick="closeMobilePip()" 
-                           class="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">
-                       Fermer les détails
-                   </button>
-               </div>
-           </div>
-       `;
+    // 2. Configuration de l'affichage
+    detailZone.classList.add('modal-mode');
+    detailZone.style.display = 'flex';
+    detailZone.style.pointerEvents = 'auto';
+
+    // 3. LOGIQUE DE CALCUL & DATE TRADUITE
+    const regCount = event.registrations ? event.registrations.length : 0;
+    const maxPlus = event.max_participants || 0;
+    const hasPrivateReg = event.registrations && event.registrations.some(r => r.is_private_request === true);
+    const isFull = (regCount >= maxPlus) || hasPrivateReg;
+
+    // Traduction dynamique de la date (pour éviter le fr-FR forcé)
+    const d = new Date(event.date);
+    const dateFormatted = `${d.getDate()} ${t('months')[d.getMonth()]}`;
+
+    // 4. INJECTION DU HTML
+    detailZone.innerHTML = `
+        <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
+            
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h3 class="text-2xl font-black text-slate-800 uppercase tracking-tight">${event.title}</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">${t('event_details_title')}</p>
+                </div>
+                
+                ${isOwner ? `
+                    <button onclick="startEditing('${event.id}')" 
+                            class="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all duration-300 group p-2 rounded-lg hover:bg-slate-50">
+                        <span class="text-[10px] font-black uppercase tracking-widest">${t('btn_save').replace('Save', 'Edit').replace('Enregistrer', 'Modifier')}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                ` : `
+                    <div class="px-3 py-1 rounded-full">
+                         <span class="text-[9px] text-slate-400 uppercase font-black tracking-tighter">${t('under_construction').replace('(', '').replace(')', '')}</span>
+                    </div>
+                `}
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 mb-10">
+                
+                <div class="grid grid-cols-1 ${event.notes ? 'md:grid-cols-2' : ''} gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm shrink-0 border border-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('placeholder_loc')}</p>
+                            <p class="font-bold text-slate-700 text-xs truncate">${event.location}</p>
+                        </div>
+                    </div>
+
+                    ${event.notes ? `
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm shrink-0 border border-slate-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('label_notes')}</p>
+                            <p class="font-bold text-slate-700 text-xs leading-tight">${event.notes}</p>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 border border-slate-100 shadow-sm shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('label_recurrence')}</p>
+                        <p class="font-bold text-slate-700 text-sm">
+                            ${dateFormatted} • ${event.start_time.substring(0, 5)} - ${event.end_time.substring(0, 5)}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center ${isFull ? 'text-red-500' : 'text-slate-900'} border border-slate-100 shadow-sm shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('placeholder_max')}</p>
+                        <p class="font-bold text-sm ${isFull ? 'text-red-600' : 'text-slate-700'}">
+                            ${isFull ? t('status_full') : `${regCount} / ${maxPlus} ${t('label_members') || 'membres'}`}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button onclick="closeMobilePip()" 
+                        class="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">
+                    ${t('btn_back')}
+                </button>
+            </div>
+        </div>
+    `;
 }
 
 async function startEditing(eventId) {
@@ -3801,6 +3807,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
