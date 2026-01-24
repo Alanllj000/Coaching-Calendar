@@ -1043,34 +1043,44 @@ async function initApp(user) {
 }
 
 async function loadProfile() {
-if (!currentUser) return;
-document.getElementById('set-email').value = currentUser.email || '';
+    if (!currentUser) return;
+    document.getElementById('set-email').value = currentUser.email || '';
 
-const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
-if (error) return console.error("Erreur profil:", error.message);
+    const { data: profile, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+    if (error) return console.error("Erreur profil:", error.message);
 
-if (profile) {
-currentProfile = profile;
-document.getElementById('set-firstname').value = profile.first_name || '';
-document.getElementById('set-lastname').value = profile.last_name || '';
-document.getElementById('set-phone').value = profile.phone || '';
+    if (profile) {
+        // --- NOUVEAU : SYNCHRONISATION DE LA LANGUE ---
+        const localLang = localStorage.getItem('userLang') || 'fr';
+        // Si le profil en base de données a une langue différente de celle stockée localement
+        if (profile.language && profile.language !== localLang) {
+            localStorage.setItem('userLang', profile.language);
+            location.reload(); // On recharge pour appliquer la langue du profil partout
+            return; // On stoppe l'exécution ici car la page va se rafraîchir
+        }
+        // ----------------------------------------------
 
-initialProfileData = {
-first_name: profile.first_name || '',
-last_name: profile.last_name || '',
-phone: profile.phone || ''
-};
-checkProfileChanges();
+        currentProfile = profile;
+        document.getElementById('set-firstname').value = profile.first_name || '';
+        document.getElementById('set-lastname').value = profile.last_name || '';
+        document.getElementById('set-phone').value = profile.phone || '';
 
-if (profile.first_name) {
-document.getElementById('user-initials').textContent = profile.first_name[0].toUpperCase();
+        initialProfileData = {
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            phone: profile.phone || ''
+        };
+        checkProfileChanges();
+
+        if (profile.first_name) {
+            document.getElementById('user-initials').textContent = profile.first_name[0].toUpperCase();
+        }
+        
+        if (profile.role === 'admin') {
+            document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
+        }
+    }
 }
-if (profile.role === 'admin') {
-document.getElementById('btn-admin-panel-menu').classList.remove('hidden');
-}
-}
-}
-
 async function fetchEvents() {
     // 1. Récupération des données avec registrations
     const { data: evts, error } = await sb
@@ -3566,12 +3576,19 @@ function updateLanguageUI() {
         applyStyle(btnAuth);
     });
 }
-function changeLanguage(lang) {
-    currentLang = lang;
+async function changeLanguage(lang) {
+    // 1. Sauvegarde locale
     localStorage.setItem('userLang', lang);
+    
+    // 2. Sauvegarde dans Supabase (si connecté)
+    if (currentUser) {
+        await sb.from('profiles').update({ language: lang }).eq('id', currentUser.id);
+    }
+
+    // 3. UI et rechargement
     updateLanguageUI();
     setTimeout(() => {
-        location.reload();
+        location.reload(); 
     }, 150);
 }
 resetInactivityTimer();
@@ -3723,6 +3740,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
