@@ -3574,21 +3574,17 @@ setTimeout(setupGlobalRealtimeSync, 5000);
 function t(key) {
     const lang = localStorage.getItem('userLang') || 'fr';
     
-    // Sécurité au cas où l'objet translations ou la langue n'existe pas
-    if (!translations || !translations[lang]) {
-        if (key === 'days_short' || key === 'months') return [];
+    // Si la langue n'existe pas dans le dico, on essaie de se rabattre sur le français
+    const dict = translations[lang] || translations['fr'];
+    
+    if (!dict || !dict[key]) {
+        console.warn(`Clé manquante : [${lang}][${key}]`);
+        if (key === 'months') return ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+        if (key === 'days_short') return ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
         return key;
     }
-
-    const translation = translations[lang][key];
     
-    if (translation === undefined || translation === null) {
-        console.warn(`Clé manquante : ${key} (lang: ${lang})`);
-        if (key === 'days_short' || key === 'months') return [];
-        return key; 
-    }
-    
-    return translation;
+    return dict[key];
 }
 
 
@@ -3808,6 +3804,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
