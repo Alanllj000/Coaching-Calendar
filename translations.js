@@ -90,6 +90,18 @@ const translations = {
     pip_del_acc_confirm: "Veuillez confirmer l'action.",
     btn_confirm_del_acc: "Oui, Supprimer",
 
+
+
+    //--- PiP Inscription et modification d'inscription ---
+    label_private_session: "Session Privée",
+    private_warning_blocked: "Option bloquée.",
+    placeholder_reg_notes: "Ex: Travailler les sauts...",
+    step2_title_register: "S'inscrire",
+    step2_title_edit: "Modifier l'inscription",
+    step2_label_notes: "Notes pour le coach",
+    btn_register_confirm: "Confirmer l'inscription",
+    btn_modify_confirm: "Enregistrer les modifications",
+
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -369,6 +381,17 @@ Poursuivre
     pip_del_acc_desc: "This action will permanently delete your account and all your data. This action is irreversible.",
     pip_del_acc_confirm: "Please confirm this action.",
     btn_confirm_del_acc: "Yes, Delete",
+
+
+    //--- PiP Inscription et modification d'inscription ---
+    label_private_session: "Private Session",
+    private_warning_blocked: "Option blocked.",
+    placeholder_reg_notes: "E.g.: Work on jumps...",
+    step2_title_register: "Register",
+    step2_title_edit: "Edit Registration",
+    step2_label_notes: "Notes for the coach",
+    btn_register_confirm: "Confirm Registration",
+    btn_modify_confirm: "Save Changes",
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
@@ -634,6 +657,17 @@ Continue
     pip_del_acc_desc: "Diese Aktion wird Ihr Konto und alle Ihre Daten dauerhaft löschen. Diese Aktion ist nicht rückgängig zu machen.",
     pip_del_acc_confirm: "Bitte bestätigen Sie diese Aktion.",
     btn_confirm_del_acc: "Ja, Löschen",
+
+
+    //--- PiP Inscription et modification d'inscription ---
+    label_private_session: "Private Session",
+    private_warning_blocked: "Option blocked.",
+    placeholder_reg_notes: "E.g.: Work on jumps...",
+    step2_title_register: "Register",
+    step2_title_edit: "Edit Registration",
+    step2_label_notes: "Notes for the coach",
+    btn_register_confirm: "Confirm Registration",
+    btn_modify_confirm: "Save Changes",
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
