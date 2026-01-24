@@ -2523,30 +2523,30 @@ zone.innerHTML = `
         </div>`;
 }
 async function handleInscriptionPiPstep2(eventId) {
-const event = eventsCache.find(e => e.id === eventId);
-if (!event) return;
+    const event = eventsCache.find(e => e.id === eventId);
+    if (!event) return;
 
-const zone = document.getElementById('mobile-pip-zone');
-const template = document.getElementById('pip-step2-template');
+    const zone = document.getElementById('mobile-pip-zone');
+    const template = document.getElementById('pip-step2-template');
 
-// 1. RÉCUPÉRATION DE LA DONNÉE (Cache d'abord, sinon Supabase)
-let myReg = registrationDetailsCache[eventId];
+    // 1. RÉCUPÉRATION DE LA DONNÉE (Cache d'abord, sinon Supabase)
+    let myReg = registrationDetailsCache[eventId];
 
-if (!myReg) {
-document.body.style.cursor = 'wait'; 
-const { data } = await sb 
-.from('registrations')
-.select('id, notes, is_private_request, status') 
-.eq('event_id', eventId)
-.eq('user_id', currentUser?.id)
-.maybeSingle();
+    if (!myReg) {
+        document.body.style.cursor = 'wait'; 
+        const { data } = await sb 
+            .from('registrations')
+            .select('id, notes, is_private_request, status') 
+            .eq('event_id', eventId)
+            .eq('user_id', currentUser?.id)
+            .maybeSingle();
 
-myReg = data;
-if (data) registrationDetailsCache[eventId] = data;
-document.body.style.cursor = 'default';
-}
+        myReg = data;
+        if (data) registrationDetailsCache[eventId] = data;
+        document.body.style.cursor = 'default';
+    }
 
-// 2. PRÉPARATION DES TEXTES VIA t()
+    // 2. PRÉPARATION DES TEXTES VIA t()
     const isEditing = !!myReg;
     const isPending = myReg && myReg.status === 'PENDING_CONFIRMATION';
     const regId = myReg?.id || '';
@@ -2574,17 +2574,18 @@ document.body.style.cursor = 'default';
 
     // 3. INJECTION
     zone.innerHTML = template.innerHTML;
-    applyStaticTranslations(); // TRÈS IMPORTANT pour les data-i18n du template
+    applyStaticTranslations(); // Applique les data-i18n statiques du template
 
     document.getElementById('step2-title').innerText = titleText;
     document.getElementById('step2-label').innerText = labelText;
     
-    // Remplissage des champs
-    document.getElementById('reg-notes').value = myReg?.notes || '';
-    document.getElementById('reg-private-toggle').checked = myReg?.is_private_request || false;
+    // --- GESTION DES CHAMPS ET PLACEHOLDERS ---
+    const notesField = document.getElementById('reg-notes');
+    notesField.value = myReg?.notes || '';
+    // TRADUCTION DU PLACEHOLDER ICI :
+    notesField.placeholder = t('placeholder_notes_coach');
 
-    // Gestion de l'option privée (Capacité)
-    // (Identique, mais traduis le warning via data-i18n dans le HTML)
+    document.getElementById('reg-private-toggle').checked = myReg?.is_private_request || false;
 
     // Injection des boutons dynamiques
     document.getElementById('step2-buttons-zone').innerHTML = `
@@ -3801,6 +3802,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
