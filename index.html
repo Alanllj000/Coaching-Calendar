@@ -1394,7 +1394,6 @@ async function openEventDetails(eventId) {
         colorInput.value = event.color || '#3b82f6'; 
     }
 
-    // 1. Récupération de l'utilisateur actuel
     const { data: { user } } = await sb.auth.getUser();
     const currentUserId = user?.id;
     const isOwner = (event.owner_id === currentUserId);
@@ -1402,48 +1401,43 @@ async function openEventDetails(eventId) {
     const detailZone = document.getElementById('mobile-pip-zone');
     if (!detailZone) return;
 
-    // 2. Configuration de l'affichage
     detailZone.classList.add('modal-mode');
     detailZone.style.display = 'flex';
     detailZone.style.pointerEvents = 'auto';
 
-    // 3. LOGIQUE DE CALCUL & DATE TRADUITE
     const regCount = event.registrations ? event.registrations.length : 0;
     const maxPlus = event.max_participants || 0;
     const hasPrivateReg = event.registrations && event.registrations.some(r => r.is_private_request === true);
     const isFull = (regCount >= maxPlus) || hasPrivateReg;
 
-    // Traduction dynamique de la date (pour éviter le fr-FR forcé)
     const d = new Date(event.date);
     const dateFormatted = `${d.getDate()} ${t('months')[d.getMonth()]}`;
 
-    // 4. INJECTION DU HTML
     detailZone.innerHTML = `
         <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
             
             <div class="flex justify-between items-start mb-8">
                 <div>
                     <h3 class="text-2xl font-black text-slate-800 uppercase tracking-tight">${event.title}</h3>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">${t('event_details_title')}</p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">${t('event_card_subtitle')}</p>
                 </div>
                 
                 ${isOwner ? `
                     <button onclick="startEditing('${event.id}')" 
                             class="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all duration-300 group p-2 rounded-lg hover:bg-slate-50">
-                        <span class="text-[10px] font-black uppercase tracking-widest">${t('btn_save').replace('Save', 'Edit').replace('Enregistrer', 'Modifier')}</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest">${t('btn_save').replace('Save', 'Modifier').replace('Enregistrer', 'Modifier')}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
                 ` : `
                     <div class="px-3 py-1 rounded-full">
-                         <span class="text-[9px] text-slate-400 uppercase font-black tracking-tighter">${t('under_construction').replace('(', '').replace(')', '')}</span>
+                         <span class="text-[9px] text-slate-400 uppercase font-black tracking-tighter">${t('label_consultation')}</span>
                     </div>
                 `}
             </div>
 
             <div class="grid grid-cols-1 gap-6 mb-10">
-                
                 <div class="grid grid-cols-1 ${event.notes ? 'md:grid-cols-2' : ''} gap-6">
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm shrink-0 border border-slate-100">
@@ -1453,7 +1447,7 @@ async function openEventDetails(eventId) {
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('placeholder_loc')}</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('label_location')}</p>
                             <p class="font-bold text-slate-700 text-xs truncate">${event.location}</p>
                         </div>
                     </div>
@@ -1480,7 +1474,7 @@ async function openEventDetails(eventId) {
                         </svg>
                     </div>
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('label_recurrence')}</p>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('label_date_time')}</p>
                         <p class="font-bold text-slate-700 text-sm">
                             ${dateFormatted} • ${event.start_time.substring(0, 5)} - ${event.end_time.substring(0, 5)}
                         </p>
@@ -1496,7 +1490,7 @@ async function openEventDetails(eventId) {
                     <div>
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('placeholder_max')}</p>
                         <p class="font-bold text-sm ${isFull ? 'text-red-600' : 'text-slate-700'}">
-                            ${isFull ? t('status_full') : `${regCount} / ${maxPlus} ${t('label_members') || 'membres'}`}
+                            ${isFull ? t('status_full') : `${regCount} / ${maxPlus} ${t('label_members')}`}
                         </p>
                     </div>
                 </div>
@@ -1511,7 +1505,6 @@ async function openEventDetails(eventId) {
         </div>
     `;
 }
-
 async function startEditing(eventId) {
 const event = eventsCache.find(e => e.id === eventId);
 const currentUserId = (await sb.auth.getUser()).data.user?.id;
@@ -3807,6 +3800,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
