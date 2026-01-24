@@ -149,6 +149,9 @@ const translations = {
     inbox_empty: "Aucune notification pour le moment.",
     btn_read_all: "Tout marquer comme lu",
     click_to_view_event: "Cliquez pour voir l'événement",
+    inbox_title: "Boîte de réception",
+    inbox_subtitle: "Tes notifications récentes",
+    btn_read_all: "Tout marquer comme lu",
 
 
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
@@ -487,10 +490,12 @@ Poursuivre
 
 
     // Inbox
-    inbox_empty: "No notifications yet.",
     btn_read_all: "Mark all as read",
     click_to_view_event: "Click to view the event",
-    
+    inbox_title: "Inbox",
+    inbox_subtitle: "Your recent notifications",
+    inbox_empty: "No messages for now",
+    btn_read_all: "Mark all as read",
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
@@ -813,9 +818,13 @@ Continue
 
 
     // Inbox
-    inbox_empty: "Noch keine Benachrichtigungen.",
     btn_read_all: "Alles als gelesen markieren",
     click_to_view_event: "Klicken, um das Ereignis anzuzeigen",
+    inbox_title: "Posteingang",
+    inbox_subtitle: "Deine letzten Benachrichtigungen",
+    inbox_empty: "Noch keine Nachrichten",
+    btn_read_all: "Alles als gelesen markieren",
+        
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
