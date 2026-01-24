@@ -1809,37 +1809,60 @@ await sb.from('system_errors').insert([{ error_message: err.message, function_na
 
 // --- PARAMETRES PROFIL ---
 function checkProfileChanges() {
-const currentData = {
-first_name: document.getElementById('set-firstname').value,
-last_name: document.getElementById('set-lastname').value,
-phone: document.getElementById('set-phone').value
-};
-const hasChanged = currentData.first_name !== initialProfileData.first_name ||
-currentData.last_name !== initialProfileData.last_name ||
-currentData.phone !== initialProfileData.phone;
+    // 1. On récupère les éléments d'abord
+    const fNameEl = document.getElementById('set-firstname');
+    const lNameEl = document.getElementById('set-lastname');
+    const phoneEl = document.getElementById('set-phone');
+    const btn = document.getElementById('btn-update-profile');
 
-const btn = document.getElementById('btn-update-profile');
-if (!btn) return;
+    // 2. SÉCURITÉ : Si l'un des champs est absent du DOM, on arrête tout de suite
+    if (!fNameEl || !lNameEl || !phoneEl) return;
 
-btn.disabled = !hasChanged;
+    const currentData = {
+        first_name: fNameEl.value,
+        last_name: lNameEl.value,
+        phone: phoneEl.value
+    };
 
-if (hasChanged) {
-btn.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
-btn.classList.add('bg-slate-900', 'text-white', 'cursor-pointer');
-} else {
-btn.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
-btn.classList.remove('bg-slate-900', 'text-white', 'cursor-pointer');
-}
+    const hasChanged = currentData.first_name !== initialProfileData.first_name ||
+                       currentData.last_name !== initialProfileData.last_name ||
+                       currentData.phone !== initialProfileData.phone;
+
+    if (!btn) return;
+
+    btn.disabled = !hasChanged;
+
+    if (hasChanged) {
+        btn.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.add('bg-slate-900', 'text-white', 'cursor-pointer');
+    } else {
+        btn.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.remove('bg-slate-900', 'text-white', 'cursor-pointer');
+    }
 }
 
 async function saveProfileInfo() {
-const payload = { 
-first_name: document.getElementById('set-firstname').value, 
-last_name: document.getElementById('set-lastname').value, 
-phone: document.getElementById('set-phone').value 
-};
-const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
-if (!error) { alert("Profil à jour !"); loadProfile(); }
+    const fNameEl = document.getElementById('set-firstname');
+    const lNameEl = document.getElementById('set-lastname');
+    const phoneEl = document.getElementById('set-phone');
+
+    if (!fNameEl || !lNameEl || !phoneEl) return;
+
+    const payload = { 
+        first_name: fNameEl.value, 
+        last_name: lNameEl.value, 
+        phone: phoneEl.value 
+    };
+
+    const { error } = await sb.from('profiles').update(payload).eq('id', currentUser.id);
+    
+    if (!error) { 
+        // Utilise la clé de traduction pour l'alerte !
+        alert(t('msg_save_success') || "Profil à jour !"); 
+        loadProfile(); 
+    } else {
+        console.error("Erreur sauvegarde profil:", error);
+    }
 }
 
 
@@ -3754,6 +3777,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
