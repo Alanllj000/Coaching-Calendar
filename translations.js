@@ -316,7 +316,7 @@ Annuler
 <button onclick="proceedToSignupForm()" class="flex-[2] py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-100 active:scale-95 text-sm">
 Poursuivre
 </button>
-</div>`,
+</div>`
 
         
         
@@ -621,7 +621,7 @@ Cancel
 <button onclick="proceedToSignupForm()" class="flex-[2] py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-100 active:scale-95 text-sm">
 Continue
 </button>
-</div>`,
+</div>`
         
 
 
@@ -925,7 +925,7 @@ Abbrechen
 <button onclick="proceedToSignupForm()" class="flex-[2] py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-100 active:scale-95 text-sm">
 Fortsetzen
 </button>
-</div>`,
+</div>`
 
 
     }
