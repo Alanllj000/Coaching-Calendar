@@ -240,30 +240,54 @@ user-select: none;
 </head>
 <body>
 
-<div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
-    <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Pro Coach</h2>
+<!-- Auth PiP / screen !-->
+<div id="auth-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999] w-full h-full">
     
-    <div class="space-y-4 max-w-sm mx-auto w-full">
-        <input id="auth-email" type="email" data-i18n="placeholder_email" placeholder="Email" class="input-field">
-        <input id="auth-password" type="password" data-i18n="placeholder_password" placeholder="Mot de passe" class="input-field">
-
-        <div id="register-fields" class="hidden space-y-4">
-            <input id="auth-firstname" type="text" data-i18n="placeholder_prenom" placeholder="Prénom" class="input-field">
-            <input id="auth-lastname" type="text" data-i18n="placeholder_nom" placeholder="Nom" class="input-field">
-            <input id="auth-phone" type="tel" data-i18n="placeholder_tel" placeholder="Téléphone" class="input-field">
+    <div class="absolute top-4 right-4 z-50">
+        <div class="flex bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-200 shadow-sm">
+            <button onclick="changeLanguage('fr')" id="auth-lang-fr" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
+                <img src="https://flagcdn.com/w40/fr.png" class="w-4 h-3 object-cover rounded-sm" alt="FR">
+                <span class="text-[10px] font-black">FR</span>
+            </button>
+            <button onclick="changeLanguage('en')" id="auth-lang-en" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
+                <img src="https://flagcdn.com/w40/gb.png" class="w-4 h-3 object-cover rounded-sm" alt="EN">
+                <span class="text-[10px] font-black">EN</span>
+            </button>
+            <button onclick="changeLanguage('de')" id="auth-lang-de" class="p-2 px-3 rounded-xl transition-all duration-300 flex items-center gap-2">
+                <img src="https://flagcdn.com/w40/de.png" class="w-4 h-3 object-cover rounded-sm" alt="DE">
+                <span class="text-[10px] font-black">DE</span>
+            </button>
         </div>
+        <div class="text-center mt-1">
+            <span class="text-[10px] text-slate-400 font-medium" data-i18n="under_construction">(En cours de création)</span>
+        </div>
+    </div>
 
-        <button id="auth-btn" onclick="handleAuth()" data-i18n="auth_btn_login" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
-            Se connecter
-        </button>
+    <div id="auth-container-inner" class="flex flex-col justify-center h-full px-8">
+        <h2 class="text-4xl font-black tracking-tighter text-slate-900 mb-8 text-center">Pro Coach</h2>
+        
+        <div class="space-y-4 max-w-sm mx-auto w-full">
+            <input id="auth-email" type="email" data-i18n="placeholder_email" placeholder="Email" class="input-field">
+            <input id="auth-password" type="password" data-i18n="placeholder_password" placeholder="Mot de passe" class="input-field">
 
-        <p onclick="toggleAuthMode()" id="auth-toggle" data-i18n="auth_toggle_to_register" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">
-            Créer un compte
-        </p>
+            <div id="register-fields" class="hidden space-y-4">
+                <input id="auth-firstname" type="text" data-i18n="placeholder_prenom" placeholder="Prénom" class="input-field">
+                <input id="auth-lastname" type="text" data-i18n="placeholder_nom" placeholder="Nom" class="input-field">
+                <input id="auth-phone" type="tel" data-i18n="placeholder_tel" placeholder="Téléphone" class="input-field">
+            </div>
 
-        <button id="auth-submit-btn" onclick="handleRegisterStep1()" data-i18n="auth_btn_register" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
-            Créer mon compte
-        </button>
+            <button id="auth-btn" onclick="handleAuth()" data-i18n="auth_btn_login" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
+                Se connecter
+            </button>
+
+            <p onclick="toggleAuthMode()" id="auth-toggle" data-i18n="auth_toggle_to_register" class="text-center text-sm font-bold text-slate-400 cursor-pointer py-4">
+                Créer un compte
+            </p>
+
+            <button id="auth-submit-btn" onclick="handleRegisterStep1()" data-i18n="auth_btn_register" class="w-full py-5 bg-slate-900 text-white text-lg font-bold rounded-2xl shadow-lg active:scale-95 transition hidden">
+                Créer mon compte
+            </button>
+        </div>
     </div>
 </div>
 
@@ -3748,6 +3772,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
