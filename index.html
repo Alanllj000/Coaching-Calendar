@@ -1870,33 +1870,43 @@ async function saveProfileInfo() {
 
 // --- UTILITAIRES INTERFACE ---
 function openAdminPanel() { 
-resetAdminForm();
-const dateInput = document.getElementById('admin-date');
-const today = new Date().toISOString().split('T')[0];
+    resetAdminForm();
+    const dateInput = document.getElementById('admin-date');
+    const today = new Date().toISOString().split('T')[0];
 
-if (dateInput) {
-// On n'utilise PAS .setAttribute('min') pour laisser le choix libre
-dateInput.removeAttribute('min'); 
+    if (dateInput) {
+        // On n'utilise PAS .setAttribute('min') pour laisser le choix libre
+        dateInput.removeAttribute('min'); 
 
-// On écoute le changement de date pour griser dynamiquement
-dateInput.onchange = function() {
-if (this.value < today) {
-this.classList.add('input-field-past');
-} else {
-this.classList.remove('input-field-past');
-}
-};
+        // On écoute le changement de date pour griser dynamiquement
+        dateInput.onchange = function() {
+            if (this.value < today) {
+                this.classList.add('input-field-past');
+            } else {
+                this.classList.remove('input-field-past');
+            }
+        };
 
-// Initialisation si c'est un nouvel évent
-const eventId = document.getElementById('admin-event-id').value;
-if (!eventId) {
-dateInput.value = today;
-dateInput.classList.remove('input-field-past');
-}
-}
+        // Initialisation si c'est un nouvel évent
+        const eventId = document.getElementById('admin-event-id').value;
+        if (!eventId) {
+            dateInput.value = today;
+            dateInput.classList.remove('input-field-past');
+        }
+    }
 
-document.getElementById('admin-panel').style.display = 'flex'; 
-if(document.getElementById('admin-delete-btn')) document.getElementById('admin-delete-btn').classList.add('hidden');
+    // --- TRADUCTION DU PLACEHOLDER ---
+    const adminNotes = document.getElementById('admin-notes');
+    if (adminNotes) {
+        adminNotes.placeholder = t('placeholder_admin_notes');
+    }
+
+    // Affichage du panel
+    document.getElementById('admin-panel').style.display = 'flex'; 
+    
+    // Masquer le bouton supprimer par défaut (mode création)
+    const delBtn = document.getElementById('admin-delete-btn');
+    if (delBtn) delBtn.classList.add('hidden');
 }
 
 
@@ -3724,6 +3734,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
