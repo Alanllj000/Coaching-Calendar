@@ -137,6 +137,13 @@ const translations = {
     msg_save_success: "Modifications enregistrées !",
     msg_reg_success: "Inscription validée !",
 
+
+
+
+    //Handleinscription setp 1 : 
+    warmup_warning:"Une avance d'au minimum 15 minutes dédiée à un échauffement est nécessaire !",
+
+
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -464,6 +471,10 @@ Poursuivre
     msg_saving: "Saving...",
     msg_save_success: "Changes saved!",
     msg_reg_success: "Registration confirmed!",
+
+
+    //Handleinscription setp 1 : 
+    warmup_warning: "Arriving 15 minutes early for a proper warm-up is required!",
     
         
     reglages_all: `
@@ -778,6 +789,10 @@ Continue
     msg_saving: "Speichern...",
     msg_save_success: "Änderungen gespeichert!",
     msg_reg_success: "Anmeldung bestätigt!",
+
+
+    //Handleinscription setp 1 : 
+    warmup_warning: "Ein Erscheinen 15 Minuten früher für ein Aufwärmtraining ist erforderlich!",
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
