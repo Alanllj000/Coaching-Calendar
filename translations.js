@@ -145,6 +145,12 @@ const translations = {
     placeholder_notes_coach:"Tester des nouvelles pirouettes ; travailler l'Axel ; etc...",
 
 
+    // Inbox
+    inbox_empty: "Aucune notification pour le moment.",
+    btn_read_all: "Tout marquer comme lu",
+    click_to_view_event: "Cliquez pour voir l'événement",
+
+
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -477,6 +483,13 @@ Poursuivre
     //Handleinscription setp 1 : 
     warmup_warning: "Arriving 15 minutes early for a proper warm-up is required!",
     placeholder_notes_coach:"Test new spins ; work on the Axel ; etc...",
+
+
+
+    // Inbox
+    inbox_empty: "No notifications yet.",
+    btn_read_all: "Mark all as read",
+    click_to_view_event: "Click to view the event",
     
         
     reglages_all: `
@@ -796,6 +809,13 @@ Continue
     //Handleinscription setp 1 : 
     warmup_warning: "Ein Erscheinen 15 Minuten früher für ein Aufwärmtraining ist erforderlich!",
     placeholder_notes_coach:"z.B. neue Pirouetten testen, am Axel arbeiten, etc",
+
+
+
+    // Inbox
+    inbox_empty: "Noch keine Benachrichtigungen.",
+    btn_read_all: "Alles als gelesen markieren",
+    click_to_view_event: "Klicken, um das Ereignis anzuzeigen",
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
