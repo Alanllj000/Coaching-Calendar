@@ -140,8 +140,9 @@ const translations = {
 
 
 
-    //Handleinscription setp 1 : 
+    //Handleinscription setp 1 et 2 (autres): 
     warmup_warning:"Une avance d'au minimum 15 minutes dédiée à un échauffement est nécessaire !",
+    placeholder_notes_coach:"Tester des nouvelles pirouettes ; travailler l'Axel ; etc...",
 
 
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
@@ -475,6 +476,7 @@ Poursuivre
 
     //Handleinscription setp 1 : 
     warmup_warning: "Arriving 15 minutes early for a proper warm-up is required!",
+    placeholder_notes_coach:"Test new spins ; work on the Axel ; etc...",
     
         
     reglages_all: `
@@ -793,6 +795,7 @@ Continue
 
     //Handleinscription setp 1 : 
     warmup_warning: "Ein Erscheinen 15 Minuten früher für ein Aufwärmtraining ist erforderlich!",
+    placeholder_notes_coach:"z.B. neue Pirouetten testen, am Axel arbeiten, etc",
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
