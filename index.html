@@ -3568,12 +3568,15 @@ function updateLanguageUI() {
     const langs = ['fr', 'en', 'de'];
 
     langs.forEach(l => {
-        // IDs pour les paramètres ET pour l'écran d'auth
+        // 1. On récupère les éléments
         const btnSettings = document.getElementById(`lang-${l}`);
         const btnAuth = document.getElementById(`auth-lang-${l}`);
         
-        const updateStyle = (btn) => {
+        // 2. La logique de style reste la même
+        const applyStyle = (btn) => {
+            // SÉCURITÉ : On sort de la fonction si le bouton n'est pas dans la page
             if (!btn) return;
+
             if (l === current) {
                 btn.classList.add('bg-slate-900', 'text-white', 'shadow-md');
                 btn.classList.remove('text-slate-500', 'bg-transparent');
@@ -3583,11 +3586,11 @@ function updateLanguageUI() {
             }
         };
 
-        updateStyle(btnSettings);
-        updateStyle(btnAuth);
+        // 3. On applique sur les deux (si ils existent)
+        applyStyle(btnSettings);
+        applyStyle(btnAuth);
     });
 }
-
 function changeLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('userLang', lang);
@@ -3745,6 +3748,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
