@@ -102,6 +102,30 @@ const translations = {
     btn_register_confirm: "Confirmer l'inscription",
     btn_modify_confirm: "Enregistrer les modifications",
 
+
+
+    //--- HandleAuthSetp1 and 2 ---
+    btn_continue_registration: "Poursuivre l'inscription",
+    btn_continue_confirmation: "Poursuivre la confirmation",
+    warning_action_required: "Action requise",
+    desc_event_modified: "Les informations de cet événement ont été modifiées. Veuillez relire les nouveaux détails.",
+    status_already_registered: "Vous êtes déjà inscrit",
+    event_details_title: "Détails de l'événement",
+    confirm_presence_prompt: "Souhaitez-vous confirmer votre présence à l'événement",
+    label_date_on: "Le",
+    not_defined: "Non défini",
+    warmup_warning: "Une avance d'au minimum 15 minutes dédiée à un échauffement est nécessaire !",
+    pip_step2_default_title: "Avant de valider...",
+    btn_back: "Retour",
+    btn_back_to_details: "Détails de l'événement",
+    label_update_notes: "Mettre à jour vos notes :",
+    step2_title_reconfirmation: "Reconfirmation",
+    btn_finish_confirmation: "Terminer la confirmation",
+    btn_unsubscribe: "Se désinscrire",
+    msg_saving: "Enregistrement...",
+    msg_save_success: "Modifications enregistrées !",
+    msg_reg_success: "Inscription validée !",
+
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
 <div class="grid grid-cols-2 gap-4">
@@ -392,6 +416,30 @@ Poursuivre
     step2_label_notes: "Notes for the coach",
     btn_register_confirm: "Confirm Registration",
     btn_modify_confirm: "Save Changes",
+
+
+    // --- HandleAuthStep 1 and 2 ---
+    btn_continue_registration: "Continue registration",
+    btn_continue_confirmation: "Continue confirmation",
+    warning_action_required: "Action required",
+    desc_event_modified: "The event details have been modified. Please review the new information.",
+    status_already_registered: "You are already registered",
+    event_details_title: "Event Details",
+    confirm_presence_prompt: "Would you like to confirm your attendance for",
+    label_date_on: "On",
+    not_defined: "Not defined",
+    warmup_warning: "A minimum of 15 minutes for warm-up is required before the session!",
+    pip_step2_default_title: "Before validating...",
+    btn_back: "Back",
+    btn_back_to_details: "Go to Event Details",
+    label_update_notes: "Update your notes:",
+    step2_title_reconfirmation: "Reconfirmation",
+    btn_finish_confirmation: "Complete confirmation",
+    btn_unsubscribe: "Unsubscribe",
+    msg_saving: "Saving...",
+    msg_save_success: "Changes saved!",
+    msg_reg_success: "Registration confirmed!",
+    
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
@@ -668,6 +716,29 @@ Continue
     step2_label_notes: "Notizen für den Coach",
     btn_register_confirm: "Anmeldung bestätigen",
     btn_modify_confirm: "Änderungen speichern",
+
+
+    // --- HandleAuthStep 1 and 2 ---
+    btn_continue_registration: "Anmeldung fortsetzen",
+    btn_continue_confirmation: "Bestätigung fortsetzen",
+    warning_action_required: "Aktion erforderlich",
+    desc_event_modified: "Die Details zu diesem Ereignis wurden geändert. Bitte lesen Sie die neuen Informationen.",
+    status_already_registered: "Sie sind bereits angemeldet",
+    event_details_title: "Ereignisdetails",
+    confirm_presence_prompt: "Möchten Sie Ihre Teilnahme bestätigen für",
+    label_date_on: "Am",
+    not_defined: "Nicht definiert",
+    warmup_warning: "Ein Aufwärmen von mindestens 15 Minuten vor Beginn ist erforderlich!",
+    pip_step2_default_title: "Vor der Validierung...",
+    btn_back: "Zurück",
+    btn_back_to_details: "Zu den Ereignisdetails",
+    label_update_notes: "Notizen aktualisieren:",
+    step2_title_reconfirmation: "Rückbestätigung",
+    btn_finish_confirmation: "Bestätigung abschließen",
+    btn_unsubscribe: "Abmelden",
+    msg_saving: "Speichern...",
+    msg_save_success: "Änderungen gespeichert!",
+    msg_reg_success: "Anmeldung bestätigt!",
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
