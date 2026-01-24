@@ -660,14 +660,14 @@ Continue
 
 
     //--- PiP Inscription et modification d'inscription ---
-    label_private_session: "Private Session",
-    private_warning_blocked: "Option blocked.",
-    placeholder_reg_notes: "E.g.: Work on jumps...",
-    step2_title_register: "Register",
-    step2_title_edit: "Edit Registration",
-    step2_label_notes: "Notes for the coach",
-    btn_register_confirm: "Confirm Registration",
-    btn_modify_confirm: "Save Changes",
+    label_private_session: "Privatsitzung",
+    private_warning_blocked: "Option gesperrt.",
+    placeholder_reg_notes: "Z.B.: Sprünge trainieren...",
+    step2_title_register: "Anmelden",
+    step2_title_edit: "Anmeldung bearbeiten",
+    step2_label_notes: "Notizen für den Coach",
+    btn_register_confirm: "Anmeldung bestätigen",
+    btn_modify_confirm: "Änderungen speichern",
         
     reglages_all: `
 <div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
