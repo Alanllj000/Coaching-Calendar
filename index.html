@@ -2793,19 +2793,28 @@ let currentCustomReminders = []; // Stocke {days: 1, time: "09:00", active: true
 
 // 1. Gérer l'état du panneau (On/Off)
 function toggleNotifUI() {
-const isMasterOn = document.getElementById('notif-master').checked;
-const wrapper = document.getElementById('notif-content-wrapper');
+    const toggle = document.getElementById('notif-master');
+    const wrapper = document.getElementById('notif-content-wrapper');
 
-if (isMasterOn) {
-wrapper.style.opacity = "1";
-wrapper.style.pointerEvents = "auto";
-wrapper.classList.remove('grayscale');
-} else {
-wrapper.style.opacity = "0.5";
-wrapper.style.pointerEvents = "none";
-wrapper.classList.add('grayscale');
-}
-checkChanges();
+    // SÉCURITÉ : On vérifie que les deux éléments existent
+    if (!toggle || !wrapper) return;
+
+    const isMasterOn = toggle.checked;
+
+    if (isMasterOn) {
+        wrapper.style.opacity = "1";
+        wrapper.style.pointerEvents = "auto";
+        wrapper.classList.remove('grayscale');
+    } else {
+        wrapper.style.opacity = "0.5";
+        wrapper.style.pointerEvents = "none";
+        wrapper.classList.add('grayscale');
+    }
+
+    // SÉCURITÉ : On vérifie si checkChanges existe avant de l'appeler
+    if (typeof checkChanges === 'function') {
+        checkChanges();
+    }
 }
 
 // 2. Ouvrir/Fermer la PiP
@@ -3444,20 +3453,20 @@ async function setupAppRealtime(userId) {
 
 function syncNotifToggleWithBrowser() {
     const toggle = document.getElementById('notif-master');
-    const permission = Notification.permission; // 'default', 'granted', 'denied'
+    // SÉCURITÉ : Si le toggle n'existe pas dans le DOM actuel, on quitte
+    if (!toggle) return;
 
-    // Si la base de données dit "OUI" (toggle coché) 
-    // MAIS que le navigateur dit "NON" ou "JE SAIS PAS"
+    const permission = Notification.permission; 
+
+    // Si la base de données dit "OUI" mais que le navigateur bloque
     if (toggle.checked && permission !== 'granted') {
         console.warn("Désynchronisation détectée : DB active, mais Navigateur inactif.");
-        // On force le switch à OFF visuellement pour refléter la réalité
         toggle.checked = false; 
     }
 
-    // Cas spécifique : Si le navigateur a bloqué définitivement (Denied)
+    // Si le navigateur a bloqué définitivement
     if (permission === 'denied') {
-        toggle.disabled = true; // On empêche même de cliquer
-        // Optionnel : Afficher un petit message "Bloqué dans les réglages système"
+        toggle.disabled = true;
     }
 }
 
@@ -3563,9 +3572,23 @@ setTimeout(setupGlobalRealtimeSync, 5000);
 });
 }
 function t(key) {
-    const lang = localStorage.getItem('userLang') || 'fr'; 
-    if (!translations[lang]) return key;
-    return translations[lang][key] || key;
+    const lang = localStorage.getItem('userLang') || 'fr';
+    
+    // Sécurité au cas où l'objet translations ou la langue n'existe pas
+    if (!translations || !translations[lang]) {
+        if (key === 'days_short' || key === 'months') return [];
+        return key;
+    }
+
+    const translation = translations[lang][key];
+    
+    if (translation === undefined || translation === null) {
+        console.warn(`Clé manquante : ${key} (lang: ${lang})`);
+        if (key === 'days_short' || key === 'months') return [];
+        return key; 
+    }
+    
+    return translation;
 }
 
 
@@ -3785,6 +3808,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
