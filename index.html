@@ -1058,7 +1058,8 @@ async function loadProfile() {
         if (profile.language && profile.language !== localLang) {
             localStorage.setItem('userLang', profile.language);
             location.reload(); 
-            return; 
+            // TRÈS IMPORTANT : on throw une erreur intentionnelle pour stopper net initApp
+            throw new Error("Redirecting for language change..."); 
         }
 
         currentProfile = profile;
@@ -1144,54 +1145,65 @@ function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     if (!grid) return;
     grid.innerHTML = '';
+
+    // --- 1. EN-TÊTE DES JOURS (LUN, MAR...) ---
     const dayHeader = document.getElementById('calendar-days-header');
     if (dayHeader) {
         const days = t('days_short');
-        dayHeader.innerHTML = days.map(d => `<div>${d}</div>`).join('');
+        // Sécurité : on vérifie que days est bien un tableau
+        if (Array.isArray(days)) {
+            dayHeader.innerHTML = days.map(d => `<div>${d}</div>`).join('');
+        } else {
+            console.error("t('days_short') n'est pas un tableau", days);
+        }
     }
 
     const now = new Date();
     const y = currentDate.getFullYear();
     const m = currentDate.getMonth();
 
+    // --- 2. ÉTIQUETTE DU MOIS (JANVIER 2026...) ---
     const monthNames = t('months');
-    document.getElementById('month-label').textContent = monthNames[m] + ' ' + y;
+    const monthLabel = document.getElementById('month-label');
+    if (monthLabel && Array.isArray(monthNames)) {
+        monthLabel.textContent = monthNames[m] + ' ' + y;
+    }
 
+    // Calcul des jours
     const firstDay = (new Date(y, m, 1).getDay() || 7) - 1;
     const lastDate = new Date(y, m + 1, 0).getDate();
     const todayStr = now.toISOString().split('T')[0];
 
+    // Espaces vides pour le début du mois
     for (let i = 0; i < firstDay; i++) {
-        grid.innerHTML += `<div class="calendar-day opacity-0 pointer-events-none"></div>`;
+        const emptyCell = document.createElement('div');
+        emptyCell.className = "calendar-day opacity-0 pointer-events-none";
+        grid.appendChild(emptyCell);
     }
 
+    // --- 3. BOUCLE DE GÉNÉRATION DES JOURS ---
     for (let d = 1; d <= lastDate; d++) {
         const dateStr = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
         const loopD = new Date(y, m, d);
         const isToday = now.toDateString() === loopD.toDateString();
+        let isPast = dateStr < todayStr;
 
-        const dayEvts = eventsCache.filter(function(e) {
+        // Filtrage des événements pour ce jour
+        const dayEvts = (eventsCache || []).filter(function(e) {
             const isD = e.date === dateStr;
             const isNotExcluded = !e.excluded_dates || !e.excluded_dates.includes(dateStr);
             return isD && isNotExcluded;
         });
 
-        let isPast = dateStr < todayStr;
-
         const cell = document.createElement('div');
         const isAdmin = currentProfile && currentProfile.role === 'admin';
 
-        // --- AJOUT CRUCIAL : L'ID POUR LE DEEP LINKING ---
-        // On met l'ID de la date pour pouvoir scroller dessus
-        cell.id = `calendar-day-${dateStr}`; 
-        
-        // Si tu veux aussi pouvoir cibler un événement précis dans la case :
-        // On pourrait ajouter des IDs aux dots, mais cibler la case jour est plus simple pour le scroll.
-
+        cell.id = `calendar-day-${dateStr}`;
         cell.className = `calendar-day border border-slate-100 transition-all ${isPast ? 'bg-slate-50/80' : 'bg-white shadow-sm'}`;
         if (isToday) cell.classList.add('ring-2', 'ring-blue-500', 'ring-inset');
 
-        if (dateStr < todayStr) {
+        // Gestion du clic (Passé vs Futur)
+        if (isPast) {
             if (isAdmin) {
                 cell.onclick = function() { openDayPip(dateStr, dayEvts); };
                 cell.style.cursor = 'pointer';
@@ -1203,26 +1215,22 @@ function renderCalendar() {
             cell.style.cursor = 'pointer';
         }
 
+        // Génération des points (Dots) d'événements
         let dotsHtml = dayEvts.map(function(e) {
-            // 1. Logique de priorité : si complet/privé -> Rouge, sinon couleur de l'évenement, sinon Bleu
             const regCount = (e.registrations && e.registrations.length) || 0;
             const maxPlus = e.max_participants || 0;
             const hasPrivateReg = e.registrations && e.registrations.some(r => r.is_private_request === true);
             const isPrivateTitle = e.title && e.title.toLowerCase().includes('privé');
             const isFullOrPrivate = (regCount >= maxPlus) || hasPrivateReg || isPrivateTitle;
         
-            // 2. Détermination de la couleur
-            let dotColor = e.color || '#3b82f6'; // Couleur de la BDD ou bleu par défaut
-            if (isFullOrPrivate) dotColor = '#ef4444'; // Le rouge reste prioritaire pour l'affichage
+            let dotColor = e.color || '#3b82f6'; 
+            if (isFullOrPrivate) dotColor = '#ef4444'; 
         
-            // 3. Gestion de la date passée
             const [endH, endMins] = (e.end_time || "23:59").split(':');
             const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endMins));
-            if (now > eFullDate) dotColor = '#cbd5e1'; // Gris (slate-300) si terminé
+            if (now > eFullDate) dotColor = '#cbd5e1'; 
         
-            return `<span class="event-dot" 
-                          style="background-color: ${dotColor}; box-shadow: 0 0 4px ${dotColor}80;">
-                    </span>`;
+            return `<span class="event-dot" style="background-color: ${dotColor}; box-shadow: 0 0 4px ${dotColor}80;"></span>`;
         }).join('');
 
         cell.innerHTML = `
@@ -3777,6 +3785,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
