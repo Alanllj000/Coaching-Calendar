@@ -2455,7 +2455,7 @@ zone.innerHTML = `
                     <p>${t('label_date_on')} <strong class="text-slate-900">${dateReadable}</strong></p>
                     <p>${t('at')} <strong class="text-slate-900">${event.start_time.substring(0, 5)}</strong> - <strong class="text-slate-900">${event.end_time.substring(0, 5)}</strong></p>
                     <p>${t('placeholder_loc')} : <strong class="text-slate-900">${event.location || t('not_defined')}</strong></p>
-                    ${event.notes ? `<p class="mt-2 pt-2 border-t border-slate-200/60 italic text-slate-500 text-[11px]">Note : <span class="font-medium text-slate-700">${event.notes}</span></p>` : ''}
+                    ${event.notes ? `<p class="mt-2 pt-2 border-t border-slate-200/60 italic text-slate-500 text-[11px]">${t('label_notes')} : <span class="font-medium text-slate-700">${event.notes}</span></p>` : ''}
                 </div>
             </div>
 
@@ -3723,6 +3723,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
