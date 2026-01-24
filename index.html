@@ -622,25 +622,29 @@ onclick="event.stopPropagation()">
 
 <!-- PiP Inscription et modification d'inscription -->
 <div id="pip-step2-template" class="hidden"> 
-<div class="mobile-pip-card flex flex-col gap-6 relative shadow-2xl">
-<button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">&times;</button>
-<h3 id="step2-title" class="text-xl font-bold text-slate-900 mb-2 uppercase"></h3>
-<div>
-<label id="step2-label" class="block text-xs font-bold text-slate-500 uppercase mb-2"></label>
-<textarea id="reg-notes" maxlength="999" placeholder="Ex: Travailler les sauts..." class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-sm h-32 resize-none"></textarea>
-</div>
-<div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
-<div class="flex items-center justify-between mb-2">
-<span class="font-bold text-slate-900 text-sm">Session Privée</span>
-<label id="toggle-container" class="relative inline-flex items-center">
-<input type="checkbox" id="reg-private-toggle" class="sr-only peer">
-<div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-slate-900 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
-</label>
-</div>
-<div id="private-warning" class="mt-2 p-2 bg-red-50 rounded-lg text-[10px] text-red-600 font-medium hidden">Option bloquée.</div>
-</div>
-<div id="step2-buttons-zone" class="flex flex-col gap-3"></div>
-</div>
+    <div class="mobile-pip-card flex flex-col gap-6 relative shadow-2xl">
+        <button onclick="closeMobilePip()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition">&times;</button>
+        
+        <h3 id="step2-title" class="text-xl font-bold text-slate-900 mb-2 uppercase"></h3>
+        
+        <div>
+            <label id="step2-label" class="block text-xs font-bold text-slate-500 uppercase mb-2"></label>
+            <textarea id="reg-notes" maxlength="999" data-i18n="placeholder_reg_notes" placeholder="Ex: Travailler les sauts..." class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-slate-900 outline-none transition text-sm h-32 resize-none"></textarea>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-bold text-slate-900 text-sm" data-i18n="label_private_session">Session Privée</span>
+                <label id="toggle-container" class="relative inline-flex items-center">
+                    <input type="checkbox" id="reg-private-toggle" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-slate-900 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                </label>
+            </div>
+            <div id="private-warning" class="mt-2 p-2 bg-red-50 rounded-lg text-[10px] text-red-600 font-medium hidden" data-i18n="private_warning_blocked">Option bloquée.</div>
+        </div>
+
+        <div id="step2-buttons-zone" class="flex flex-col gap-3"></div>
+    </div>
 </div>
 
 <!-- PiP boite de réception !-->
@@ -2408,85 +2412,63 @@ zone.classList.add('modal-mode');
 zone.style.display = 'flex';
 zone.style.pointerEvents = 'auto';
 
+const currentLang = localStorage.getItem('userLang') || 'fr';
 const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-const dateReadable = new Date(event.date).toLocaleDateString('fr-FR', dateOptions);
+const dateReadable = new Date(event.date).toLocaleDateString(currentLang === 'en' ? 'en-GB' : (currentLang === 'de' ? 'de-DE' : 'fr-FR'), dateOptions);
 
 // --- 3. LOGIQUE VISUELLE ET TEXTUELLE ---
-let btnText = "Poursuivre l'inscription";
-let btnClass = "bg-slate-900";
-let alertHtml = ""; 
+    let btnText = t('btn_continue_registration');
+    let btnClass = "bg-slate-900";
+    let alertHtml = ""; 
 
-if (isEditing) {
-if (isPending) {
-// Bloc spécifique pour la reconfirmation (UX améliorée)
-btnText = "Poursuivre la confirmation";
-btnClass = "bg-orange-500";
-alertHtml = `
-               <div class="mb-4 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-r-2xl text-left">
-                   <p class="text-orange-600 font-bold uppercase text-[10px] mb-1">⚠️ Action requise</p>
-                   <p class="text-orange-800 text-xs leading-relaxed">
-                       Les informations de cet événement ont été modifiées.<br>
-                       <strong>Veuillez relire les nouveaux détails ci-dessous.</strong>
-                   </p>
-               </div>
-           `;
-} else {
-btnText = "Modifier l'inscription";
-btnClass = "bg-slate-900";
-alertHtml = `
-               <div class="mb-4 text-center">
-                   <span class="text-blue-600 font-bold uppercase text-[10px]">Vous êtes déjà inscrit</span>
-               </div>
-           `;
-}
-}
+    if (isEditing) {
+        if (isPending) {
+            btnText = t('btn_continue_confirmation');
+            btnClass = "bg-orange-500";
+            alertHtml = `
+                <div class="mb-4 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-r-2xl text-left">
+                    <p class="text-orange-600 font-bold uppercase text-[10px] mb-1">⚠️ ${t('warning_action_required')}</p>
+                    <p class="text-orange-800 text-xs leading-relaxed">${t('desc_event_modified')}</p>
+                </div>`;
+        } else {
+            btnText = t('step2_title_edit');
+            btnClass = "bg-slate-900";
+            alertHtml = `
+                <div class="mb-4 text-center">
+                    <span class="text-blue-600 font-bold uppercase text-[10px]">${t('status_already_registered')}</span>
+                </div>`;
+        }
+    }
 
 zone.innerHTML = `
-       <div class="mobile-pip-card flex flex-col gap-6 relative">
-           <h3 class="text-xl font-black text-slate-900 uppercase text-center">Détails de l'événement</h3>
+        <div class="mobile-pip-card flex flex-col gap-6 relative">
+            <h3 class="text-xl font-black text-slate-900 uppercase text-center">${t('event_details_title')}</h3>
 
-           ${alertHtml}
+            ${alertHtml}
 
-           <div class="text-sm text-slate-600 leading-relaxed text-center">
-               <div class="mb-4">
-                   Souhaitez-vous confirmer votre présence à l'événement 
-                   <strong class="text-slate-900">${event.title}</strong> ?
-               </div>
-               
-               <div class="space-y-1 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                   <p>Le <strong class="text-slate-900">${dateReadable}</strong></p>
-                   <p>De <strong class="text-slate-900">${event.start_time.substring(0, 5)}</strong> à <strong class="text-slate-900">${event.end_time.substring(0, 5)}</strong></p>
-                   <p>Lieu : <strong class="text-slate-900">${event.location || 'Non défini'}</strong></p>
-                   ${event.notes ? `
-                       <p class="mt-2 pt-2 border-t border-slate-200/60 italic text-slate-500 text-[11px]">
-                           Note : <span class="font-medium text-slate-700">${event.notes}</span>
-                       </p>
-                   ` : ''}
-               </div>
-           </div>
+            <div class="text-sm text-slate-600 leading-relaxed text-center">
+                <div class="mb-4">
+                    ${t('confirm_presence_prompt')} <strong class="text-slate-900">${event.title}</strong> ?
+                </div>
+                
+                <div class="space-y-1 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <p>${t('label_date_on')} <strong class="text-slate-900">${dateReadable}</strong></p>
+                    <p>${t('at')} <strong class="text-slate-900">${event.start_time.substring(0, 5)}</strong> - <strong class="text-slate-900">${event.end_time.substring(0, 5)}</strong></p>
+                    <p>${t('placeholder_loc')} : <strong class="text-slate-900">${event.location || t('not_defined')}</strong></p>
+                    ${event.notes ? `<p class="mt-2 pt-2 border-t border-slate-200/60 italic text-slate-500 text-[11px]">Note : <span class="font-medium text-slate-700">${event.notes}</span></p>` : ''}
+                </div>
+            </div>
 
-           <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex gap-3 items-start">
-               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-               </svg>
-               <p class="text-xs text-orange-800 font-medium leading-snug">
-                   Une avance d'au minimum <strong>15 minutes</strong> dédiée à un échauffement est nécessaire !
-               </p>
-           </div>
+            <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex gap-3 items-start">
+                <svg ...></svg>
+                <p class="text-xs text-orange-800 font-medium leading-snug">${t('warmup_warning')}</p>
+            </div>
 
-           <div class="flex flex-col gap-3 mt-2">
-               <button onclick="handleInscriptionPiPstep2('${eventId}')" 
-                       class="w-full py-4 ${btnClass} text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-                   ${btnText}
-               </button>
-
-               <button onclick="closeInscriptionAndReturnToDay('${event.date}')" 
-                       class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition">
-                   Annuler
-               </button>
-           </div>
-       </div>
-   `;
+            <div class="flex flex-col gap-3 mt-2">
+                <button onclick="handleInscriptionPiPstep2('${eventId}')" class="w-full py-4 ${btnClass} text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">${btnText}</button>
+                <button onclick="closeInscriptionAndReturnToDay('${event.date}')" class="w-full py-4 text-slate-400 font-bold hover:text-slate-600 transition">${t('btn_cancel')}</button>
+            </div>
+        </div>`;
 }
 async function handleInscriptionPiPstep2(eventId) {
 const event = eventsCache.find(e => e.id === eventId);
@@ -2512,89 +2494,58 @@ if (data) registrationDetailsCache[eventId] = data;
 document.body.style.cursor = 'default';
 }
 
-// 2. PRÉPARATION DES VARIABLES
-const isEditing = !!myReg;
-const isPending = myReg && myReg.status === 'PENDING_CONFIRMATION';
-const regId = myReg?.id || '';
+// 2. PRÉPARATION DES TEXTES VIA t()
+    const isEditing = !!myReg;
+    const isPending = myReg && myReg.status === 'PENDING_CONFIRMATION';
+    const regId = myReg?.id || '';
 
-// --- DÉFINITION DES TEXTES SELON LES 3 CAS ---
+    let titleText = t('pip_step2_default_title'); // "Avant de valider..."
+    let labelText = t('step2_label_notes'); // "Un souhait particulier ?"
+    let mainBtnText = t('btn_register_confirm'); // "Finaliser l'inscription"
+    let mainBtnColor = 'bg-blue-600';
+    let backBtnText = t('btn_back');
 
-// CAS 1 : NOUVELLE INSCRIPTION (Défaut)
-let titleText = 'Avant de valider...';
-let labelText = 'Un souhait particulier ?';
-let mainBtnText = "Finaliser l'inscription";
-let mainBtnColor = 'bg-blue-600';
-let backBtnText = 'Retour';
+    if (isEditing) {
+        backBtnText = t('btn_back_to_details');
+        labelText = t('label_update_notes');
 
-if (isEditing) {
-// Le bouton retour change pour tous ceux qui sont déjà inscrits
-backBtnText = "Aller vers les Détails de l'évènement";
-labelText = 'Mettre à jour vos notes :';
+        if (isPending) {
+            titleText = t('step2_title_reconfirmation');
+            mainBtnText = t('btn_finish_confirmation');
+            mainBtnColor = 'bg-orange-500';
+        } else {
+            titleText = t('step2_title_edit');
+            mainBtnText = t('btn_modify_confirm');
+            mainBtnColor = 'bg-slate-800';
+        }
+    }
 
-if (isPending) {
-// CAS 2 : RECONFIRMATION (Prioritaire)
-titleText = 'Reconfirmation';
-mainBtnText = 'Terminer la confirmation';
-mainBtnColor = 'bg-orange-500'; // Orange
-} else {
-// CAS 3 : MODIFICATION STANDARD
-titleText = 'Modifier mon inscription';
-mainBtnText = 'Enregistrer les modifications';
-mainBtnColor = 'bg-slate-800'; // Gris foncé
-}
-}
+    // 3. INJECTION
+    zone.innerHTML = template.innerHTML;
+    applyStaticTranslations(); // TRÈS IMPORTANT pour les data-i18n du template
 
-// 3. INJECTION ET REMPLISSAGE
-zone.innerHTML = template.innerHTML;
+    document.getElementById('step2-title').innerText = titleText;
+    document.getElementById('step2-label').innerText = labelText;
+    
+    // Remplissage des champs
+    document.getElementById('reg-notes').value = myReg?.notes || '';
+    document.getElementById('reg-private-toggle').checked = myReg?.is_private_request || false;
 
-// Mise à jour des textes
-document.getElementById('step2-title').innerText = titleText;
-document.getElementById('step2-label').innerText = labelText;
+    // Gestion de l'option privée (Capacité)
+    // (Identique, mais traduis le warning via data-i18n dans le HTML)
 
-// Remplissage des données existantes (Notes + Toggle)
-// C'est ici que je conserve le visuel standard : les champs sont toujours là
-document.getElementById('reg-notes').value = myReg?.notes || '';
-document.getElementById('reg-private-toggle').checked = myReg?.is_private_request || false;
-
-// Gestion de l'option privée (Capacité)
-let totalOthers = (event.registrations?.length || 0);
-if (isEditing) totalOthers -= 1;
-const canBePrivate = totalOthers <= 0;
-
-const toggle = document.getElementById('reg-private-toggle');
-const warning = document.getElementById('private-warning');
-const container = document.getElementById('toggle-container');
-
-if (!canBePrivate) {
-toggle.disabled = true;
-container.classList.add('opacity-50', 'cursor-not-allowed');
-warning.classList.remove('hidden');
-container.onclick = (e) => e.preventDefault();
-}
-
-// --- INJECTION DES BOUTONS ---
-// Note : J'utilise bien des guillemets simples autour de eventId dans les onclick
-document.getElementById('step2-buttons-zone').innerHTML = `
-       <button onclick="submitInscription('${eventId}', ${isEditing}, '${regId}')" 
-               class="w-full py-4 ${mainBtnColor} text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-           ${mainBtnText}
-       </button>
-       
-       <button onclick="handleUnsubscribe('${regId}', '${eventId}')" 
-               class="w-full py-4 bg-red-50 text-red-500 font-bold rounded-2xl text-[10px] uppercase tracking-widest mt-3 border border-red-100 active:scale-95 transition">
-           Se désinscrire
-       </button>
-   
-       <button onclick="handleInscriptionPiPstep1('${eventId}')" 
-               class="w-full py-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">
-           ${backBtnText}
-       </button>
-   `;
-
-// 4. AFFICHAGE
-zone.classList.add('modal-mode');
-zone.style.display = 'flex';
-zone.style.pointerEvents = 'auto';
+    // Injection des boutons dynamiques
+    document.getElementById('step2-buttons-zone').innerHTML = `
+        <button onclick="submitInscription('${eventId}', ${isEditing}, '${regId}')" class="w-full py-4 ${mainBtnColor} text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
+            ${mainBtnText}
+        </button>
+        ${isEditing ? `
+        <button onclick="handleUnsubscribe('${regId}', '${eventId}')" class="w-full py-4 bg-red-50 text-red-500 font-bold rounded-2xl text-[10px] uppercase tracking-widest mt-3 border border-red-100 active:scale-95 transition">
+            ${t('btn_unsubscribe')}
+        </button>` : ''}
+        <button onclick="handleInscriptionPiPstep1('${eventId}')" class="w-full py-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">
+            ${backBtnText}
+        </button>`;
 }
 
 async function submitInscription(eventId, isEditing, registrationId) {
@@ -3772,6 +3723,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
