@@ -28,6 +28,7 @@ const translations = {
     days_short: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
     notif_same_day: "Le jour même",
     at: "à",
+    days_long: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
 
     // --- BUTTONS GÉNÉRIQUES ---
     btn_confirm: "Confirmer",
@@ -344,6 +345,7 @@ Poursuivre
     days_short: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     notif_same_day: "Same day",
     at: "at",
+    days_long: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
 
     // --- BUTTONS GÉNÉRIQUES ---
     btn_confirm: "Confirm",
@@ -644,6 +646,7 @@ Continue
     days_short: ["Mon", "Die", "Mit", "Don", "Fre", "Sam", "Son"],
     notif_same_day: "Am selben Tag",
     at: "um",
+    days_long: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
 
     // --- BUTTONS GÉNÉRIQUES ---
     btn_confirm: "Bestätigen",
