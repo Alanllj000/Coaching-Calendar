@@ -1896,13 +1896,9 @@ function openAdminPanel() {
     }
 
     // --- TRADUCTION DU PLACEHOLDER ---
-    const adminNotes = document.getElementById('admin-notes'); // <--- VERIFIE BIEN CET ID
+    const adminNotes = document.getElementById('event-notes'); // <--- VERIFIE BIEN CET ID
     if (adminNotes) {
         const translatedText = t('placeholder_admin_notes');
-        console.log("Texte traduit trouvé :", translatedText);
-        adminNotes.placeholder = translatedText;
-    } else {
-        console.error("L'élément avec l'ID 'admin-notes' n'a pas été trouvé dans le DOM !");
     }
 
     // Affichage du panel
@@ -3738,6 +3734,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
