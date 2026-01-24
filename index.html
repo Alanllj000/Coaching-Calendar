@@ -1459,8 +1459,7 @@ async function openEventDetails(eventId) {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
-                        <div class="min-w-0">
-                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('label_notes')}</p>
+                        <div class="min-w-0 flex flex-col justify-center"> <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('label_notes')}</p>
                             <p class="font-bold text-slate-700 text-xs leading-tight">${event.notes}</p>
                         </div>
                     </div>
@@ -3800,6 +3799,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
