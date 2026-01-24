@@ -1271,7 +1271,8 @@ function openDayPip(dateStr, events = []) {
     
     // --- Traduction de la date ---
     const d = new Date(dateStr);
-    const dayName = t('days_short')[(d.getDay() + 6) % 7]; // Ajustement si ton tableau commence par Lundi
+    const dayIndex = (d.getDay() + 6) % 7; 
+    const dayName = t('days_long')[dayIndex]; 
     const monthName = t('months')[d.getMonth()];
     const dateL = `${dayName} ${d.getDate()} ${monthName}`;
 
@@ -3798,6 +3799,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
