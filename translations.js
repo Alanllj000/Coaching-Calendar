@@ -107,7 +107,13 @@ const translations = {
     btn_register_confirm: "Confirmer l'inscription",
     btn_modify_confirm: "Enregistrer les modifications",
 
-
+        
+    //--- PiP Eventdetails (Openevenetdetails()) ---
+    label_members: "membres",
+    event_card_subtitle: "Fiche de l'événement",
+    label_consultation: "Consultation",
+    label_location: "Lieu",
+    label_date_time: "Date & Horaire",
 
     //--- HandleAuthSetp1 and 2 ---
     btn_continue_registration: "Poursuivre l'inscription",
@@ -428,6 +434,15 @@ Poursuivre
     btn_modify_confirm: "Save Changes",
 
 
+        
+     //--- PiP Eventdetails (Openevenetdetails()) ---
+    label_members: "members",
+    event_card_subtitle: "Event Details",
+    label_consultation: "View Only",
+    label_location: "Location",
+    label_date_time: "Date & Time",
+
+        
     // --- HandleAuthStep 1 and 2 ---
     btn_continue_registration: "Continue registration",
     btn_continue_confirmation: "Continue confirmation",
@@ -733,6 +748,15 @@ Continue
     btn_modify_confirm: "Änderungen speichern",
 
 
+
+    //---PiP Details events (Openeventsdetails()) ---
+    label_members: "Mitglieder",
+    event_card_subtitle: "Ereignis-Details",
+    label_consultation: "Nur Ansicht",
+    label_location: "Ort",
+    label_date_time: "Datum & Uhrzeit",
+
+        
     // --- HandleAuthStep 1 and 2 ---
     btn_continue_registration: "Anmeldung fortsetzen",
     btn_continue_confirmation: "Bestätigung fortsetzen",
