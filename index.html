@@ -1023,22 +1023,29 @@ async function initApp(user) {
     if (!user) return;
     currentUser = user;
 
-    // 1. Interface
+    // 1. Interface : ON REND VISIBLE D'ABORD
     document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('main-content').classList.remove('hidden');
+    const mainContent = document.getElementById('main-content');
+    mainContent.classList.remove('hidden');
+
+    // --- NOUVEAU : On traduit le menu maintenant qu'il est visible ---
+    applyStaticTranslations(); 
 
     // 2. Temps réel
     setupAppRealtime(user.id);
 
     // 3. Chargement des données
-    await loadProfile();
-    await fetchEvents(); // Le calendrier est rendu ici (renderCalendar est appelé dedans)
+    await loadProfile(); // Ici on injecte potentiellement du HTML (reglages_all)
+    
+    // --- NOUVEAU : On traduit le contenu injecté par loadProfile ---
+    applyStaticTranslations(); 
+
+    await fetchEvents(); 
     
     loadNotificationSettings();
     syncNotifToggleWithBrowser();
     loadInbox();
 
-    // 4. Exécution de la redirection (On utilise le nom exact de TA fonction)
     await executePendingRedirection(); 
 }
 
@@ -3804,6 +3811,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
