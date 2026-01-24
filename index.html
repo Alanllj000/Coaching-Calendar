@@ -1263,13 +1263,12 @@ function openDayPip(dateStr, events = []) {
     zone.style.display = 'flex';
     zone.style.pointerEvents = 'auto';
 
-    // 3. Variables & DATE TRADUITE
+    // 3. Variables & DATE TRADUITE (Version Longue)
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const isDatePast = dateStr < todayStr;
     const isAdmin = typeof currentProfile !== 'undefined' && currentProfile && currentProfile.role === 'admin';
     
-    // --- Traduction de la date ---
     const d = new Date(dateStr);
     const dayIndex = (d.getDay() + 6) % 7; 
     const dayName = t('days_long')[dayIndex]; 
@@ -1285,7 +1284,7 @@ function openDayPip(dateStr, events = []) {
                     ${isAdmin ? `
                         <button onclick="openAdminFromPip('${dateStr}')" 
                                 class="text-blue-600 font-bold text-[10px] block mt-1 uppercase">
-                            ${isDatePast ? '➕ ' + t('menu_create') + ' (' + t('not_defined') + ')' : t('menu_create')}
+                            ${isDatePast ? '➕ ' + t('menu_create') + ' (' + t('status_finished') + ')' : t('menu_create')}
                         </button>` : ''
                     }
                 </div>
@@ -1311,30 +1310,33 @@ function openDayPip(dateStr, events = []) {
             const isFull = (regCount >= maxPlus) || hasPrivateReg || isPrivateTitle;
 
             // --- LOGIQUE DU BOUTON (TRADUIT) ---
-            let btnLabel = t('step2_title_register'); // "S'inscrire"
+            let btnLabel = t('step2_title_register'); 
             let btnClass = "bg-slate-900 text-white shadow-md hover:bg-slate-800";
             let btnAction = `handleInscriptionPiPstep1('${e.id}')`;
 
+            // Cas : Complet
             if (isFull && !myReg) {
-                btnLabel = "Complet"; // Tu peux ajouter 'status_full' dans ton dico
+                btnLabel = t('status_full'); 
                 btnClass = "bg-red-50 text-red-500 border border-red-100 cursor-not-allowed font-black";
                 btnAction = "void(0)";
             }
 
+            // Cas : Déjà inscrit
             if (myReg) {
                 if (myReg.status === 'PENDING_CONFIRMATION') {
-                    btnLabel = t('step2_title_reconfirmation'); // "En attente / Reconfirmation"
+                    btnLabel = t('status_pending'); 
                     btnClass = "bg-orange-100 text-orange-600 border border-orange-200";
                     btnAction = `handleInscriptionPiPstep1('${e.id}')`;
                 } else {
-                    btnLabel = t('step2_title_edit'); // "Modifier Réservation"
+                    btnLabel = t('btn_edit_reg'); 
                     btnClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
                     btnAction = `handleInscriptionPiPstep2('${e.id}')`;
                 }
             }
 
+            // Cas : Date passée (écrase tout le reste)
             if (isDatePast) {
-                btnLabel = t('status_already_registered'); // Ou une nouvelle clé 'status_finished'
+                btnLabel = t('status_finished'); 
                 btnClass = "bg-slate-50 text-slate-300 border border-slate-100 cursor-default";
                 btnAction = "void(0)";
             }
@@ -1354,7 +1356,7 @@ function openDayPip(dateStr, events = []) {
                             <div class="flex items-center gap-1.5 mt-1.5">
                                 <div class="w-1.5 h-1.5 rounded-full ${isFull ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-emerald-500'}"></div>
                                 <span class="text-[10px] font-black ${isFull ? 'text-red-600' : 'text-slate-500'} uppercase tracking-tighter">
-                                    ${isFull ? 'Complet' : `${regCount} / ${maxPlus} membres`}
+                                    ${isFull ? t('status_full') : `${regCount} / ${maxPlus} membres`}
                                 </span>
                             </div>
                         </div>
@@ -3799,6 +3801,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
