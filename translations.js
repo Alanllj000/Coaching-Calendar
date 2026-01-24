@@ -50,6 +50,11 @@ const translations = {
     label_recurrence: "Récurrence",
     day_mon: "Lun", day_tue: "Mar", day_wed: "Mer", day_thu: "Jeu", day_fri: "Ven", day_sat: "Sam", day_sun: "Dim",
     btn_delete_event: "Supprimer l'événement",
+    // Admin Panel
+    placeholder_admin_notes: "Ex: Tenue de gala exigée, apporter les protège-lames...",
+    label_admin_date: "Date de l'événement",
+    label_admin_location: "Lieu",
+    label_admin_capacity: "Capacité maximale",
 
     // --- PIP MODIFICATION SÉRIE ---
     edit_choice_title: "Modifier l'événement",
@@ -394,6 +399,11 @@ Poursuivre
     label_recurrence: "Recurrence",
     day_mon: "Mon", day_tue: "Tue", day_wed: "Wed", day_thu: "Thu", day_fri: "Fri", day_sat: "Sat", day_sun: "Sun",
     btn_delete_event: "Delete event",
+    // Admin Panel
+    placeholder_admin_notes: "e.g., Gala outfit required, bring blade guards...",
+    label_admin_date: "Event Date",
+    label_admin_location: "Location",
+    label_admin_capacity: "Maximum capacity",
 
     // --- PIP MODIFICATION SÉRIE ---
     edit_choice_title: "Edit Event",
@@ -722,6 +732,11 @@ Continue
     label_recurrence: "Wiederholung",
     day_mon: "Mo", day_tue: "Di", day_wed: "Mi", day_thu: "Do", day_fri: "Fr", day_sat: "Sa", day_sun: "So",
     btn_delete_event: "Ereignis löschen",
+    // Admin Panel
+    placeholder_admin_notes: "z.B. Gala-Outfit erforderlich, Kufenschoner mitbringen...",
+    label_admin_date: "Datum der Veranstaltung",
+    label_admin_location: "Ort",
+    label_admin_capacity: "Maximale Kapazität",
 
     // --- PIP MODIFICATION SÉRIE ---
     edit_choice_title: "Ereignis bearbeiten",
