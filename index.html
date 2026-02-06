@@ -34,19 +34,16 @@ touch-action: pan-x pan-y;
 #calendar-days-header {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    gap: 1px; /* Identique à la grille */
+    gap: 1px !important; /* DOIT être identique au gap de .calendar-grid */
     width: 100%;
     
-    /* On imite la structure de la grille pour aligner les colonnes */
-    border-left: 1px solid transparent; 
+    /* On ajoute les mêmes bordures latérales (même si transparentes) 
+       pour que le calcul de largeur soit identique au pixel près */
+    border-left: 1px solid transparent;
     border-right: 1px solid transparent;
     
-    /* On ajoute une marge pour compenser le fait que la grille a 1px de border */
-    /* Si la grille est poussée de 1px, on pousse le texte de 1px aussi */
-    padding: 0 1px; 
-    
     box-sizing: border-box;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 
 #calendar-days-header div {
@@ -55,6 +52,9 @@ touch-action: pan-x pan-y;
     font-weight: 800;
     color: #94a3b8;
     text-transform: uppercase;
+    /* On s'assure qu'aucun padding interne ne vient fausser le calcul */
+    padding: 0;
+    margin: 0;
 }
 
 .input-field {
@@ -3766,6 +3766,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
