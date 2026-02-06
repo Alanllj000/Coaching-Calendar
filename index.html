@@ -2258,9 +2258,8 @@ function openConfirmDeleteSeriesPip(eventId) {
                     </button>
                     
                     ${seriesId ? `
-                    <button onclick="processDeleteSeries('${seriesId}')" 
-                            class="w-full p-5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300 cursor-pointer"
-                            data-i18n="btn_delete_series">
+                        <button onclick="processDelete('${eventId}', true)" 
+                            class="w-full p-5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300 cursor-pointer">
                         Supprimer TOUTE LA SÉRIE
                     </button>
                     ` : ''}
@@ -3736,6 +3735,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
