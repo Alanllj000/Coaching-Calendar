@@ -34,25 +34,27 @@ touch-action: pan-x pan-y;
 #calendar-days-header {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    gap: 1px; /* DOIT être identique au gap de .calendar-grid */
+    gap: 1px; /* Identique à la grille */
     width: 100%;
-    text-align: center;
-    /* On ajoute des marges pour compenser la bordure de la grille en dessous */
+    
+    /* On imite la structure de la grille pour aligner les colonnes */
+    border-left: 1px solid transparent; 
+    border-right: 1px solid transparent;
+    
+    /* On ajoute une marge pour compenser le fait que la grille a 1px de border */
+    /* Si la grille est poussée de 1px, on pousse le texte de 1px aussi */
     padding: 0 1px; 
+    
     box-sizing: border-box;
-    margin-bottom: 8px; /* Espace entre les lettres et la grille */
+    margin-bottom: 5px;
 }
 
 #calendar-days-header div {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #94a3b8; /* slate-400 */
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    /* Centre parfaitement le texte dans sa colonne */
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 .input-field {
@@ -3764,6 +3766,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
