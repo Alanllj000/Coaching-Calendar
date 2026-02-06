@@ -3527,6 +3527,10 @@ function applyStaticTranslations() {
     
     elements.forEach(el => {
         const key = el.getAttribute('data-i18n');
+
+        if (key === 'days_short' || key === 'months') return;
+
+        
         const translation = t(key);
 
         // Si la traduction est trouvée (différente de la clé)
@@ -3737,6 +3741,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
