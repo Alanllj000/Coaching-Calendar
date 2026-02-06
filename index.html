@@ -31,6 +31,13 @@ width: 100vw;
 touch-action: pan-x pan-y;
 }
 
+#calendar-days-header {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    width: 100%;
+    text-align: center;
+}
+
 .input-field {
 width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; 
 padding: 1rem; border-radius: 1rem; font-weight: 600; outline: none; transition: all 0.2s;
@@ -3741,6 +3748,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
