@@ -1183,7 +1183,7 @@ function renderCalendar() {
     // Espaces vides pour le début du mois
     for (let i = 0; i < firstDay; i++) {
         const emptyCell = document.createElement('div');
-        emptyCell.className = "calendar-day opacity-0 pointer-events-none";
+        emptyCell.className = "calendar-day border border-slate-100 bg-slate-50/30 opacity-50";
         grid.appendChild(emptyCell);
     }
 
@@ -3735,6 +3735,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
