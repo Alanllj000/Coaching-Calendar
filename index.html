@@ -2125,155 +2125,157 @@ zone.innerHTML = `
 }
 
 async function handleDelete(eventId) {
-const event = eventsCache.find(e => e.id === eventId);
+    const event = eventsCache.find(e => e.id === eventId);
 
-if (event && event.is_recurring) {
-// Si c'est une série, on ouvre la PiP de choix
-openConfirmDeleteSeriesPip(eventId);
-} else {
-// Si c'est unique, on demande une confirmation simple avant de supprimer
-if (confirm("Supprimer cet événement ?")) {
-await processDelete(eventId, false);
-}
-}
+    // Un événement fait partie d'une série s'il a un series_id
+    if (event && event.series_id) {
+        openConfirmDeleteSeriesPip(eventId);
+    } else {
+        if (confirm("Supprimer cet événement ?")) {
+            await processDelete(eventId, false);
+        }
+    }
 }
 
 async function processDelete(eventId, deleteAll) {
-try {
-console.log("Exécution suppression...", { eventId, deleteAll });
+    try {
+        console.log("Exécution suppression...", { eventId, deleteAll });
 
-// On récupère les infos de l'événement actuel depuis le cache pour l'archivage
-const eventData = eventsCache.find(e => e.id === eventId);
-if (!eventData) throw new Error("Événement introuvable dans le cache");
+        const eventData = eventsCache.find(e => e.id === eventId);
+        if (!eventData) throw new Error("Événement introuvable dans le cache");
 
-if (deleteAll) {
-// --- LOGIQUE SÉRIE ---
-const pId = eventData.parent_event_id || eventData.id;
-const dateStr = eventData.date;
+        if (deleteAll) {
+            // --- LOGIQUE SÉRIE BASÉE SUR SERIES_ID ---
+            const sId = eventData.series_id;
+            if (!sId) throw new Error("Cet événement n'a pas d'identifiant de série.");
 
-// 1. On récupère tous les IDs de la série à partir de cette date
-const { data: relatedEvents, error: fetchError } = await sb.from('events')
-.select('*') // On prend tout pour pouvoir archiver
-.or(`id.eq.${pId},parent_event_id.eq.${pId}`)
-.gte('date', dateStr);
+            // 1. On récupère TOUTE la série (indépendamment du parent)
+            const { data: relatedEvents, error: fetchError } = await sb.from('events')
+                .select('*')
+                .eq('series_id', sId);
 
-if (fetchError) throw fetchError;
-if (!relatedEvents || relatedEvents.length === 0) return;
+            if (fetchError) throw fetchError;
+            if (!relatedEvents || relatedEvents.length === 0) return;
 
-const idsToDelete = relatedEvents.map(e => e.id);
+            const idsToDelete = relatedEvents.map(e => e.id);
 
-// 2. ARCHIVAGE DE LA SÉRIE (Avant suppression)
-// On prépare les lignes pour registre_events
-const archiveLines = relatedEvents.map(ev => ({
-original_event_id: ev.id,
-owner_id: ev.owner_id,
-title: ev.title,
-location: ev.location,
-date: ev.date,
-start_time: ev.start_time,
-end_time: ev.end_time,
-max_participants: ev.max_participants,
-participants_json: ev.registrations || [], // Inscrits actuels
-series_id: pId,
-status: 'SUPPRIME_SERIE'
-}));
+            // 2. ARCHIVAGE DE LA SÉRIE
+            const archiveLines = relatedEvents.map(ev => ({
+                original_event_id: ev.id,
+                owner_id: ev.owner_id,
+                title: ev.title,
+                location: ev.location,
+                date: ev.date,
+                start_time: ev.start_time,
+                end_time: ev.end_time,
+                max_participants: ev.max_participants,
+                participants_json: ev.registrations || [],
+                series_id: sId,
+                status: 'SUPPRIME_SERIE'
+            }));
 
-const { error: logError } = await sb.from('registre_events').insert(archiveLines);
-if (logError) console.warn("Erreur archivage série :", logError);
+            const { error: logError } = await sb.from('registre_events').insert(archiveLines);
+            if (logError) console.warn("Erreur archivage série :", logError);
 
-// 3. Supprimer d'abord les inscriptions liées (pour éviter l'erreur 409)
-await sb.from('registrations').delete().in('event_id', idsToDelete);
+            // 3. Supprimer les inscriptions liées
+            await sb.from('registrations').delete().in('event_id', idsToDelete);
 
-// 4. Supprimer enfin les événements
-const { error: deleteError } = await sb.from('events')
-.delete()
-.in('id', idsToDelete);
+            // 4. Supprimer les événements
+            const { error: deleteError } = await sb.from('events')
+                .delete()
+                .in('id', idsToDelete);
 
-if (deleteError) throw deleteError;
+            if (deleteError) throw deleteError;
 
-} else {
-// --- LOGIQUE UNIQUE ---
+        } else {
+            // --- LOGIQUE UNIQUE (Inchangée mais utilise series_id pour l'archive) ---
+            const { error: logError } = await sb.from('registre_events').insert([{
+                original_event_id: eventId,
+                owner_id: eventData.owner_id,
+                title: eventData.title,
+                location: eventData.location,
+                date: eventData.date,
+                start_time: eventData.start_time,
+                end_time: eventData.end_time,
+                max_participants: eventData.max_participants,
+                participants_json: eventData.registrations || [],
+                series_id: eventData.series_id || null,
+                status: 'SUPPRIME_UNIQUE'
+            }]);
 
-// 1. ARCHIVAGE DE L'ÉVÉNEMENT UNIQUE
-const { error: logError } = await sb.from('registre_events').insert([{
-original_event_id: eventId,
-owner_id: eventData.owner_id,
-title: eventData.title,
-location: eventData.location,
-date: eventData.date,
-start_time: eventData.start_time,
-end_time: eventData.end_time,
-max_participants: eventData.max_participants,
-participants_json: eventData.registrations || [],
-series_id: eventData.parent_event_id || null,
-status: 'SUPPRIME_UNIQUE'
-}]);
+            if (logError) console.warn("Erreur archivage unique :", logError);
 
-if (logError) console.warn("Erreur archivage unique :", logError);
+            await sb.from('registrations').delete().eq('event_id', eventId);
+            const { error: deleteError } = await sb.from('events').delete().eq('id', eventId);
+            if (deleteError) throw deleteError;
+        }
 
-// 2. Supprimer les inscriptions de cet event précis
-await sb.from('registrations').delete().eq('event_id', eventId);
+        // --- FINALISATION ---
+        alert("Suppression et archivage réussis.");
+        if (typeof closeMobilePip === "function") closeMobilePip();
+        if (typeof closeAdminPanel === "function") closeAdminPanel();
 
-// 3. Supprimer l'event
-const { error: deleteError } = await sb.from('events').delete().eq('id', eventId);
-if (deleteError) throw deleteError;
-}
+        await fetchEvents();
 
-// --- FINALISATION ---
-alert("Suppression et archivage réussis.");
-closeMobilePip();
-if (typeof closeAdminPanel === "function") closeAdminPanel();
-
-// Rafraîchir les données
-await fetchEvents();
-
-} catch (err) {
-console.error("Erreur détaillée lors de la suppression:", err);
-alert("Erreur : " + err.message);
-}
+    } catch (err) {
+        console.error("Erreur détaillée lors de la suppression:", err);
+        alert("Erreur : " + err.message);
+    }
 }
 
 function openConfirmDeleteSeriesPip(eventId) {
-const zone = document.getElementById('mobile-pip-zone');
-if (!zone) return;
+    const zone = document.getElementById('mobile-pip-zone');
+    if (!zone) return;
 
-zone.classList.add('modal-mode');
-zone.style.display = 'flex';
-zone.style.pointerEvents = 'auto';
+    // Récupération de l'event pour obtenir le series_id
+    const event = eventsCache.find(e => e.id === eventId);
+    const seriesId = event ? event.series_id : null;
 
-zone.innerHTML = `
-       <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
-           <div class="flex flex-col items-center text-center">
-               <div class="w-16 h-16 bg-slate-100 text-slate-900 rounded-full flex items-center justify-center mb-6">
-                   <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                   </svg>
-               </div>
-               
-               <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">Supprimer l'événement</h3>
-               <p class="text-slate-500 mb-8 leading-relaxed">
-                   Cette action est irréversible.<br>
-                   Souhaitez-vous supprimer uniquement cette séance ou toute la série ?
-               </p>
-               
-               <div class="flex flex-col w-full gap-3">
-                   <button onclick="processDelete('${eventId}', false)" 
-                           class="w-full p-5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer">
-                       Supprimer cette séance UNIQUEMENT
-                   </button>
-                   
-                   <button onclick="processDelete('${eventId}', true)" 
-                           class="w-full p-5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer">
-                       Supprimer TOUTE LA SÉRIE (à venir)
-                   </button>
-                   
-                   <button onclick="closeMobilePip()" 
-                           class="w-full p-4 text-slate-400 font-bold text-xs uppercase tracking-widest mt-2 hover:text-slate-600 transition">
-                       Annuler
-                   </button>
-               </div>
-           </div>
-       </div>`;
+    zone.classList.add('modal-mode');
+    zone.style.display = 'flex';
+    zone.style.pointerEvents = 'auto';
+
+    zone.innerHTML = `
+        <div class="mobile-pip-card border-t-8 border-slate-900 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
+            <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-slate-100 text-slate-900 rounded-full flex items-center justify-center mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </div>
+                
+                <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight" data-i18n="delete_title">Supprimer l'événement</h3>
+                <p class="text-slate-500 mb-8 leading-relaxed" data-i18n="delete_confirm_desc">
+                    Cette action est irréversible.<br>
+                    Souhaitez-vous supprimer uniquement cette séance ou toute la série ?
+                </p>
+                
+                <div class="flex flex-col w-full gap-3">
+                    <button onclick="processDelete('${eventId}', false)" 
+                            class="w-full p-5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer"
+                            data-i18n="btn_delete_only_this">
+                        Supprimer cette séance UNIQUEMENT
+                    </button>
+                    
+                    ${seriesId ? `
+                    <button onclick="processDeleteSeries('${seriesId}')" 
+                            class="w-full p-5 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300 cursor-pointer"
+                            data-i18n="btn_delete_series">
+                        Supprimer TOUTE LA SÉRIE
+                    </button>
+                    ` : ''}
+                    
+                    <button onclick="closeMobilePip()" 
+                            class="w-full p-4 text-slate-400 font-bold text-xs uppercase tracking-widest mt-2 hover:text-slate-600 transition"
+                            data-i18n="btn_cancel">
+                        Annuler
+                    </button>
+                </div>
+            </div>
+        </div>`;
+
+    // On applique les traductions si disponibles
+    if (typeof applyStaticTranslations === 'function') applyStaticTranslations();
 }
 
 // Change le texte dynamiquement selon la position du toggle
@@ -3734,6 +3736,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
