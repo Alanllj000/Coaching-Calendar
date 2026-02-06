@@ -1163,11 +1163,11 @@ function renderCalendar() {
     const dayHeader = document.getElementById('calendar-days-header');
     if (dayHeader) {
         const days = t('days_short');
-        // Sécurité : on vérifie que days est bien un tableau
         if (Array.isArray(days)) {
-            dayHeader.innerHTML = days.map(d => `<div>${d}</div>`).join('');
-        } else {
-            console.error("t('days_short') n'est pas un tableau", days);
+            // AJOUT : On force le header à être une grille alignée sur le calendrier
+            dayHeader.style.display = 'grid';
+            dayHeader.style.gridTemplateColumns = 'repeat(7, 1fr)';
+            dayHeader.innerHTML = days.map(d => `<div class="text-center">${d}</div>`).join('');
         }
     }
 
@@ -1175,26 +1175,24 @@ function renderCalendar() {
     const y = currentDate.getFullYear();
     const m = currentDate.getMonth();
 
-    // --- 2. ÉTIQUETTE DU MOIS (JANVIER 2026...) ---
     const monthNames = t('months');
     const monthLabel = document.getElementById('month-label');
     if (monthLabel && Array.isArray(monthNames)) {
         monthLabel.textContent = monthNames[m] + ' ' + y;
     }
 
-    // Calcul des jours
+    // Calcul du premier jour (Lundi = 0)
     const firstDay = (new Date(y, m, 1).getDay() || 7) - 1;
     const lastDate = new Date(y, m + 1, 0).getDate();
     const todayStr = now.toISOString().split('T')[0];
 
-    // Espaces vides pour le début du mois
+    // --- 2. ESPACES VIDES (DÉBUT DU MOIS) ---
     for (let i = 0; i < firstDay; i++) {
-    const emptyCell = document.createElement('div');
-    // On ajoute 'calendar-day' pour qu'elle prenne sa place dans la grille
-    // On ajoute 'empty' (qui existe déjà dans ton CSS) pour le fond gris clair
-    emptyCell.className = "calendar-day empty"; 
-    grid.appendChild(emptyCell);
-}
+        const emptyCell = document.createElement('div');
+        // MODIFICATION : On ajoute explicitement la bordure pour que la case existe visuellement
+        emptyCell.className = "calendar-day empty border border-slate-100"; 
+        grid.appendChild(emptyCell);
+    }
 
     // --- 3. BOUCLE DE GÉNÉRATION DES JOURS ---
     for (let d = 1; d <= lastDate; d++) {
@@ -1203,47 +1201,38 @@ function renderCalendar() {
         const isToday = now.toDateString() === loopD.toDateString();
         let isPast = dateStr < todayStr;
 
-        // Filtrage des événements pour ce jour
         const dayEvts = (eventsCache || []).filter(function(e) {
-            const isD = e.date === dateStr;
-            const isNotExcluded = !e.excluded_dates || !e.excluded_dates.includes(dateStr);
-            return isD && isNotExcluded;
+            return e.date === dateStr && (!e.excluded_dates || !e.excluded_dates.includes(dateStr));
         });
 
         const cell = document.createElement('div');
         const isAdmin = currentProfile && currentProfile.role === 'admin';
 
         cell.id = `calendar-day-${dateStr}`;
+        // On s'assure que la classe est identique aux cases vides pour l'alignement
         cell.className = `calendar-day border border-slate-100 transition-all ${isPast ? 'bg-slate-50/80' : 'bg-white shadow-sm'}`;
+        
         if (isToday) cell.classList.add('ring-2', 'ring-blue-500', 'ring-inset');
 
-        // Gestion du clic (Passé vs Futur)
-        if (isPast) {
-            if (isAdmin) {
-                cell.onclick = function() { openDayPip(dateStr, dayEvts); };
-                cell.style.cursor = 'pointer';
-            } else {
-                cell.style.cursor = 'not-allowed';
-            }
+        if (isPast && !isAdmin) {
+            cell.style.cursor = 'not-allowed';
         } else {
             cell.onclick = function() { openDayPip(dateStr, dayEvts); };
             cell.style.cursor = 'pointer';
         }
 
-        // Génération des points (Dots) d'événements
         let dotsHtml = dayEvts.map(function(e) {
             const regCount = (e.registrations && e.registrations.length) || 0;
             const maxPlus = e.max_participants || 0;
-            const hasPrivateReg = e.registrations && e.registrations.some(r => r.is_private_request === true);
-            const isPrivateTitle = e.title && e.title.toLowerCase().includes('privé');
-            const isFullOrPrivate = (regCount >= maxPlus) || hasPrivateReg || isPrivateTitle;
-        
+            const isFullOrPrivate = (regCount >= maxPlus) || 
+                                   (e.registrations && e.registrations.some(r => r.is_private_request)) || 
+                                   (e.title && e.title.toLowerCase().includes('privé'));
+            
             let dotColor = e.color || '#3b82f6'; 
             if (isFullOrPrivate) dotColor = '#ef4444'; 
         
             const [endH, endMins] = (e.end_time || "23:59").split(':');
-            const eFullDate = new Date(y, m, d, parseInt(endH), parseInt(endMins));
-            if (now > eFullDate) dotColor = '#cbd5e1'; 
+            if (now > new Date(y, m, d, parseInt(endH), parseInt(endMins))) dotColor = '#cbd5e1'; 
         
             return `<span class="event-dot" style="background-color: ${dotColor}; box-shadow: 0 0 4px ${dotColor}80;"></span>`;
         }).join('');
@@ -1253,6 +1242,16 @@ function renderCalendar() {
             <div class="mt-auto flex flex-wrap gap-1">${dotsHtml}</div>
         `;
         grid.appendChild(cell);
+    }
+
+    // --- 4. OPTIONNEL : REMPLIR LA FIN DU MOIS ---
+    // Cela évite que le calendrier s'arrête brutalement au milieu de la ligne
+    const totalCells = firstDay + lastDate;
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let j = 0; j < remaining; j++) {
+        const lastEmptyCell = document.createElement('div');
+        lastEmptyCell.className = "calendar-day empty border border-slate-100";
+        grid.appendChild(lastEmptyCell);
     }
 }
 // --- PIP DETAILS JOUR ---
@@ -3748,6 +3747,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
