@@ -1182,10 +1182,12 @@ function renderCalendar() {
 
     // Espaces vides pour le début du mois
     for (let i = 0; i < firstDay; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = "calendar-day border border-slate-100 bg-slate-50/30 opacity-50";
-        grid.appendChild(emptyCell);
-    }
+    const emptyCell = document.createElement('div');
+    // On ajoute 'calendar-day' pour qu'elle prenne sa place dans la grille
+    // On ajoute 'empty' (qui existe déjà dans ton CSS) pour le fond gris clair
+    emptyCell.className = "calendar-day empty"; 
+    grid.appendChild(emptyCell);
+}
 
     // --- 3. BOUCLE DE GÉNÉRATION DES JOURS ---
     for (let d = 1; d <= lastDate; d++) {
@@ -3735,6 +3737,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
