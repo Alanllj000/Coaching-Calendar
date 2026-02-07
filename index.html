@@ -3727,7 +3727,20 @@ function fillProfileInputs() {
 
 
 
+document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get('event_id');
 
+    if (eventId) {
+        console.log("Tentative d'ouverture de l'event :", eventId);
+        // Ici, appelle la fonction que tu utilises d'habitude pour ouvrir un event
+        // Exemple : openEventDetails(eventId);
+        // Ou : showRegistrationPip(eventId);
+        
+        // Optionnel : Nettoyer l'URL après lecture pour éviter de réouvrir au refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
 
     
 // --- 2. Gestion du ServiceWorker
@@ -3772,6 +3785,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
