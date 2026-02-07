@@ -2177,6 +2177,7 @@ async function processDelete(eventId, deleteAll) {
         const eventData = eventsCache.find(e => e.id === eventId);
         if (!eventData) throw new Error("Événement introuvable dans le cache");
 
+        console.log("Données du cache pour suppression:", eventData);
         if (deleteAll) {
             // --- LOGIQUE SÉRIE BASÉE SUR SERIES_ID ---
             const sId = eventData.series_id;
@@ -3727,64 +3728,81 @@ function fillProfileInputs() {
 
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    const params = new URLSearchParams(window.location.search);
-    const eventId = params.get('event_id');
-
-    if (eventId) {
-        console.log("Tentative d'ouverture de l'event :", eventId);
-        // Ici, appelle la fonction que tu utilises d'habitude pour ouvrir un event
-        // Exemple : openEventDetails(eventId);
-        // Ou : showRegistrationPip(eventId);
+/**
+ * Met à jour les pastilles rouges (badges) des notifications
+ */
+function updateBadges() {
+    try {
+        // On cherche toutes les notifications non lues dans ton interface (si applicable)
+        // Pour l'instant, on fait juste un log pour éviter l'erreur ReferenceError
+        console.log("Mise à jour des badges demandée...");
         
-        // Optionnel : Nettoyer l'URL après lecture pour éviter de réouvrir au refresh
-        window.history.replaceState({}, document.title, window.location.pathname);
+        // Si tu as un élément HTML pour le badge de l'inbox, tu peux le gérer ici
+        const badge = document.getElementById('inbox-badge-count');
+        if (badge) {
+            // Logique pour compter les non-lus...
+        }
+    } catch (e) {
+        console.error("Erreur dans updateBadges:", e);
     }
-});
+}
 
     
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
-    // 1. Premier passage : Traduction initiale (Auth, etc.)
+    // 1. Traduction initiale
     applyStaticTranslations();
     updateLanguageUI();
 
-    // 2. Cache les éléments administratifs
+    // 2. Interface de base
     if(document.getElementById('admin-panel')) {
         document.getElementById('admin-panel').style.display = 'none';
     }
     const pipZone = document.getElementById('mobile-pip-zone');
     if(pipZone) pipZone.style.display = 'none';
 
-    // 3. Vérification de la session
+    // 3. Session et Initialisation
     const { data: { session } } = await sb.auth.getSession();
     
     if (session) {
-        // initApp charge le calendrier, le profil, etc.
-        await initApp(session.user);
+        await initApp(session.user); // On attend que tout soit chargé
 
-        // 4. DEUXIÈME PASSAGE : Traduit ce qui a été généré par initApp (comme reglages_all)
-        // ON LE FAIT AVANT LE REMPLISSAGE
         applyStaticTranslations(); 
         updateLanguageUI();
 
-        // 5. REMPLISSAGE FINAL : Maintenant que le HTML est traduit ET injecté
+        // 4. Détection de l'event dans l'URL (pour les notifications)
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('event_id');
+
+        if (eventId) {
+            console.log("🚀 Notification reçue pour l'event :", eventId);
+            // On attend un tout petit peu que le calendrier soit rendu
+            setTimeout(() => {
+                // Remplace 'openEventDetails' par le nom exact de ta fonction d'ouverture
+                if (typeof openEventDetails === 'function') {
+                    openEventDetails(eventId);
+                } else if (typeof showRegistrationPip === 'function') {
+                    showRegistrationPip(eventId);
+                }
+            }, 500);
+            
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // 5. Remplissage profil
         setTimeout(() => {
-            if (typeof fillProfileInputs === 'function') {
-                console.log("Appel de sécurité pour remplir les champs...");
-                fillProfileInputs();
-            }
-        }, 300); // 300ms suffisent largement après l'injection
+            if (typeof fillProfileInputs === 'function') fillProfileInputs();
+        }, 300);
 
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
-        // On traduit l'écran d'auth si pas de session
         applyStaticTranslations();
     }
 };
 </script>
 </body>
 </html>
+
 
 
 
