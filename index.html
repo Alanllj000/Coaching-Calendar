@@ -4273,14 +4273,20 @@ async function openBroadcastGroup(userIds, eventTitle) {
     }));
 
     // B. Table Notification_queue (Déclencheur PUSH)
-    const queue = userIds.map(uid => ({
+   const queue = userIds.map(uid => ({
         user_id: uid,
         message_type: 'ADMIN_BROADCAST',
-        scheduled_for: new Date().toISOString(), // On l'envoie maintenant
+        scheduled_for: new Date().toISOString(),
+        // On envoie le titre et le body à la racine du metadata 
+        // ET dans un objet notification pour être compatible avec l'Edge Function
         metadata: { 
             title: eventTitle, 
             body: msg,
-            icon: '/icon-192x192.png' 
+            url: '/Coaching-Calendar/',
+            notification: {
+                title: eventTitle,
+                body: msg
+            }
         }
     }));
 
@@ -4380,6 +4386,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
