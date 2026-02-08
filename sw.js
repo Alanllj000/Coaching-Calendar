@@ -1,68 +1,67 @@
 const CACHE_NAME = 'coachpro-v4';
+const ASSETS_TO_CACHE = ['./', './index.html'];
 
-// On vide la liste pour le test
-const ASSETS_TO_CACHE = [
-    './',
-    './index.html'
-];
-
+// --- INSTALLATION & ACTIVATION ---
 self.addEventListener('install', (event) => {
-    // Note: l'alerte ne s'affichera pas sur mobile, mieux vaut console.log
-    console.log("SW: Installation en cours..."); 
-    self.skipWaiting(); 
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
-        })
-    );
+    self.skipWaiting();
+    event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)));
 });
 
 self.addEventListener('activate', (event) => {
-    console.log("SW: Nettoyage des anciennes versions...");
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    // Si le cache trouvé n'est pas la version actuelle (ex: v4)
-                    if (cacheName !== CACHE_NAME) {
-                        console.log("SW: Suppression du cache obsolète :", cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => {
-            // Prend le contrôle immédiatement pour éviter les bugs d'affichage
-            return self.clients.claim();
-        })
+        caches.keys().then((names) => Promise.all(names.map(n => n !== CACHE_NAME && caches.delete(n))))
+        .then(() => self.clients.claim())
     );
 });
 
-// --- GESTION DU PUSH REÇU ---
+// --- 1. GESTION DU PUSH REÇU (LE BLOC MANQUANT) ---
+self.addEventListener('push', (event) => {
+    console.log("SW: Push reçu");
+    let data = { title: 'Coach Pro', body: 'Nouveau message', url: '/Coaching-Calendar/' };
+
+    try {
+        if (event.data) {
+            data = event.data.json();
+        }
+    } catch (e) {
+        console.error("SW: Erreur parsing JSON push", e);
+        // Backup si le payload n'est pas du JSON
+        data.body = event.data.text();
+    }
+
+    const options = {
+        body: data.body,
+        icon: './appicon-128x128.png',
+        badge: './appicon-128x128.png',
+        vibrate: [100, 50, 100],
+        data: { url: data.url || '/Coaching-Calendar/' }
+    };
+
+    event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+// --- 2. GESTION DU CLIC SUR LA NOTIFICATION ---
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    // On extrait l'ID de l'URL reçue (ex: /Coaching-Calendar/?event_id=123)
     const urlData = event.notification.data.url || '';
-    const eventId = urlData.split('event_id=')[1]; // Récupère ce qu'il y a après 'event_id='
+    const eventId = urlData.split('event_id=')[1];
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (let client of windowClients) {
+                // Si l'onglet est déjà ouvert sur notre app
                 if (client.url.includes('Coaching-Calendar') && 'focus' in client) {
                     client.focus();
-                    // ENVOI DU MESSAGE À L'APP
                     if (eventId) {
-                        return client.postMessage({
-                            type: 'OPEN_EVENT',
-                            eventId: eventId
-                        });
+                        return client.postMessage({ type: 'OPEN_EVENT', eventId: eventId });
                     }
                     return;
                 }
             }
-            // Si l'app est fermée, on l'ouvre normalement sur la racine
+            // Si l'app est fermée, on ouvre la racine (la détection URL prendra le relais)
             if (clients.openWindow) {
-                return clients.openWindow('/Coaching-Calendar/');
+                return clients.openWindow('/Coaching-Calendar/' + (eventId ? `?event_id=${eventId}` : ''));
             }
         })
     );
