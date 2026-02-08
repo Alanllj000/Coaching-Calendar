@@ -4095,82 +4095,100 @@ function openBroadcastPip() {
 
                 
 async function openEventParticipantsDetails(eventId) {
+    console.log("🔍 Ouverture de l'event ID:", eventId);
+    
     const panel = document.getElementById('admin-event-details-panel');
     const header = document.getElementById('event-details-header');
     const container = document.getElementById('event-participants-container');
     
+    if (!panel) return console.error("❌ Panel détails introuvable");
+
+    // FORCE L'AFFICHAGE VISUEL
     panel.classList.remove('hidden');
+    panel.style.display = 'block'; 
+    panel.style.zIndex = "10001"; // S'assure d'être au dessus du dashboard
+    
     container.innerHTML = '<div class="p-10 text-center"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i></div>';
 
-    // 1. On récupère d'abord l'Event et ses registrations (simple)
-    const { data: event, error: eventErr } = await sb.from('events')
-        .select(`*, registrations(*)`)
-        .eq('id', eventId)
-        .single();
+    try {
+        // 1. Récupération Event
+        const { data: event, error: eventErr } = await sb.from('events')
+            .select(`*, registrations(*)`)
+            .eq('id', eventId)
+            .single();
 
-    if (eventErr) return console.error("Erreur Event:", eventErr);
+        if (eventErr) throw eventErr;
+        console.log("✅ Event chargé:", event.title);
 
-    // 2. On récupère les profils des inscrits (S'il y en a)
-    let profilesMap = {};
-    if (event.registrations && event.registrations.length > 0) {
-        const userIds = event.registrations.map(r => r.user_id);
-        const { data: profiles, error: profErr } = await sb.from('profiles')
-            .select('*')
-            .in('id', userIds);
-        
-        if (!profErr) {
-            // On crée un dictionnaire {id: profil} pour un accès rapide
-            profiles.forEach(p => profilesMap[p.id] = p);
+        // 2. Récupération Profils
+        let profilesMap = {};
+        if (event.registrations && event.registrations.length > 0) {
+            const userIds = event.registrations.map(r => r.user_id);
+            const { data: profiles, error: profErr } = await sb.from('profiles')
+                .select('*')
+                .in('id', userIds);
+            
+            if (!profErr) {
+                profiles.forEach(p => profilesMap[p.id] = p);
+            }
         }
-    }
 
-    // 3. Remplissage du Header (Identique à avant)
-    header.innerHTML = `
-        <div class="flex justify-between items-start">
-            <div>
-                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-[10px] font-black uppercase">${event.location}</span>
-                <h2 class="text-2xl font-black text-slate-900 mt-2">${event.title}</h2>
-                <p class="text-slate-500 font-bold text-sm">${new Date(event.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}</p>
-                <p class="text-blue-500 font-black text-xs uppercase">${event.start_time.substring(0,5)} - ${event.end_time.substring(0,5)}</p>
-            </div>
-            <div class="text-right">
-                <div class="text-2xl font-black text-slate-900">${event.registrations.length}/${event.max_participants}</div>
-                <div class="text-[10px] font-bold text-slate-400 uppercase">Places prises</div>
-            </div>
-        </div>
-        ${event.notes ? `<div class="mt-4 p-3 bg-white rounded-xl border border-dashed border-slate-200 text-sm text-slate-600 italic">"${event.notes}"</div>` : ''}
-    `;
-
-    // 4. Remplissage de la liste des membres
-    container.innerHTML = '';
-    if (event.registrations.length === 0) {
-        container.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold">Aucun inscrit pour le moment.</p>';
-    } else {
-        event.registrations.forEach(reg => {
-            const p = profilesMap[reg.user_id] || { first_name: 'Utilisateur', last_name: 'Inconnu', email: '' };
-            const item = document.createElement('div');
-            item.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-all cursor-pointer";
-            
-            item.onclick = () => openUserProfilePiP(p);
-            
-            item.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                        ${p.first_name ? p.first_name[0] : '?'}
-                    </div>
-                    <div>
-                        <div class="font-black text-slate-900">${p.first_name} ${p.last_name}</div>
-                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">${reg.status}</div>
-                    </div>
+        // 3. Rendu Header
+        header.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div>
+                    <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-[10px] font-black uppercase">${event.location}</span>
+                    <h2 class="text-2xl font-black text-slate-900 mt-2">${event.title}</h2>
+                    <p class="text-slate-500 font-bold text-sm italic">${new Date(event.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}</p>
                 </div>
-                <i class="fas fa-chevron-right text-slate-300"></i>
-            `;
-            container.appendChild(item);
-        });
-    }
+                <div class="text-right">
+                    <div class="text-2xl font-black text-slate-900">${event.registrations.length}/${event.max_participants}</div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">Inscrits</div>
+                </div>
+            </div>
+        `;
 
-    // Configurer le bouton de message groupé
-    document.getElementById('btn-broadcast-group').onclick = () => openBroadcastGroup(event.registrations.map(r => r.user_id), event.title);
+        // 4. Rendu Participants
+        container.innerHTML = '';
+        if (event.registrations.length === 0) {
+            container.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold">Aucun inscrit.</p>';
+        } else {
+            event.registrations.forEach(reg => {
+                const p = profilesMap[reg.user_id] || { first_name: 'Inconnu', last_name: '', email: '' };
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 cursor-pointer active:scale-95 transition-all";
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    openUserProfilePiP(p);
+                };
+                
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold">${p.first_name[0]}</div>
+                        <div>
+                            <div class="font-black text-slate-900 text-sm">${p.first_name} ${p.last_name}</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">${reg.status}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        document.getElementById('btn-broadcast-group').onclick = () => openBroadcastGroup(event.registrations.map(r => r.user_id), event.title);
+
+    } catch (err) {
+        console.error("❌ Erreur critique:", err.message);
+        container.innerHTML = `<p class="text-red-500 p-4 text-center font-bold">Erreur : ${err.message}</p>`;
+    }
+}
+
+// ET SURTOUT, LA FERMETURE
+function closeEventDetails() {
+    const panel = document.getElementById('admin-event-details-panel');
+    panel.classList.add('hidden');
+    panel.style.display = 'none';
 }
 
 function closeEventDetails() {
@@ -4276,6 +4294,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
