@@ -4259,12 +4259,12 @@ async function sendIndividualMessage(userId, firstName) {
     }
 }
 async function openBroadcastGroup(userIds, eventTitle) {
-    if (!userIds || userIds.length === 0) return alert("Aucun destinataire trouvé.");
+    if (!userIds || userIds.length === 0) return alert("Aucun destinataire.");
 
-    const msg = prompt(`Message pour les participants (${userIds.length}) :`);
+    const msg = prompt(`Message Push & Interne pour les ${userIds.length} participants :`);
     if (!msg || msg.trim() === "") return;
 
-    // A. Insertion pour l'affichage interne (Table Notifications)
+    // A. Table Notifications (Inbox PWA)
     const notifs = userIds.map(uid => ({
         user_id: uid,
         title: eventTitle,
@@ -4272,21 +4272,29 @@ async function openBroadcastGroup(userIds, eventTitle) {
         is_read: false
     }));
 
-    const { error: err1 } = await sb.from('notifications').insert(notifs);
-
-    // B. Insertion pour le Push Mobile (Table Notification_queue)
+    // B. Table Notification_queue (Déclencheur PUSH)
     const queue = userIds.map(uid => ({
         user_id: uid,
         message_type: 'ADMIN_BROADCAST',
-        metadata: { title: eventTitle, body: msg }
+        scheduled_for: new Date().toISOString(), // On l'envoie maintenant
+        metadata: { 
+            title: eventTitle, 
+            body: msg,
+            icon: '/icon-192x192.png' 
+        }
     }));
 
-    const { error: err2 } = await sb.from('notification_queue').insert(queue);
+    // On lance les deux en parallèle
+    const [res1, res2] = await Promise.all([
+        sb.from('notifications').insert(notifs),
+        sb.from('notification_queue').insert(queue)
+    ]);
 
-    if (err1 || err2) {
-        alert("Erreur lors de l'envoi.");
+    if (res1.error || res2.error) {
+        console.error("Erreur Notif:", res1.error, "Erreur Queue:", res2.error);
+        alert("Erreur lors de l'envoi du Push.");
     } else {
-        alert("✅ Message envoyé (Interne + Push Queue) !");
+        alert("🚀 Push envoyé et Inbox mise à jour !");
         if (window.updateNotificationBadges) window.updateNotificationBadges();
     }
 }
@@ -4372,6 +4380,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
