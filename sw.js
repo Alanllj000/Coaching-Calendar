@@ -38,56 +38,31 @@ self.addEventListener('activate', (event) => {
 });
 
 // --- GESTION DU PUSH REÇU ---
-self.addEventListener('push', (event) => {
-    // On parse les données reçues
-    let data = event.data ? event.data.json() : { title: 'Coach Pro', body: 'Nouveau message', url: '/' };
-    
-    console.log("SW Push reçu:", data);
-
-    const options = {
-        body: data.body,
-        icon: './appicon-128x128.png',
-        badge: './appicon-128x128.png', // Petite icône dans la barre de statut
-        vibrate: [100, 50, 100],
-        data: {
-            url: data.url || '/' // IMPORTANT : On stocke l'URL dans la notification elle-même
-        }
-    };
-
-    event.waitUntil(
-        self.registration.showNotification(data.title, options)
-    );
-});
-
-// --- GESTION DU CLIC SUR LA NOTIFICATION ---
 self.addEventListener('notificationclick', (event) => {
-    console.log("SW: Notification cliquée");
-    
-    event.notification.close(); // Ferme la bulle de notification
+    event.notification.close();
 
-    // CONSTRUCTION DE L'URL ROBUSTE
-    // On prend l'origine (https://alanllj000.github.io) 
-    // et on y ajoute le chemin envoyé par la DB (/Coaching-Calendar/?event_id=...)
-    const relativePath = event.notification.data.url || '/Coaching-Calendar/';
-    const urlToOpen = new URL(relativePath, self.location.origin).href;
-
-    console.log("SW: Tentative d'ouverture/navigation vers :", urlToOpen);
+    // On extrait l'ID de l'URL reçue (ex: /Coaching-Calendar/?event_id=123)
+    const urlData = event.notification.data.url || '';
+    const eventId = urlData.split('event_id=')[1]; // Récupère ce qu'il y a après 'event_id='
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-            // 1. Chercher si un onglet du site est déjà ouvert
             for (let client of windowClients) {
-                // On vérifie si l'onglet appartient bien à notre application
                 if (client.url.includes('Coaching-Calendar') && 'focus' in client) {
-                    client.focus(); 
-                    // On force la navigation vers la nouvelle URL (avec l'évent_id)
-                    return client.navigate(urlToOpen);
+                    client.focus();
+                    // ENVOI DU MESSAGE À L'APP
+                    if (eventId) {
+                        return client.postMessage({
+                            type: 'OPEN_EVENT',
+                            eventId: eventId
+                        });
+                    }
+                    return;
                 }
             }
-
-            // 2. Si aucun onglet n'est ouvert, on en ouvre un nouveau
+            // Si l'app est fermée, on l'ouvre normalement sur la racine
             if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
+                return clients.openWindow('/Coaching-Calendar/');
             }
         })
     );
