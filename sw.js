@@ -63,22 +63,29 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     console.log("SW: Notification cliquée");
     
-    event.notification.close(); // On ferme la notification visuelle
+    event.notification.close(); // Ferme la bulle de notification
 
-    // On récupère l'URL qu'on a stockée dans 'options.data' juste au-dessus
-    const urlToOpen = new URL(event.notification.data.url, self.location.origin + self.registration.scope).href;
+    // CONSTRUCTION DE L'URL ROBUSTE
+    // On prend l'origine (https://alanllj000.github.io) 
+    // et on y ajoute le chemin envoyé par la DB (/Coaching-Calendar/?event_id=...)
+    const relativePath = event.notification.data.url || '/Coaching-Calendar/';
+    const urlToOpen = new URL(relativePath, self.location.origin).href;
+
+    console.log("SW: Tentative d'ouverture/navigation vers :", urlToOpen);
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-            // 1. Si l'application est déjà ouverte (même en arrière-plan)
+            // 1. Chercher si un onglet du site est déjà ouvert
             for (let client of windowClients) {
-                // On vérifie si c'est notre URL de base (pour éviter de cibler d'autres sites)
-                if (client.url.includes(self.registration.scope) && 'focus' in client) {
-                    client.focus(); // On met la fenêtre au premier plan
-                    return client.navigate(urlToOpen); // On charge la bonne page
+                // On vérifie si l'onglet appartient bien à notre application
+                if (client.url.includes('Coaching-Calendar') && 'focus' in client) {
+                    client.focus(); 
+                    // On force la navigation vers la nouvelle URL (avec l'évent_id)
+                    return client.navigate(urlToOpen);
                 }
             }
-            // 2. Si aucune fenêtre n'est ouverte, on en ouvre une nouvelle
+
+            // 2. Si aucun onglet n'est ouvert, on en ouvre un nouveau
             if (clients.openWindow) {
                 return clients.openWindow(urlToOpen);
             }
