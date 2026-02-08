@@ -540,7 +540,7 @@ onclick="event.stopPropagation()">
                         <button onclick="applyAdminFilters()" class="px-5 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
                             Appliquer
                         </button>
-                        <button onclick="openBroadcastPip()" class="px-5 py-2 bg-blue-100 text-blue-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-200 transition-all">
+                        <button onclick="openBroadcastGroup()" class="px-5 py-2 bg-blue-100 text-blue-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-200 transition-all">
                             <i class="fas fa-paper-plane mr-2"></i> Message
                         </button>
                     </div>
@@ -4259,30 +4259,33 @@ async function sendIndividualMessage(userId, firstName) {
     }
 }
 async function openBroadcastGroup(userIds, eventTitle) {
-    if (!userIds || userIds.length === 0) {
-        return alert("Il n'y a aucun participant inscrit à cet événement.");
-    }
+    if (!userIds || userIds.length === 0) return alert("Aucun inscrit.");
 
-    const message = prompt(`Envoyer un message aux ${userIds.length} participants de l'événement "${eventTitle}" :`);
+    const msg = prompt(`Message aux ${userIds.length} inscrits de "${eventTitle}" :`);
+    if (!msg || msg.trim() === "") return;
 
-    if (message && message.trim() !== "") {
-        const { data, error } = await sb.from('notifications').insert(
-            userIds.map(uid => ({
-                user_id: uid,
-                title: `Annonce : ${eventTitle}`,
-                message: message,
-                is_read: false
-            }))
-        );
+    // On prépare les données
+    const notifications = userIds.map(uid => ({
+        user_id: uid,
+        title: `Coach : ${eventTitle}`,
+        message: msg,
+        is_read: false,
+        created_at: new Date().toISOString()
+    }));
 
-        if (error) {
-            console.error("Erreur envoi broadcast:", error);
-            alert("Une erreur est survenue lors de l'envoi.");
-        } else {
-            alert("✅ Votre message a été envoyé à tous les participants !");
-        }
+    const { error } = await sb.from('notifications').insert(notifications);
+
+    if (error) {
+        console.error("Erreur:", error);
+        alert("Erreur d'envoi.");
+    } else {
+        alert("✅ Envoyé !");
+        // On force la mise à jour locale si la fonction existe
+        if (window.updateNotificationBadges) window.updateNotificationBadges();
     }
 }
+
+
 
     
 
@@ -4347,6 +4350,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
