@@ -4261,57 +4261,42 @@ async function sendIndividualMessage(userId, firstName) {
 async function openBroadcastGroup(userIds, eventTitle) {
     if (!userIds || userIds.length === 0) return alert("Aucun destinataire.");
 
-    const msg = prompt(`Message Push & Interne pour les ${userIds.length} participants :`);
+    const msg = prompt(`Message pour les participants (${userIds.length}) :`);
     if (!msg || msg.trim() === "") return;
 
-    // A. Table Notifications (Inbox PWA)
+    // 1. Inbox Interne (Table Notifications)
     const notifs = userIds.map(uid => ({
         user_id: uid,
-        title: eventTitle,
+        title: `Coach : ${eventTitle}`,
         message: msg,
         is_read: false
     }));
 
-    // B. Table Notification_queue (Déclencheur PUSH)
-   const queue = userIds.map(uid => ({
-    user_id: uid,
-    message_type: 'ADMIN_BROADCAST', // Ce type doit être différent de 'REMINDER'
-    scheduled_for: new Date().toISOString(),
-    metadata: { 
-        // 1. On met les infos à la racine du metadata
+    // 2. Push Mobile (Table Notification_queue)
+    // ATTENTION : On met title et body à la racine pour l'Edge Function !
+    const queue = userIds.map(uid => ({
+        user_id: uid,
+        message_type: 'ADMIN_BROADCAST',
+        scheduled_for: new Date().toISOString(),
+        // IMPORTANT : Ton Edge Function attend ces clés précises
         title: `Message : ${eventTitle}`, 
         body: msg,
-        
-        // 2. On ajoute un objet 'notification' (souvent prioritaire dans les Edge Functions)
-        notification: {
-            title: `Message de l'Admin`,
-            body: msg
-        },
+        url: '/Coaching-Calendar/',
+        // On garde metadata au cas où un autre script en a besoin
+        metadata: { title: eventTitle, body: msg } 
+    }));
 
-        // 3. On ajoute les data pour le Service Worker
-        data: {
-            title: `Message : ${eventTitle}`,
-            body: msg,
-            url: '/Coaching-Calendar/'
-        }
-    }
-}));
-
-    // On lance les deux en parallèle
     const [res1, res2] = await Promise.all([
         sb.from('notifications').insert(notifs),
         sb.from('notification_queue').insert(queue)
     ]);
 
     if (res1.error || res2.error) {
-        console.error("Erreur Notif:", res1.error, "Erreur Queue:", res2.error);
-        alert("Erreur lors de l'envoi du Push.");
+        alert("Erreur d'envoi.");
     } else {
-        alert("🚀 Push envoyé et Inbox mise à jour !");
-        if (window.updateNotificationBadges) window.updateNotificationBadges();
+        alert("🚀 Push envoyé avec le bon titre !");
     }
 }
-
 async function openGlobalBroadcast() {
     // 1. On récupère tous les profils pour avoir les IDs
     const { data: profiles, error } = await sb.from('profiles').select('id');
@@ -4393,6 +4378,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
