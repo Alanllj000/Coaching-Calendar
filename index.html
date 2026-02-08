@@ -4088,57 +4088,44 @@ function toggleInscribedFilter() {
     applyAdminFilters();
 }
 
-
-function openBroadcastPip() {
-    alert("Fonctionnalité d'envoi groupé bientôt disponible !");
-}
-
-                
 async function openEventParticipantsDetails(eventId) {
     console.log("🔍 Ouverture de l'event ID:", eventId);
     
     const panel = document.getElementById('admin-event-details-panel');
     const header = document.getElementById('event-details-header');
     const container = document.getElementById('event-participants-container');
-    panel.style.zIndex = "100000000000000000000";
     
     if (!panel) return console.error("❌ Panel détails introuvable");
 
-    // FORCE L'AFFICHAGE VISUEL
+    // FIX RADICAL DU Z-INDEX : On force l'affichage au-dessus de TOUT
+    panel.style.cssText = "display: block !important; z-index: 999999 !important; position: fixed; inset: 0; background: white;";
     panel.classList.remove('hidden');
-    panel.style.display = 'block'; 
-    panel.style.zIndex = "10001"; // S'assure d'être au dessus du dashboard
     
     container.innerHTML = '<div class="p-10 text-center"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i></div>';
 
     try {
-        // 1. Récupération Event
+        // 1. Récupération Event + Inscriptions
         const { data: event, error: eventErr } = await sb.from('events')
             .select(`*, registrations(*)`)
             .eq('id', eventId)
             .single();
 
         if (eventErr) throw eventErr;
-        console.log("✅ Event chargé:", event.title);
 
-        // 2. Récupération Profils
-       // ... après avoir récupéré l'event et ses registrations ...
-
+        // 2. Récupération des Profils (avec logs de contrôle)
         let profilesMap = {};
         if (event.registrations && event.registrations.length > 0) {
             const userIds = event.registrations.map(r => r.user_id);
-            console.log("IDs à chercher dans profiles:", userIds); // Debug
-        
             const { data: profiles, error: profErr } = await sb.from('profiles')
                 .select('id, first_name, last_name, email, phone')
                 .in('id', userIds);
             
             if (profErr) {
-                console.error("Erreur récupération profils:", profErr);
+                console.error("Erreur Profils:", profErr);
             } else {
-                console.log("Profils trouvés:", profiles);
+                console.log("Profils chargés:", profiles.length);
                 profiles.forEach(p => {
-                    profilesMap[p.id] = p;
+                    profilesMap[String(p.id)] = p; // Clé forcée en String
                 });
             }
         }
@@ -4153,68 +4140,65 @@ async function openEventParticipantsDetails(eventId) {
                 </div>
                 <div class="text-right">
                     <div class="text-2xl font-black text-slate-900">${event.registrations.length}/${event.max_participants}</div>
-                    <div class="text-[10px] font-bold text-slate-400 uppercase">Inscrits</div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Inscrits</div>
                 </div>
             </div>
         `;
 
-        // 4. Rendu Participants
+        // 4. Rendu des Participants
         container.innerHTML = '';
         if (event.registrations.length === 0) {
-            container.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold">Aucun inscrit.</p>';
+            container.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold italic">Aucun inscrit pour le moment.</p>';
         } else {
             event.registrations.forEach(reg => {
-                // On cherche le profil dans la map via l'user_id de la registration
-                const p = profilesMap[reg.user_id];
+                const p = profilesMap[String(reg.user_id)];
                 
-                // Si p existe, on prend ses infos, sinon on met "Inconnu"
-                const firstName = p ? p.first_name : "Utilisateur";
-                const lastName = p ? p.last_name : "Inconnu";
+                const fName = p ? p.first_name : "Utilisateur";
+                const lName = p ? p.last_name : "Inconnu";
                 const initials = p && p.first_name ? p.first_name[0] : "?";
-            
+
                 const item = document.createElement('div');
-                // ... setup de la classe ...
+                item.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 cursor-pointer active:scale-95 transition-all";
                 
-                // On passe le profil complet à la PiP de contact au clic
                 item.onclick = (e) => {
                     e.stopPropagation();
                     if (p) openUserProfilePiP(p);
-                    else alert("Profil non trouvé en base de données.");
+                    else alert("Détails du profil indisponibles (Vérifiez les RLS).");
                 };
-            
+                
                 item.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                        <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-inner">
                             ${initials}
                         </div>
                         <div>
-                            <div class="font-black text-slate-900">${firstName} ${lastName}</div>
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">${reg.status}</div>
+                            <div class="font-black text-slate-900 text-sm">${fName} ${lName}</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${reg.status}</div>
                         </div>
                     </div>
-                    <i class="fas fa-chevron-right text-slate-300"></i>
+                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
                 `;
                 container.appendChild(item);
             });
         }
 
-        document.getElementById('btn-broadcast-group').onclick = () => openBroadcastGroup(event.registrations.map(r => r.user_id), event.title);
+        // Branchage du bouton Broadcast (Message Groupé)
+        const broadcastBtn = document.getElementById('btn-broadcast-group');
+        if (broadcastBtn) {
+            broadcastBtn.onclick = () => openBroadcastGroup(event.registrations.map(r => r.user_id), event.title);
+        }
 
     } catch (err) {
         console.error("❌ Erreur critique:", err.message);
-        container.innerHTML = `<p class="text-red-500 p-4 text-center font-bold">Erreur : ${err.message}</p>`;
+        container.innerHTML = `<p class="text-red-500 p-10 text-center font-bold italic">Erreur : ${err.message}</p>`;
     }
 }
 
-// ET SURTOUT, LA FERMETURE
+
 function closeEventDetails() {
     const panel = document.getElementById('admin-event-details-panel');
     panel.classList.add('hidden');
     panel.style.display = 'none';
-}
-
-function closeEventDetails() {
-    document.getElementById('admin-event-details-panel').classList.add('hidden');
 }
 
 
@@ -4324,6 +4308,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
