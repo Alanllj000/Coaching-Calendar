@@ -4102,23 +4102,29 @@ async function openEventParticipantsDetails(eventId) {
     panel.classList.remove('hidden');
     container.innerHTML = '<div class="p-10 text-center"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i></div>';
 
-    // 1. Récupérer les détails de l'event + les participants + leurs profils
-    const { data: event, error } = await sb.from('events')
-    .select(`
-        *,
-        registrations (
-            id,
-            user_id,
-            status,
-            profiles:user_id (id, first_name, last_name, email, phone)
-        )
-    `) 
-    .eq('id', eventId)
-    .single();
+    // 1. On récupère d'abord l'Event et ses registrations (simple)
+    const { data: event, error: eventErr } = await sb.from('events')
+        .select(`*, registrations(*)`)
+        .eq('id', eventId)
+        .single();
 
-    if (error) return console.error(error);
+    if (eventErr) return console.error("Erreur Event:", eventErr);
 
-    // 2. Remplir le Header
+    // 2. On récupère les profils des inscrits (S'il y en a)
+    let profilesMap = {};
+    if (event.registrations && event.registrations.length > 0) {
+        const userIds = event.registrations.map(r => r.user_id);
+        const { data: profiles, error: profErr } = await sb.from('profiles')
+            .select('*')
+            .in('id', userIds);
+        
+        if (!profErr) {
+            // On crée un dictionnaire {id: profil} pour un accès rapide
+            profiles.forEach(p => profilesMap[p.id] = p);
+        }
+    }
+
+    // 3. Remplissage du Header (Identique à avant)
     header.innerHTML = `
         <div class="flex justify-between items-start">
             <div>
@@ -4135,17 +4141,17 @@ async function openEventParticipantsDetails(eventId) {
         ${event.notes ? `<div class="mt-4 p-3 bg-white rounded-xl border border-dashed border-slate-200 text-sm text-slate-600 italic">"${event.notes}"</div>` : ''}
     `;
 
-    // 3. Remplir la liste des membres
+    // 4. Remplissage de la liste des membres
     container.innerHTML = '';
     if (event.registrations.length === 0) {
         container.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold">Aucun inscrit pour le moment.</p>';
     } else {
         event.registrations.forEach(reg => {
-            const p = reg.profiles;
-            if (!p) return;
+            const p = profilesMap[reg.user_id] || { first_name: 'Utilisateur', last_name: 'Inconnu', email: '' };
             const item = document.createElement('div');
             item.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-all cursor-pointer";
-            item.onclick = () => openUserProfilePiP(p); // La PiP de contact
+            
+            item.onclick = () => openUserProfilePiP(p);
             
             item.innerHTML = `
                 <div class="flex items-center gap-3">
@@ -4270,6 +4276,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
