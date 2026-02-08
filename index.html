@@ -4274,16 +4274,15 @@ async function openBroadcastGroup(userIds, eventTitle) {
 
     // 2. Push Mobile (Table Notification_queue)
     // ATTENTION : On met title et body à la racine pour l'Edge Function !
+    // Dans ton fichier JS de l'application
     const queue = userIds.map(uid => ({
         user_id: uid,
         message_type: 'ADMIN_BROADCAST',
-        scheduled_for: new Date().toISOString(),
-        // IMPORTANT : Ton Edge Function attend ces clés précises
-        title: `Message : ${eventTitle}`, 
-        body: msg,
-        url: '/Coaching-Calendar/',
-        // On garde metadata au cas où un autre script en a besoin
-        metadata: { title: eventTitle, body: msg } 
+        metadata: { 
+            title: `Message : ${eventTitle}`, 
+            body: msg,
+            url: '/Coaching-Calendar/'
+        }
     }));
 
     const [res1, res2] = await Promise.all([
@@ -4378,6 +4377,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
