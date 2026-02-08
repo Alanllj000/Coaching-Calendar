@@ -4259,33 +4259,55 @@ async function sendIndividualMessage(userId, firstName) {
     }
 }
 async function openBroadcastGroup(userIds, eventTitle) {
-    if (!userIds || userIds.length === 0) return alert("Aucun inscrit.");
+    if (!userIds || userIds.length === 0) return alert("Aucun destinataire trouvé.");
 
-    const msg = prompt(`Message aux ${userIds.length} inscrits de "${eventTitle}" :`);
+    const msg = prompt(`Message pour les participants (${userIds.length}) :`);
     if (!msg || msg.trim() === "") return;
 
-    // On prépare les données
-    const notifications = userIds.map(uid => ({
+    // A. Insertion pour l'affichage interne (Table Notifications)
+    const notifs = userIds.map(uid => ({
         user_id: uid,
-        title: `Coach : ${eventTitle}`,
+        title: eventTitle,
         message: msg,
-        is_read: false,
-        created_at: new Date().toISOString()
+        is_read: false
     }));
 
-    const { error } = await sb.from('notifications').insert(notifications);
+    const { error: err1 } = await sb.from('notifications').insert(notifs);
 
-    if (error) {
-        console.error("Erreur:", error);
-        alert("Erreur d'envoi.");
+    // B. Insertion pour le Push Mobile (Table Notification_queue)
+    const queue = userIds.map(uid => ({
+        user_id: uid,
+        message_type: 'ADMIN_BROADCAST',
+        metadata: { title: eventTitle, body: msg }
+    }));
+
+    const { error: err2 } = await sb.from('notification_queue').insert(queue);
+
+    if (err1 || err2) {
+        alert("Erreur lors de l'envoi.");
     } else {
-        alert("✅ Envoyé !");
-        // On force la mise à jour locale si la fonction existe
+        alert("✅ Message envoyé (Interne + Push Queue) !");
         if (window.updateNotificationBadges) window.updateNotificationBadges();
     }
 }
 
+async function openGlobalBroadcast() {
+    // 1. On récupère tous les profils pour avoir les IDs
+    const { data: profiles, error } = await sb.from('profiles').select('id');
+    
+    if (error || !profiles) {
+        return alert("Erreur lors de la récupération des utilisateurs.");
+    }
 
+    const allUserIds = profiles.map(p => p.id);
+    
+    if (allUserIds.length === 0) {
+        return alert("Aucun utilisateur trouvé dans la base.");
+    }
+
+    // 2. On appelle notre fonction d'envoi avec tous les IDs
+    openBroadcastGroup(allUserIds, "Annonce Générale");
+}
 
     
 
@@ -4350,6 +4372,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
