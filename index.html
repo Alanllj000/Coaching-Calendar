@@ -3868,15 +3868,16 @@ if ('serviceWorker' in navigator) {
 
 // Fonction pour ouvrir le Dashboard
 function openAdminDashboard() {
+    console.log("Tentative d'ouverture du dashboard..."); // Ajoute ce log pour tester
     const panel = document.getElementById('admin-dashboard-panel');
-    panel.classList.remove('hidden');
-    // On ferme le menu utilisateur au passage
-    if (typeof toggleUserMenu === 'function') {
-        document.getElementById('user-menu').classList.add('hidden');
-    }
     
-    // Charger les événements pour la première fois
-    loadAdminEvents(true); // true = reset de la liste
+    if (!panel) {
+        console.error("L'élément 'admin-dashboard-panel' est introuvable dans le DOM !");
+        return;
+    }
+
+    panel.classList.remove('hidden'); // C'est ici que la magie opère
+    loadAdminEvents(true); // On lance le chargement initial
 }
 
 // Fonction pour fermer le Dashboard
@@ -4090,5 +4091,6 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
