@@ -3916,8 +3916,12 @@ function openAdminDashboard() {
 
 // Fonction pour fermer le Dashboard
 function closeAdminDashboard() {
+    console.log("Fermeture du dashboard...");
     const panel = document.getElementById('admin-dashboard-panel');
-    panel.classList.add('hidden');
+    if (panel) {
+        panel.classList.add('hidden');
+        panel.style.display = 'none'; // On force la disparition ici aussi
+    }
 }
 
 /**
@@ -4100,17 +4104,17 @@ async function openEventParticipantsDetails(eventId) {
 
     // 1. Récupérer les détails de l'event + les participants + leurs profils
     const { data: event, error } = await sb.from('events')
-        .select(`
-            *,
-            registrations (
-                id,
-                user_id,
-                status,
-                profiles (id, first_name, last_name, email, phone)
-            )
-        `)
-        .eq('id', eventId)
-        .single();
+    .select(`
+        *,
+        registrations (
+            id,
+            user_id,
+            status,
+            profiles:user_id (id, first_name, last_name, email, phone)
+        )
+    `) 
+    .eq('id', eventId)
+    .single();
 
     if (error) return console.error(error);
 
@@ -4138,6 +4142,7 @@ async function openEventParticipantsDetails(eventId) {
     } else {
         event.registrations.forEach(reg => {
             const p = reg.profiles;
+            if (!p) return;
             const item = document.createElement('div');
             item.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-all cursor-pointer";
             item.onclick = () => openUserProfilePiP(p); // La PiP de contact
@@ -4265,6 +4270,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
