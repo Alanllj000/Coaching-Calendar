@@ -4279,14 +4279,12 @@ async function openBroadcastGroup(userIds, eventTitle) {
 const queue = userIds.map(uid => ({
     user_id: uid,
     message_type: 'ADMIN_BROADCAST',
-    scheduled_for: new Date().toISOString(),
-    // SURTOUT PAS DE JSON.stringify() ICI !
-    metadata: { 
-        title: `Message : ${eventTitle}`, 
-        body: msg,
-        url: '/Coaching-Calendar/'
-    }
+    title: `Message : ${eventTitle}`, // On envoie à la racine
+    body: msg,                        // On envoie à la racine
+    metadata: { url: '/Coaching-Calendar/' } 
 }));
+
+await sb.from('notification_queue').insert(queue);
 
 const { error } = await sb.from('notification_queue').insert(queue);
 
@@ -4319,7 +4317,27 @@ async function openGlobalBroadcast() {
     openBroadcastGroup(allUserIds, "Annonce Générale");
 }
 
-    
+
+
+
+
+async function updateNotificationBadges() {
+    const { count, error } = await sb
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', (await sb.auth.getUser()).data.user.id)
+        .eq('is_read', false);
+
+    const dots = document.querySelectorAll('.notification-dot'); // Assure-toi que tes points rouges ont cette classe
+    dots.forEach(dot => {
+        if (!error && count > 0) {
+            dot.style.display = 'flex';
+            dot.textContent = count > 9 ? '9+' : count;
+        } else {
+            dot.style.display = 'none';
+        }
+    });
+}
 
 
 
@@ -4382,6 +4400,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
