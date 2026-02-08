@@ -66,7 +66,7 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close(); // On ferme la notification visuelle
 
     // On récupère l'URL qu'on a stockée dans 'options.data' juste au-dessus
-    const urlToOpen = event.notification.data.url;
+    const urlToOpen = new URL(event.notification.data.url, self.location.origin + self.registration.scope).href;
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
