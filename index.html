@@ -4274,21 +4274,28 @@ async function openBroadcastGroup(userIds, eventTitle) {
 
     // B. Table Notification_queue (Déclencheur PUSH)
    const queue = userIds.map(uid => ({
-        user_id: uid,
-        message_type: 'ADMIN_BROADCAST',
-        scheduled_for: new Date().toISOString(),
-        // On envoie le titre et le body à la racine du metadata 
-        // ET dans un objet notification pour être compatible avec l'Edge Function
-        metadata: { 
-            title: eventTitle, 
+    user_id: uid,
+    message_type: 'ADMIN_BROADCAST', // Ce type doit être différent de 'REMINDER'
+    scheduled_for: new Date().toISOString(),
+    metadata: { 
+        // 1. On met les infos à la racine du metadata
+        title: `Message : ${eventTitle}`, 
+        body: msg,
+        
+        // 2. On ajoute un objet 'notification' (souvent prioritaire dans les Edge Functions)
+        notification: {
+            title: `Message de l'Admin`,
+            body: msg
+        },
+
+        // 3. On ajoute les data pour le Service Worker
+        data: {
+            title: `Message : ${eventTitle}`,
             body: msg,
-            url: '/Coaching-Calendar/',
-            notification: {
-                title: eventTitle,
-                body: msg
-            }
+            url: '/Coaching-Calendar/'
         }
-    }));
+    }
+}));
 
     // On lance les deux en parallèle
     const [res1, res2] = await Promise.all([
@@ -4386,6 +4393,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
