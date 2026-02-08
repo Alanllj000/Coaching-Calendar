@@ -4164,23 +4164,35 @@ async function openEventParticipantsDetails(eventId) {
             container.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold">Aucun inscrit.</p>';
         } else {
             event.registrations.forEach(reg => {
-                const p = profilesMap[reg.user_id] || { first_name: 'Inconnu', last_name: '', email: '' };
+                // On cherche le profil dans la map via l'user_id de la registration
+                const p = profilesMap[reg.user_id];
+                
+                // Si p existe, on prend ses infos, sinon on met "Inconnu"
+                const firstName = p ? p.first_name : "Utilisateur";
+                const lastName = p ? p.last_name : "Inconnu";
+                const initials = p && p.first_name ? p.first_name[0] : "?";
+            
                 const item = document.createElement('div');
-                item.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 cursor-pointer active:scale-95 transition-all";
+                // ... setup de la classe ...
+                
+                // On passe le profil complet à la PiP de contact au clic
                 item.onclick = (e) => {
                     e.stopPropagation();
-                    openUserProfilePiP(p);
+                    if (p) openUserProfilePiP(p);
+                    else alert("Profil non trouvé en base de données.");
                 };
-                
+            
                 item.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold">${p.first_name[0]}</div>
+                        <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                            ${initials}
+                        </div>
                         <div>
-                            <div class="font-black text-slate-900 text-sm">${p.first_name} ${p.last_name}</div>
-                            <div class="text-[10px] font-bold text-slate-400 uppercase">${reg.status}</div>
+                            <div class="font-black text-slate-900">${firstName} ${lastName}</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">${reg.status}</div>
                         </div>
                     </div>
-                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                    <i class="fas fa-chevron-right text-slate-300"></i>
                 `;
                 container.appendChild(item);
             });
@@ -4312,6 +4324,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
