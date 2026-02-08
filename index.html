@@ -4100,6 +4100,7 @@ async function openEventParticipantsDetails(eventId) {
     const panel = document.getElementById('admin-event-details-panel');
     const header = document.getElementById('event-details-header');
     const container = document.getElementById('event-participants-container');
+    panel.style.zIndex = "100000000000000000000";
     
     if (!panel) return console.error("❌ Panel détails introuvable");
 
@@ -4121,15 +4122,24 @@ async function openEventParticipantsDetails(eventId) {
         console.log("✅ Event chargé:", event.title);
 
         // 2. Récupération Profils
+       // ... après avoir récupéré l'event et ses registrations ...
+
         let profilesMap = {};
         if (event.registrations && event.registrations.length > 0) {
             const userIds = event.registrations.map(r => r.user_id);
+            console.log("IDs à chercher dans profiles:", userIds); // Debug
+        
             const { data: profiles, error: profErr } = await sb.from('profiles')
-                .select('*')
+                .select('id, first_name, last_name, email, phone')
                 .in('id', userIds);
             
-            if (!profErr) {
-                profiles.forEach(p => profilesMap[p.id] = p);
+            if (profErr) {
+                console.error("Erreur récupération profils:", profErr);
+            } else {
+                console.log("Profils trouvés:", profiles);
+                profiles.forEach(p => {
+                    profilesMap[p.id] = p;
+                });
             }
         }
 
@@ -4229,7 +4239,15 @@ function openUserProfilePiP(profile) {
     document.body.insertAdjacentHTML('beforeend', contactHtml);
 }
 
-
+function openBroadcastGroup(userIds, eventTitle) {
+    console.log("Destinataires pour " + eventTitle + " :", userIds);
+    // On peut réutiliser une alerte simple pour le moment
+    const msg = prompt("Entrez le message à envoyer aux " + userIds.length + " inscrits de : " + eventTitle);
+    if (msg) {
+        alert("Message envoyé (Simulation) : " + msg);
+        // On codera ici l'envoi réel via tes Edge Functions plus tard
+    }
+}
 
     
 
@@ -4294,6 +4312,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
