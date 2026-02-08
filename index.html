@@ -841,6 +841,9 @@ let currentDayStr = null;
 let globalChannel = null;
 let isInboxOpen = false;
 let isRealtimeInitializing = false; 
+let adminCurrentPage = 0;
+const adminItemsPerPage = 15;
+let adminAllEvents = [];
 
 
 function captureDeepLink() {
@@ -1231,6 +1234,7 @@ async function loadProfile() {
             const adminBtn = document.getElementById('btn-admin-panel-menu');
             if (adminBtn) adminBtn.classList.remove('hidden');
         }
+        checkAdminAccess(profile);
     }
 }
 async function fetchEvents() {
@@ -3885,15 +3889,81 @@ function closeAdminDashboard() {
  * SECURITÉ : Affichage du bouton selon le rôle
  * À appeler lors du chargement de ton profil utilisateur (session)
  */
-function checkAdminAccess(userProfile) {
+function checkAdminAccess(profile) {
     const adminBtn = document.getElementById('btn-admin-dashboard');
-    if (userProfile && userProfile.role === 'admin') {
+    if (!adminBtn) return;
+
+    if (profile && profile.role === 'admin') {
         adminBtn.classList.remove('hidden');
+        console.log("Accès Admin accordé");
     } else {
         adminBtn.classList.add('hidden');
     }
 }
 
+
+async function loadAdminEvents(reset = false) {
+    if (reset) {
+        adminCurrentPage = 0;
+        document.getElementById('admin-events-container').innerHTML = '';
+        adminAllEvents = [];
+    }
+
+    const container = document.getElementById('admin-events-container');
+    const loadMoreBtn = document.getElementById('load-more-container');
+    
+    // 1. Récupération des filtres
+    const searchQuery = document.getElementById('admin-search-input').value.toLowerCase();
+    const selectedYear = document.getElementById('admin-filter-year').value;
+    const onlyInscribed = document.getElementById('btn-filter-inscribed').classList.contains('bg-blue-600');
+
+    // 2. Requête Supabase
+    let query = sb.from('events')
+        .select(`
+            *,
+            registrations (id, user_id, status)
+        `)
+        .eq('is_archived', false)
+        // Filtrage par année (on définit la plage de l'année sélectionnée)
+        .gte('date', `${selectedYear}-01-01`)
+        .lte('date', `${selectedYear}-12-31`)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true })
+        .range(adminCurrentPage * adminItemsPerPage, (adminCurrentPage + 1) * adminItemsPerPage - 1);
+
+    // Recherche par titre (si rempli)
+    if (searchQuery) {
+        query = query.ilike('title', `%${searchQuery}%`);
+    }
+
+    const { data: events, error } = await query;
+
+    if (error) {
+        console.error("Erreur chargement admin events:", error.message);
+        return;
+    }
+
+    // 3. Filtrage local pour "Avec inscrits" 
+    // (Plus simple à faire ici car on a déjà récupéré les registrations)
+    let filteredEvents = events;
+    if (onlyInscribed) {
+        filteredEvents = events.filter(e => e.registrations && e.registrations.length > 0);
+    }
+
+    // 4. Affichage
+    if (filteredEvents.length === 0 && adminCurrentPage === 0) {
+        container.innerHTML = `<div class="p-10 text-center text-slate-400 font-bold">Aucun événement trouvé</div>`;
+    } else {
+        renderAdminEvents(filteredEvents);
+    }
+
+    // Gestion du bouton "Charger plus"
+    if (events.length === adminItemsPerPage) {
+        loadMoreBtn.classList.remove('hidden');
+    } else {
+        loadMoreBtn.classList.add('hidden');
+    }
+}
 
 
 
@@ -3962,3 +4032,4 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
