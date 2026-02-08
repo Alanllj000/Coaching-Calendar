@@ -4205,29 +4205,32 @@ function closeEventDetails() {
 
 
 function openUserProfilePiP(profile) {
-    // On peut réutiliser une modale simple ou en créer une dédiée
     const contactHtml = `
         <div id="contact-pip" class="fixed inset-0 z-[11000] flex items-end md:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
             <div class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-black mb-4 shadow-xl shadow-blue-200">
-                        ${profile.first_name[0]}
+                        ${profile.first_name ? profile.first_name[0] : '?'}
                     </div>
                     <h3 class="text-2xl font-black text-slate-900">${profile.first_name} ${profile.last_name}</h3>
-                    <p class="text-slate-400 font-bold mb-6 italic text-sm">Participant</p>
                     
-                    <div class="w-full space-y-3">
+                    <div class="w-full space-y-3 mt-6">
+                        <button onclick="sendIndividualMessage('${profile.id}', '${profile.first_name}')" class="w-full flex items-center justify-center gap-3 p-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-paper-plane"></i> Envoyer un message
+                        </button>
+
                         <a href="mailto:${profile.email}" class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-colors">
                             <i class="fas fa-envelope text-blue-500"></i>
-                            <span class="font-bold text-slate-700">${profile.email}</span>
+                            <span class="font-bold text-slate-700 text-sm">${profile.email}</span>
                         </a>
+                        ${profile.phone ? `
                         <a href="tel:${profile.phone}" class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-green-50 transition-colors">
                             <i class="fas fa-phone text-green-500"></i>
-                            <span class="font-bold text-slate-700">${profile.phone || 'Non renseigné'}</span>
-                        </a>
+                            <span class="font-bold text-slate-700 text-sm">${profile.phone}</span>
+                        </a>` : ''}
                     </div>
                     
-                    <button onclick="this.closest('#contact-pip').remove()" class="mt-8 text-slate-400 font-black uppercase text-xs tracking-widest hover:text-slate-900">Fermer</button>
+                    <button onclick="this.closest('#contact-pip').remove()" class="mt-8 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-slate-900">Fermer la fiche</button>
                 </div>
             </div>
         </div>
@@ -4235,13 +4238,49 @@ function openUserProfilePiP(profile) {
     document.body.insertAdjacentHTML('beforeend', contactHtml);
 }
 
-function openBroadcastGroup(userIds, eventTitle) {
-    console.log("Destinataires pour " + eventTitle + " :", userIds);
-    // On peut réutiliser une alerte simple pour le moment
-    const msg = prompt("Entrez le message à envoyer aux " + userIds.length + " inscrits de : " + eventTitle);
-    if (msg) {
-        alert("Message envoyé (Simulation) : " + msg);
-        // On codera ici l'envoi réel via tes Edge Functions plus tard
+// La logique d'envoi individuel
+async function sendIndividualMessage(userId, firstName) {
+    const message = prompt(`Message privé pour ${firstName} :`);
+    
+    if (message && message.trim() !== "") {
+        const { error } = await sb.from('notifications').insert([{
+            user_id: userId,
+            title: "Message de l'Admin",
+            message: message,
+            is_read: false
+        }]);
+
+        if (error) {
+            alert("Erreur d'envoi.");
+        } else {
+            alert(`✅ Message envoyé à ${firstName} !`);
+            document.getElementById('contact-pip')?.remove();
+        }
+    }
+}
+async function openBroadcastGroup(userIds, eventTitle) {
+    if (!userIds || userIds.length === 0) {
+        return alert("Il n'y a aucun participant inscrit à cet événement.");
+    }
+
+    const message = prompt(`Envoyer un message aux ${userIds.length} participants de l'événement "${eventTitle}" :`);
+
+    if (message && message.trim() !== "") {
+        const { data, error } = await sb.from('notifications').insert(
+            userIds.map(uid => ({
+                user_id: uid,
+                title: `Annonce : ${eventTitle}`,
+                message: message,
+                is_read: false
+            }))
+        );
+
+        if (error) {
+            console.error("Erreur envoi broadcast:", error);
+            alert("Une erreur est survenue lors de l'envoi.");
+        } else {
+            alert("✅ Votre message a été envoyé à tous les participants !");
+        }
     }
 }
 
@@ -4308,6 +4347,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
