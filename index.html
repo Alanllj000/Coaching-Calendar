@@ -4039,8 +4039,46 @@ function openEventParticipantsDetails(eventId) {
     console.log("Ouverture de l'event :", eventId);
     alert("Bientôt disponible : Liste des participants pour l'ID " + eventId);
 }
+    
+function applyAdminFilters() {
+    console.log("Application des filtres admin...");
+    // On appelle simplement loadAdminEvents avec reset = true
+    loadAdminEvents(true);
+}
+
+// Optionnel : permettre de valider avec la touche "Entrée" dans l'input
+document.getElementById('admin-search-input')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') applyAdminFilters();
+});
+
+function toggleInscribedFilter() {
+    const btn = document.getElementById('btn-filter-inscribed');
+    // On bascule les classes Tailwind pour l'effet visuel
+    if (btn.classList.contains('bg-blue-600')) {
+        // Désactiver
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-slate-100', 'text-slate-600');
+    } else {
+        // Activer
+        btn.classList.remove('bg-slate-100', 'text-slate-600');
+        btn.classList.add('bg-blue-600', 'text-white');
+    }
+    // On applique le filtre immédiatement
+    applyAdminFilters();
+}
 
 
+function openBroadcastPip() {
+    alert("Fonctionnalité d'envoi groupé bientôt disponible !");
+}
+
+function openCreateEventModal() {
+    openadminpanel();
+}
+
+
+
+    
 
 
 
@@ -4103,6 +4141,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
