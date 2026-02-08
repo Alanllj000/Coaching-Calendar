@@ -3736,6 +3736,22 @@ function updateBadges() {
     }
 }
 
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'OPEN_EVENT') {
+            const eventId = event.data.eventId;
+            console.log("Message du SW reçu pour ouvrir l'event:", eventId);
+            
+            // On appelle ta fonction après un court délai pour être sûr que le cache est prêt
+            setTimeout(() => {
+                if (typeof openEventDetails === 'function') {
+                    openEventDetails(eventId);
+                }
+            }, 500);
+        }
+    });
+}
+
     
 // --- 2. Gestion du ServiceWorker
 window.onload = async function() {
@@ -3791,6 +3807,7 @@ window.onload = async function() {
 </script>
 </body>
 </html>
+
 
 
 
