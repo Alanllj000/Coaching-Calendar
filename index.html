@@ -1666,6 +1666,249 @@ async function adjustCredits(userId, multiplier) {
         loadOwnerUsers(); // Recharge pour afficher le nouveau solde
     }
 }
+
+// ============================================================================
+// 11. FONCTIONS D'INTERFACE (UI & MENUS)
+// ============================================================================
+
+function toggleUserMenu(e) { 
+    e.stopPropagation(); 
+    document.getElementById('user-menu').classList.toggle('hidden'); 
+}
+
+function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
+function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
+
+function openPasswordPip() { document.getElementById('password-pip').style.display = 'flex'; }
+function closePasswordPip() { document.getElementById('password-pip').style.display = 'none'; }
+
+function openEmailPip() {
+    const emailInput = document.getElementById('email-current-display');
+    if (AppState.user && emailInput) emailInput.value = AppState.user.email;
+    document.getElementById('email-pip').style.display = 'flex';
+}
+function closeEmailPip() { document.getElementById('email-pip').style.display = 'none'; }
+
+function openDeleteAccountPip() {
+    closeSettingsPanel();
+    document.getElementById('delete-account-pip').classList.remove('hidden');
+}
+function closeDeleteAccountPip() {
+    document.getElementById('delete-account-pip').classList.add('hidden');
+    openSettingsPanel();
+}
+
+// Fermer les menus si on clique à côté
+window.addEventListener('click', (event) => {
+    const userMenu = document.getElementById('user-menu');
+    if (userMenu && !userMenu.classList.contains('hidden') && !event.target.closest('.group-menu')) {
+        userMenu.classList.add('hidden');
+    }
+});
+
+// ============================================================================
+// 12. GESTION DU PROFIL & SÉCURITÉ
+// ============================================================================
+
+function checkProfileChanges() {
+    const fName = document.getElementById('set-firstname')?.value;
+    const lName = document.getElementById('set-lastname')?.value;
+    const phone = document.getElementById('set-phone')?.value;
+    const btn = document.getElementById('btn-update-profile');
+
+    if (!btn || !AppState.profile) return;
+
+    const hasChanged = fName !== AppState.profile.first_name || 
+                       lName !== AppState.profile.last_name || 
+                       phone !== AppState.profile.phone;
+
+    btn.disabled = !hasChanged;
+    btn.className = hasChanged 
+        ? "w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-sm cursor-pointer transition-all duration-300" 
+        : "w-full py-4 bg-slate-100 text-slate-400 rounded-xl font-bold text-sm cursor-not-allowed transition-all duration-300";
+}
+
+async function saveProfileInfo() {
+    const first_name = document.getElementById('set-firstname').value;
+    const last_name = document.getElementById('set-lastname').value;
+    const phone = document.getElementById('set-phone').value;
+
+    const { error } = await sb.from('profiles').update({ first_name, last_name, phone }).eq('id', AppState.user.id);
+    
+    if (error) alert("Erreur : " + error.message);
+    else {
+        alert(t('msg_save_success') || "Profil mis à jour !");
+        AppState.profile.first_name = first_name;
+        AppState.profile.last_name = last_name;
+        AppState.profile.phone = phone;
+        checkProfileChanges();
+        document.getElementById('user-initials').textContent = first_name[0].toUpperCase();
+    }
+}
+
+async function handleDeleteAccount() {
+    if (!confirm(t('pip_del_acc_confirm') || "Voulez-vous vraiment supprimer votre compte ?")) return;
+    
+    // Appel de la fonction RPC pour supprimer l'utilisateur de l'Auth
+    const { error } = await sb.rpc('delete_own_user');
+    if (error) alert("Erreur : " + error.message);
+    else {
+        alert("Compte supprimé avec succès.");
+        await sb.auth.signOut();
+        window.location.reload();
+    }
+}
+
+// ============================================================================
+// 13. DASHBOARD ADMIN (LISTE, MODIFICATION, SUPPRESSION)
+// ============================================================================
+
+function openAdminDashboard() {
+    document.getElementById('admin-dashboard-panel').classList.remove('hidden');
+    document.getElementById('admin-dashboard-panel').style.display = 'block';
+    document.getElementById('user-menu').classList.add('hidden');
+    loadAdminEvents();
+}
+
+function closeAdminDashboard() {
+    document.getElementById('admin-dashboard-panel').classList.add('hidden');
+    document.getElementById('admin-dashboard-panel').style.display = 'none';
+}
+
+async function loadAdminEvents() {
+    const container = document.getElementById('admin-events-container');
+    container.innerHTML = '<div class="p-10 text-center text-slate-400 font-bold animate-pulse">Chargement...</div>';
+
+    const { data: events, error } = await sb.from('events')
+        .select(`*, registrations(id)`)
+        .eq('is_archived', false)
+        .order('date', { ascending: true });
+
+    if (error) return container.innerHTML = `<div class="p-10 text-center text-red-500">Erreur: ${error.message}</div>`;
+
+    if (events.length === 0) {
+        return container.innerHTML = `<div class="p-10 text-center text-slate-400 font-bold">Aucun événement trouvé</div>`;
+    }
+
+    let html = '';
+    events.forEach(e => {
+        const count = e.registrations.length;
+        html += `
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-4 hover:border-blue-300 transition-all cursor-pointer" onclick="startEditing('${e.id}')">
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-black text-slate-900 truncate text-sm">${e.title}</h4>
+                    <p class="text-slate-500 text-xs mt-1 font-bold">${e.date} • ${e.start_time.substring(0,5)}</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-black ${count >= e.max_participants ? 'text-red-600' : 'text-emerald-600'}">${count}/${e.max_participants} inscrits</span>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// --- MODIFICATION & SUPPRESSION ---
+
+function startEditing(eventId) {
+    const event = eventsCache.find(e => e.id === eventId) || adminAllEvents?.find(e => e.id === eventId);
+    if (!event) return;
+
+    closeAdminDashboard();
+    openAdminPanel();
+
+    document.getElementById('admin-event-id').value = event.id;
+    document.getElementById('admin-title').value = event.title;
+    document.getElementById('admin-loc').value = event.location;
+    document.getElementById('admin-date').value = event.date;
+    document.getElementById('admin-start').value = event.start_time.substring(0, 5);
+    document.getElementById('admin-end').value = event.end_time.substring(0, 5);
+    document.getElementById('admin-max').value = event.max_participants;
+    document.getElementById('admin-price').value = event.price_in_credits;
+    document.getElementById('event-notes').value = event.notes || '';
+    document.getElementById('event-color-input').value = event.color || '#3b82f6';
+
+    document.getElementById('admin-delete-btn').classList.remove('hidden');
+}
+
+async function handleDelete(eventId) {
+    const event = eventsCache.find(e => e.id === eventId);
+    if (!event) return;
+
+    if (event.is_recurring || event.series_id) {
+        // Si c'est une série, on demande si on supprime tout ou juste un
+        document.getElementById('delete-confirmation-pip').style.display = 'flex';
+        document.getElementById('delete-switch-container').classList.remove('hidden');
+    } else {
+        if (confirm("Voulez-vous vraiment supprimer cet événement ?")) {
+            await processDelete(eventId, false);
+        }
+    }
+}
+
+async function processDelete(eventId, deleteAll) {
+    const event = eventsCache.find(e => e.id === eventId);
+    let query = sb.from('events').delete();
+
+    if (deleteAll && (event.series_id || event.is_recurring)) {
+        const sId = event.series_id || event.id;
+        query = query.or(`id.eq.${sId},series_id.eq.${sId}`).gte('date', event.date);
+    } else {
+        query = query.eq('id', eventId);
+    }
+
+    const { error } = await query;
+    if (error) alert("Erreur : " + error.message);
+    else {
+        alert("Suppression réussie !");
+        document.getElementById('delete-confirmation-pip').style.display = 'none';
+        closeAdminPanel();
+        await refreshData();
+    }
+}
+
+// ============================================================================
+// 14. BOÎTE DE RÉCEPTION (INBOX)
+// ============================================================================
+
+function openInboxPip() {
+    document.getElementById('pip-inbox').style.display = 'flex';
+    document.getElementById('pip-inbox').classList.remove('hidden');
+    document.getElementById('user-menu').classList.add('hidden');
+    loadInbox();
+}
+
+function closeInboxPip() {
+    document.getElementById('pip-inbox').style.display = 'none';
+    document.getElementById('pip-inbox').classList.add('hidden');
+}
+
+async function loadInbox() {
+    const container = document.getElementById('inbox-list-pip');
+    const { data: messages, error } = await sb.from('notifications')
+        .select('*').eq('user_id', AppState.user.id).order('created_at', { ascending: false }).limit(20);
+
+    if (error || !messages || messages.length === 0) {
+        container.innerHTML = `<div class="p-10 text-center text-slate-400 italic">Aucun message</div>`;
+        return;
+    }
+
+    let html = '';
+    messages.forEach(msg => {
+        html += `
+            <div class="p-4 bg-white rounded-2xl border ${msg.is_read ? 'border-slate-100 opacity-60' : 'border-blue-200 shadow-sm'} mb-2 cursor-pointer" onclick="markAsRead('${msg.id}')">
+                <h4 class="font-bold text-xs ${msg.is_read ? 'text-slate-500' : 'text-slate-900'}">${msg.title}</h4>
+                <p class="text-[10px] text-slate-600 mt-1">${msg.message}</p>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+async function markAsRead(msgId) {
+    await sb.from('notifications').update({ is_read: true }).eq('id', msgId);
+    loadInbox();
+}
 </script>
 </body>
 </html>
