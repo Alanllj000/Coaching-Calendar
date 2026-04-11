@@ -158,6 +158,14 @@ const translations = {
     inbox_subtitle: "Tes notifications récentes",
     btn_read_all: "Tout marquer comme lu",
 
+    label_credits: "Crédits (CHF)",
+    placeholder_price: "Prix (Crédits/CHF)",
+    btn_join_waitlist: "Rejoindre la file d'attente",
+    status_waitlisted: "En file d'attente",
+    waitlist_offer_title: "Une place s'est libérée ! 🎉",
+    waitlist_offer_desc: "C'est à votre tour ! Acceptez-vous la place pour ce cours ?",
+    btn_accept_place: "Accepter la place",
+    btn_decline_place: "Refuser",
 
         reglages_all:`<div id="profile-section" class="relative bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
 <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profil</p>
@@ -411,6 +419,16 @@ Poursuivre
     edit_mode_single: "Edit this session only",
     edit_mode_series: "Edit entire series",
     btn_confirm_edit: "Confirm modification",
+
+    // ... tes autres traductions EN
+    label_credits: "Credits (CHF)",
+    placeholder_price: "Price (Credits/CHF)",
+    btn_join_waitlist: "Join waitlist",
+    status_waitlisted: "On waitlist",
+    waitlist_offer_title: "A spot opened up! 🎉",
+    waitlist_offer_desc: "It's your turn! Do you accept the spot for this session?",
+    btn_accept_place: "Accept spot",
+    btn_decline_place: "Decline",
 
     // --- PIP SUPPRESSION ÉVÉNEMENT ---
     pip_delete_title: "Delete Event",
@@ -824,6 +842,16 @@ Continue
     msg_saving: "Speichern...",
     msg_save_success: "Änderungen gespeichert!",
     msg_reg_success: "Anmeldung bestätigt!",
+
+    // ... tes autres traductions DE
+    label_credits: "Guthaben (CHF)",
+    placeholder_price: "Preis (Guthaben/CHF)",
+    btn_join_waitlist: "Auf die Warteliste",
+    status_waitlisted: "Auf der Warteliste",
+    waitlist_offer_title: "Ein Platz ist frei geworden! 🎉",
+    waitlist_offer_desc: "Sie sind dran! Nehmen Sie den Platz für diesen Kurs an?",
+    btn_accept_place: "Platz annehmen",
+    btn_decline_place: "Ablehnen",
 
 
     //Handleinscription setp 1 : 
