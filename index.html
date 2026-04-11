@@ -1374,52 +1374,81 @@ function closeAdminPanel() {
     document.getElementById('admin-panel').style.display = 'none';
 }
 
+const DAY_NAMES = {0:'sunday', 1:'monday', 2:'tuesday', 3:'wednesday', 4:'thursday', 5:'friday', 6:'saturday'};
+
 async function requestAdminSubmit() {
     const title = document.getElementById('admin-title').value;
     const location = document.getElementById('admin-loc').value;
-    const date = document.getElementById('admin-date').value;
+    const dateStr = document.getElementById('admin-date').value;
     const start_time = document.getElementById('admin-start').value;
     const end_time = document.getElementById('admin-end').value;
-    
-    // SÉCURITÉ : On force la conversion en nombre. Si le champ est vide, on met une valeur par défaut.
     const max_participants = parseInt(document.getElementById('admin-max').value) || 10;
     const price_in_credits = parseInt(document.getElementById('admin-price').value) || 0;
-    
     const notes = document.getElementById('event-notes').value;
     const color = document.getElementById('event-color-input').value;
 
-    if (!title || !date || !start_time || !end_time) return alert("Champs obligatoires manquants");
+    if (!title || !dateStr || !start_time || !end_time) return alert("Champs obligatoires manquants");
+
+    // Récupération des jours cochés pour la récurrence
+    const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
+    const isRecurring = selectedDays.length > 0;
 
     const btn = document.getElementById('admin-save-btn');
     btn.disabled = true;
     btn.innerText = "Enregistrement...";
 
-    // Insertion dans Supabase
-    const { error } = await sb.from('events').insert([{
-        title, 
-        location, 
-        date, 
-        start_time, 
-        end_time, 
-        max_participants, 
-        price_in_credits, 
-        notes, 
-        color,
-        owner_id: AppState.user.id
-    }]);
+    try {
+        // 1. Création de l'événement PARENT
+        const { data: createdEvents, error: pError } = await sb.from('events').insert([{
+            title, location, date: dateStr, start_time, end_time, max_participants, price_in_credits, notes, color,
+            owner_id: AppState.user.id,
+            is_recurring: isRecurring,
+            series_id: null // Le parent n'a pas de series_id, il EST la série
+        }]).select();
 
-    btn.disabled = false;
-    btn.innerText = t('btn_save');
+        if (pError) throw pError;
+        const parent = createdEvents[0];
 
-    if (error) {
-        alert("Erreur : " + error.message);
-    } else {
-        alert("Événement créé avec succès !");
+        // 2. Création des ENFANTS (Série)
+        if (isRecurring) {
+            const occs = [];
+            const [y, m, d_parts] = dateStr.split('-').map(Number);
+            
+            // Boucle sur 365 jours
+            for (let i = 1; i <= 365; i++) {
+                let nextDate = new Date(y, m - 1, d_parts, 12, 0, 0);
+                nextDate.setDate(nextDate.getDate() + i);
+
+                const dayName = DAY_NAMES[nextDate.getDay()];
+
+                if (selectedDays.includes(dayName)) {
+                    const nextDateStr = nextDate.toISOString().split('T')[0];
+                    occs.push({ 
+                        title, location, date: nextDateStr, start_time, end_time, max_participants, price_in_credits, notes, color,
+                        owner_id: AppState.user.id, 
+                        is_recurring: true, 
+                        series_id: parent.id // On lie les enfants au parent
+                    });
+                }
+            }
+
+            if (occs.length > 0) {
+                const { error: occError } = await sb.from('events').insert(occs);
+                if (occError) throw occError;
+            }
+        }
+
+        alert("Événement(s) créé(s) avec succès !");
         closeAdminPanel();
         await refreshData();
+
+    } catch (err) {
+        alert("Erreur : " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = t('btn_save');
     }
 }
-
 // ============================================================================
 // 9. CHECK-IN DES PRÉSENCES & PAIEMENT CASH (COACH)
 // ============================================================================
@@ -2164,6 +2193,55 @@ function renderCustomReminders() {
 
     const btnAdd = document.getElementById('btn-open-custom');
     if (btnAdd) btnAdd.style.display = currentCustomReminders.length >= 3 ? 'none' : 'block';
+}
+
+// ============================================================================
+// 16. SÉCURITÉ (EMAIL & MOT DE PASSE) ET CORRECTIONS
+// ============================================================================
+
+async function validateAndChangePassword() {
+    const currentPwd = document.getElementById('pwd-current').value;
+    const newPwd = document.getElementById('pwd-new').value;
+    const confirmPwd = document.getElementById('pwd-confirm').value;
+
+    if (!currentPwd || !newPwd || !confirmPwd) return alert('Tous les champs sont requis.');
+    if (newPwd !== confirmPwd) return alert('Les nouveaux mots de passe ne correspondent pas.');
+
+    // 1. Vérification de l'ancien mot de passe
+    const { error: signInErr } = await sb.auth.signInWithPassword({ email: AppState.user.email, password: currentPwd });
+    if (signInErr) return alert('Mot de passe actuel incorrect.');
+
+    // 2. Mise à jour
+    const { error: updateErr } = await sb.auth.updateUser({ password: newPwd });
+    if (updateErr) return alert('Erreur : ' + updateErr.message);
+
+    alert('Mot de passe mis à jour !');
+    closePasswordPip();
+}
+
+async function updateEmail() {
+    const newEmail = document.getElementById('email-new').value.trim();
+    const pwd = document.getElementById('email-pwd-verif').value;
+
+    if (!newEmail || !pwd) return alert("Tous les champs sont requis.");
+
+    // 1. Vérification du mot de passe
+    const { error: loginErr } = await sb.auth.signInWithPassword({ email: AppState.user.email, password: pwd });
+    if (loginErr) return alert("Mot de passe incorrect.");
+
+    // 2. Mise à jour (Supabase enverra un mail de confirmation à la nouvelle adresse)
+    const { error: updateErr } = await sb.auth.updateUser({ email: newEmail });
+    if (updateErr) return alert("Erreur : " + updateErr.message);
+
+    alert("Email mis à jour avec succès ! Veuillez vérifier votre nouvelle boîte mail.");
+    closeEmailPip();
+}
+
+// Alias pour correspondre au HTML de translations.js
+function checkChanges() {
+    if (typeof checkNotifChanges === 'function') {
+        checkNotifChanges();
+    }
 }
 </script>
 </body>
