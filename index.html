@@ -1321,15 +1321,15 @@ async function refreshData() {
 
 function openAdminPanel() {
     document.getElementById('admin-panel').style.display = 'flex';
-    // Reset du formulaire
+    // Reset du formulaire : on met des chaînes vides pour afficher les placeholders !
     document.getElementById('admin-event-id').value = '';
     document.getElementById('admin-title').value = '';
     document.getElementById('admin-loc').value = '';
     document.getElementById('admin-date').value = '';
     document.getElementById('admin-start').value = '';
     document.getElementById('admin-end').value = '';
-    document.getElementById('admin-max').value = 10;
-    document.getElementById('admin-price').value = 0;
+    document.getElementById('admin-max').value = '';   // Vide -> Affiche "Places Max"
+    document.getElementById('admin-price').value = ''; // Vide -> Affiche "Prix (CHF)"
     document.getElementById('event-notes').value = '';
 }
 
@@ -1343,8 +1343,11 @@ async function requestAdminSubmit() {
     const date = document.getElementById('admin-date').value;
     const start_time = document.getElementById('admin-start').value;
     const end_time = document.getElementById('admin-end').value;
-    const max_participants = document.getElementById('admin-max').value;
-    const price_in_credits = document.getElementById('admin-price').value || 0;
+    
+    // SÉCURITÉ : On force la conversion en nombre. Si le champ est vide, on met une valeur par défaut.
+    const max_participants = parseInt(document.getElementById('admin-max').value) || 10;
+    const price_in_credits = parseInt(document.getElementById('admin-price').value) || 0;
+    
     const notes = document.getElementById('event-notes').value;
     const color = document.getElementById('event-color-input').value;
 
@@ -1354,9 +1357,17 @@ async function requestAdminSubmit() {
     btn.disabled = true;
     btn.innerText = "Enregistrement...";
 
-    // Insertion simple (le backend gère le reste)
+    // Insertion dans Supabase
     const { error } = await sb.from('events').insert([{
-        title, location, date, start_time, end_time, max_participants, price_in_credits, notes, color,
+        title, 
+        location, 
+        date, 
+        start_time, 
+        end_time, 
+        max_participants, 
+        price_in_credits, 
+        notes, 
+        color,
         owner_id: AppState.user.id
     }]);
 
