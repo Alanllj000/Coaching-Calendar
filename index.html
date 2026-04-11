@@ -1677,7 +1677,32 @@ function toggleUserMenu(e) {
     document.getElementById('user-menu').classList.toggle('hidden'); 
 }
 
-function openSettingsPanel() { document.getElementById('settings-panel').style.display = 'flex'; }
+function openSettingsPanel() { 
+    const panel = document.getElementById('settings-panel');
+    panel.style.display = 'flex'; 
+    
+    // 1. On injecte le HTML des réglages depuis les traductions
+    const section = panel.querySelector('section[data-i18n="reglages_all"]');
+    if (section && !section.innerHTML.trim()) {
+        section.innerHTML = t('reglages_all');
+    }
+
+    // 2. On pré-remplit les champs avec les données du profil
+    if (AppState.profile) {
+        const fName = document.getElementById('set-firstname');
+        const lName = document.getElementById('set-lastname');
+        const phone = document.getElementById('set-phone');
+        const email = document.getElementById('set-email');
+
+        if (fName) fName.value = AppState.profile.first_name || '';
+        if (lName) lName.value = AppState.profile.last_name || '';
+        if (phone) phone.value = AppState.profile.phone || '';
+        if (email && AppState.user) email.value = AppState.user.email || '';
+    }
+
+    // 3. On charge les préférences de notification
+    loadNotificationSettings();
+}
 function closeSettingsPanel() { document.getElementById('settings-panel').style.display = 'none'; }
 
 function openPasswordPip() { document.getElementById('password-pip').style.display = 'flex'; }
@@ -1836,12 +1861,39 @@ async function handleDelete(eventId) {
     const event = eventsCache.find(e => e.id === eventId);
     if (!event) return;
 
+    // Si l'événement fait partie d'une série (il a un series_id ou c'est le parent)
     if (event.is_recurring || event.series_id) {
-        // Si c'est une série, on demande si on supprime tout ou juste un
-        document.getElementById('delete-confirmation-pip').style.display = 'flex';
-        document.getElementById('delete-switch-container').classList.remove('hidden');
+        const zone = document.getElementById('mobile-pip-zone');
+        zone.classList.add('modal-mode');
+        zone.style.display = 'flex';
+        zone.style.pointerEvents = 'auto';
+
+        zone.innerHTML = `
+            <div class="mobile-pip-card border-t-8 border-red-500 bg-white p-8 rounded-3xl shadow-2xl max-w-lg">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-trash-alt text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">${t('pip_delete_title')}</h3>
+                    <p class="text-slate-500 mb-8 leading-relaxed">Cet événement fait partie d'une série.<br>Que souhaitez-vous supprimer ?</p>
+                    
+                    <div class="flex flex-col w-full gap-3">
+                        <button onclick="processDelete('${eventId}', false)" class="w-full p-5 bg-slate-100 text-slate-700 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition-all">
+                            ${t('delete_mode_single')}
+                        </button>
+                        <button onclick="processDelete('${eventId}', true)" class="w-full p-5 bg-red-600 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-red-700 shadow-lg transition-all">
+                            ${t('delete_mode_series')} (à venir)
+                        </button>
+                        <button onclick="closeMobilePip()" class="w-full p-4 text-slate-400 font-bold text-xs uppercase tracking-widest mt-2 hover:text-slate-600 transition">
+                            ${t('btn_cancel')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     } else {
-        if (confirm("Voulez-vous vraiment supprimer cet événement ?")) {
+        // Événement unique
+        if (confirm(t('pip_delete_desc') || "Voulez-vous vraiment supprimer cet événement ?")) {
             await processDelete(eventId, false);
         }
     }
@@ -1909,6 +1961,209 @@ async function loadInbox() {
 async function markAsRead(msgId) {
     await sb.from('notifications').update({ is_read: true }).eq('id', msgId);
     loadInbox();
+}
+
+// ============================================================================
+// 15. NOTIFICATIONS & RAPPELS PERSONNALISÉS
+// ============================================================================
+
+let currentCustomReminders = [];
+let initialSettings = {};
+
+// Charge les réglages depuis la base de données
+async function loadNotificationSettings() {
+    if (!AppState.user) return;
+
+    const { data, error } = await sb.from('profiles')
+        .select('notif_enable, notif_week, notif_day, notif_hour, notif_custom')
+        .eq('id', AppState.user.id).single();
+
+    if (error || !data) return;
+
+    // Vérifie si le navigateur autorise vraiment les notifications
+    const browserPermission = Notification.permission;
+    const realEnableStatus = (data.notif_enable && browserPermission === 'granted');
+
+    initialSettings = {
+        notif_enable: realEnableStatus,
+        notif_week: !!data.notif_week,
+        notif_day: !!data.notif_day,
+        notif_hour: !!data.notif_hour,
+        notif_custom: data.notif_custom || []
+    };
+
+    // Met à jour l'interface
+    const masterToggle = document.getElementById('notif-master');
+    if (masterToggle) {
+        masterToggle.checked = realEnableStatus;
+        if (browserPermission === 'denied') masterToggle.disabled = true;
+    }
+
+    if (document.getElementById('notif-1s')) document.getElementById('notif-1s').checked = initialSettings.notif_week;
+    if (document.getElementById('notif-1j')) document.getElementById('notif-1j').checked = initialSettings.notif_day;
+    if (document.getElementById('notif-1h')) document.getElementById('notif-1h').checked = initialSettings.notif_hour;
+
+    currentCustomReminders = [...initialSettings.notif_custom];
+    renderCustomReminders();
+    toggleNotifUI();
+}
+
+// Grise ou dégrise la zone des rappels selon le switch principal
+function toggleNotifUI() {
+    const isMasterOn = document.getElementById('notif-master')?.checked;
+    const wrapper = document.getElementById('notif-content-wrapper');
+    
+    if (wrapper) {
+        wrapper.style.opacity = isMasterOn ? "1" : "0.5";
+        wrapper.style.pointerEvents = isMasterOn ? "auto" : "none";
+        wrapper.classList.toggle('grayscale', !isMasterOn);
+    }
+    checkNotifChanges();
+}
+
+// Vérifie si l'utilisateur a modifié un réglage pour activer le bouton "Sauvegarder"
+function checkNotifChanges() {
+    const btn = document.getElementById('btn-save-notif');
+    if (!btn) return;
+
+    const currentUI = {
+        notif_enable: Boolean(document.getElementById('notif-master')?.checked),
+        notif_week: Boolean(document.getElementById('notif-1s')?.checked),
+        notif_day: Boolean(document.getElementById('notif-1j')?.checked),
+        notif_hour: Boolean(document.getElementById('notif-1h')?.checked),
+        notif_custom: currentCustomReminders
+    };
+
+    const hasChanged = JSON.stringify(currentUI) !== JSON.stringify(initialSettings);
+
+    btn.disabled = !hasChanged;
+    btn.className = hasChanged 
+        ? "w-full py-4 bg-slate-900 text-white font-bold rounded-2xl transition mt-4 shadow-md cursor-pointer" 
+        : "w-full py-4 bg-slate-200 text-slate-400 font-bold rounded-2xl transition mt-4 cursor-not-allowed";
+}
+
+// Sauvegarde les préférences et demande l'autorisation Push si nécessaire
+async function saveNotificationPrefs() {
+    const isEnabled = document.getElementById('notif-master').checked;
+
+    if (isEnabled && Notification.permission !== 'granted') {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            await subscribeUserToPush();
+        } else {
+            alert("Notifications bloquées par le navigateur.");
+            document.getElementById('notif-master').checked = false;
+            toggleNotifUI();
+            return;
+        }
+    }
+
+    const settingsToSave = {
+        notif_enable: isEnabled,
+        notif_week: document.getElementById('notif-1s').checked,
+        notif_day: document.getElementById('notif-1j').checked,
+        notif_hour: document.getElementById('notif-1h').checked,
+        notif_custom: currentCustomReminders
+    };
+
+    const { error } = await sb.from('profiles').update(settingsToSave).eq('id', AppState.user.id);
+
+    if (error) alert("Erreur : " + error.message);
+    else {
+        alert("Préférences enregistrées !");
+        initialSettings = JSON.parse(JSON.stringify(settingsToSave));
+        checkNotifChanges();
+    }
+}
+
+// Abonnement au Service Worker pour les Push
+async function subscribeUserToPush() {
+    try {
+        let reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) reg = await navigator.serviceWorker.register('./sw.js');
+
+        // Clé publique VAPID (À remplacer par la tienne si différente)
+        const publicVapidKey = "BAs4HzcCnOFP6ePWnfTFJ7IW6y_kWjeftUnQtnImOp1jaGHc_MRXOBTjD3A00D403snaTgJhc4pxzAakZnGbxM4";
+        
+        const subscription = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: publicVapidKey
+        });
+
+        // Sauvegarde dans Supabase
+        await sb.from('user_push_subscriptions').upsert({
+            user_id: AppState.user.id,
+            subscription: subscription.toJSON()
+        }, { onConflict: 'user_id' });
+
+    } catch (err) {
+        console.error("Erreur Push:", err);
+    }
+}
+
+// --- GESTION VISUELLE DES RAPPELS PERSONNALISÉS ---
+
+function openCustomReminderPip() {
+    if (currentCustomReminders.length >= 3) return alert("Maximum 3 rappels personnalisés.");
+    document.getElementById('pip-custom-reminder').classList.replace('hidden', 'flex');
+}
+
+function closeCustomReminderPip() {
+    document.getElementById('pip-custom-reminder').classList.replace('flex', 'hidden');
+}
+
+function addCustomReminderToUI() {
+    const days = document.getElementById('in-remind-days').value;
+    const time = document.getElementById('in-remind-time').value;
+
+    currentCustomReminders.push({ 
+        id: crypto.randomUUID(), 
+        days: parseInt(days), 
+        time: time, 
+        active: true 
+    });
+
+    renderCustomReminders();
+    closeCustomReminderPip();
+    checkNotifChanges();
+}
+
+function removeReminder(id) {
+    currentCustomReminders = currentCustomReminders.filter(r => r.id !== id);
+    renderCustomReminders();
+    checkNotifChanges();
+}
+
+function toggleReminderActive(id) {
+    const rem = currentCustomReminders.find(r => r.id === id);
+    if (rem) rem.active = !rem.active;
+    checkNotifChanges();
+}
+
+function renderCustomReminders() {
+    const container = document.getElementById('custom-reminders-list');
+    if (!container) return;
+    container.innerHTML = "";
+
+    currentCustomReminders.forEach(rem => {
+        const label = rem.days == 0 ? `Le jour même à ${rem.time}` : `J-${rem.days} à ${rem.time}`;
+        
+        container.innerHTML += `
+            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl">
+                <div>
+                    <p class="text-xs font-black text-slate-700">${label}</p>
+                    <button onclick="removeReminder('${rem.id}')" class="text-[9px] font-bold text-red-400 uppercase tracking-tighter">Supprimer</button>
+                </div>
+                <label class="switch scale-75">
+                    <input type="checkbox" ${rem.active ? 'checked' : ''} onchange="toggleReminderActive('${rem.id}')">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        `;
+    });
+
+    const btnAdd = document.getElementById('btn-open-custom');
+    if (btnAdd) btnAdd.style.display = currentCustomReminders.length >= 3 ? 'none' : 'block';
 }
 </script>
 </body>
