@@ -1032,41 +1032,7 @@ async function logout() {
     window.location.reload();
 }
 
-// ============================================================================
-// 5. INITIALISATION DE L'APPLICATION
-// ============================================================================
 
-async function initApp(user) {
-    AppState.user = user;
-    
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('main-content').classList.remove('hidden');
-
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
-    if (profile) {
-        AppState.profile = profile;
-        
-        if (profile.language && profile.language !== AppState.lang) {
-            changeLanguage(profile.language);
-        }
-
-        const initialsEl = document.getElementById('user-initials');
-        if (initialsEl && profile.first_name) {
-            initialsEl.textContent = profile.first_name[0].toUpperCase();
-        }
-
-        // Affichage des crédits au démarrage
-        updateCreditsDisplay(profile.credits_balance || 0);
-
-        if (profile.role === 'admin' || profile.role === 'owner') {
-            const adminBtn = document.getElementById('btn-admin-dashboard');
-            if (adminBtn) adminBtn.classList.remove('hidden');
-        }
-    }
-
-    // On charge le calendrier !
-    await fetchEvents();
-}
 
 // ============================================================================
 // 6. MOTEUR DU CALENDRIER & ÉVÉNEMENTS
@@ -1304,6 +1270,42 @@ async function refreshData() {
     const { data } = await sb.from('profiles').select('credits_balance').eq('id', AppState.user.id).single();
     if (data) updateCreditsDisplay(data.credits_balance);
     closeMobilePip();
+}
+
+// ============================================================================
+// 5. INITIALISATION DE L'APPLICATION
+// ============================================================================
+
+async function initApp(user) {
+    AppState.user = user;
+    
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('main-content').classList.remove('hidden');
+
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if (profile) {
+        AppState.profile = profile;
+        
+        if (profile.language && profile.language !== AppState.lang) {
+            changeLanguage(profile.language);
+        }
+
+        const initialsEl = document.getElementById('user-initials');
+        if (initialsEl && profile.first_name) {
+            initialsEl.textContent = profile.first_name[0].toUpperCase();
+        }
+
+        // Affichage des crédits au démarrage
+        updateCreditsDisplay(profile.credits_balance || 0);
+
+        if (profile.role === 'admin' || profile.role === 'owner') {
+            const adminBtn = document.getElementById('btn-admin-dashboard');
+            if (adminBtn) adminBtn.classList.remove('hidden');
+        }
+    }
+
+    // On charge le calendrier !
+    await fetchEvents();
 }
 </script>
 </body>
