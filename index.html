@@ -420,6 +420,15 @@ onclick="event.stopPropagation()">
         <span class="text-[10px] text-indigo-400 font-medium -mt-1">Gestion & Inscriptions</span>
     </div>
 </button>
+<button id="btn-owner-dashboard" onclick="openOwnerPanel()" class="hidden w-full text-left p-3 hover:bg-purple-50 rounded-xl font-bold text-sm text-purple-600 flex items-center gap-3 transition">
+    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+        <i class="fas fa-crown text-xs"></i>
+    </div>
+    <div class="flex flex-col">
+        <span>Espace Propriétaire</span>
+        <span class="text-[10px] text-purple-400 font-medium -mt-1">Permissions & Crédits</span>
+    </div>
+</button>
 
 <div class="border-t border-slate-100 my-2 mx-2"></div>
 
@@ -845,7 +854,30 @@ onclick="event.stopPropagation()">
     </div>
 </div>
 
+<!-- PANEL OWNER -->
+<div id="owner-panel" class="fullscreen-pip hidden" style="z-index: 9999999;">
+    <div class="max-w-5xl mx-auto w-full p-6 pt-10 flex flex-col h-full">
+        <div class="flex justify-between items-center mb-8 shrink-0">
+            <div>
+                <h2 class="text-3xl font-black tracking-tight text-slate-900">Espace Propriétaire</h2>
+                <p class="text-slate-500 text-sm font-medium">Gestion des accès, tags et crédits</p>
+            </div>
+            <button onclick="closeOwnerPanel()" class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold hover:bg-slate-200 transition">&times;</button>
+        </div>
+        
+        <!-- Barre de recherche -->
+        <div class="mb-4 relative shrink-0">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="owner-search" onkeyup="if(event.key === 'Enter') loadOwnerUsers()" placeholder="Rechercher un utilisateur (Nom ou Email)..." class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-purple-500 shadow-sm">
+        </div>
 
+        <div class="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-3xl border border-slate-100 shadow-sm p-2 md:p-4">
+            <div id="owner-users-list" class="space-y-3">
+                <!-- Les utilisateurs apparaîtront ici -->
+            </div>
+        </div>
+    </div>
+</div>
 <script src="./translations.js"></script>
 <script>
 // ============================================================================
@@ -1061,6 +1093,10 @@ async function initApp(user) {
         if (profile.role === 'admin' || profile.role === 'owner') {
             const adminBtn = document.getElementById('btn-admin-dashboard');
             if (adminBtn) adminBtn.classList.remove('hidden');
+        }
+        if (profile.role === 'owner') {
+            const ownerBtn = document.getElementById('btn-owner-dashboard');
+            if (ownerBtn) ownerBtn.classList.remove('hidden');
         }
     }
 
@@ -1473,6 +1509,162 @@ async function toggleAttendance(regId, isPresent) {
 async function togglePaidCash(regId, isPaid) {
     const { error } = await sb.from('registrations').update({ is_paid_cash: isPaid }).eq('id', regId);
     if (error) alert("Erreur lors du paiement : " + error.message);
+}
+
+
+// ============================================================================
+// 10. ESPACE PROPRIÉTAIRE (OWNER ZONE)
+// ============================================================================
+
+async function openOwnerPanel() {
+    document.getElementById('owner-panel').style.display = 'flex';
+    document.getElementById('owner-panel').classList.remove('hidden');
+    document.getElementById('user-menu').classList.add('hidden'); // Ferme le menu
+    await loadOwnerUsers();
+}
+
+function closeOwnerPanel() {
+    document.getElementById('owner-panel').style.display = 'none';
+    document.getElementById('owner-panel').classList.add('hidden');
+}
+
+async function loadOwnerUsers() {
+    const container = document.getElementById('owner-users-list');
+    const searchQuery = document.getElementById('owner-search').value.toLowerCase();
+    
+    container.innerHTML = '<div class="text-center p-10 text-slate-400 font-bold animate-pulse">Chargement des utilisateurs...</div>';
+
+    let query = sb.from('profiles').select('*').order('first_name');
+    
+    if (searchQuery) {
+        query = query.or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
+    }
+
+    const { data: users, error } = await query;
+    if (error) return alert("Erreur : " + error.message);
+
+    if (users.length === 0) {
+        container.innerHTML = '<div class="text-center p-10 text-slate-400 font-bold">Aucun utilisateur trouvé.</div>';
+        return;
+    }
+
+    let html = '';
+    users.forEach(u => {
+        const tags = (u.club_tags || []).join(', ');
+        const perms = u.permissions || [];
+        const isManageUsers = perms.includes('manage_users');
+        const isManageFinances = perms.includes('manage_finances');
+        const isOwner = u.role === 'owner';
+
+        html += `
+            <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+                
+                <!-- Infos User & Tags -->
+                <div class="flex-1 w-full">
+                    <div class="flex items-center gap-2">
+                        <h4 class="font-black text-slate-900 text-sm">${u.first_name} ${u.last_name}</h4>
+                        <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${isOwner ? 'bg-purple-100 text-purple-700' : (u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600')}">${u.role}</span>
+                    </div>
+                    <p class="text-xs text-slate-500 font-medium mb-2">${u.email} • 💰 <span class="font-black ${u.credits_balance < 0 ? 'text-red-600' : 'text-slate-900'}">${u.credits_balance} CHF</span></p>
+                    
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="tags-${u.id}" value="${tags}" placeholder="Tags (ex: Fribourg, U15)" class="text-xs p-2 rounded-lg border border-slate-200 w-full max-w-[200px] outline-none focus:border-purple-500">
+                        <button onclick="saveUserTags('${u.id}')" class="px-3 py-2 bg-slate-900 text-white rounded-lg text-[9px] font-bold uppercase active:scale-95 transition">Sauver Tags</button>
+                    </div>
+                </div>
+
+                <!-- Rôle & Permissions -->
+                <div class="flex flex-col gap-2 w-full lg:w-auto bg-white p-3 rounded-xl border border-slate-100 shrink-0">
+                    <p class="text-[9px] font-black uppercase text-slate-400 mb-1">Accès & Permissions</p>
+                    
+                    <select onchange="changeUserRole('${u.id}', this.value)" class="text-xs p-2 rounded-lg border border-slate-200 bg-slate-50 font-bold text-slate-700 outline-none cursor-pointer" ${isOwner ? 'disabled' : ''}>
+                        <option value="user" ${u.role === 'user' ? 'selected' : ''}>Utilisateur</option>
+                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrateur</option>
+                    </select>
+
+                    <label class="flex items-center gap-2 cursor-pointer mt-1 ${u.role !== 'admin' ? 'opacity-50' : ''}">
+                        <input type="checkbox" ${isManageUsers ? 'checked' : ''} onchange="togglePermission('${u.id}', 'manage_users', this.checked)" class="w-4 h-4 accent-purple-600" ${u.role !== 'admin' ? 'disabled' : ''}>
+                        <span class="text-[10px] font-bold text-slate-600">Gérer les utilisateurs</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer ${u.role !== 'admin' ? 'opacity-50' : ''}">
+                        <input type="checkbox" ${isManageFinances ? 'checked' : ''} onchange="togglePermission('${u.id}', 'manage_finances', this.checked)" class="w-4 h-4 accent-purple-600" ${u.role !== 'admin' ? 'disabled' : ''}>
+                        <span class="text-[10px] font-bold text-slate-600">Gérer les finances</span>
+                    </label>
+                </div>
+                
+                <!-- Gestion Manuelle des Crédits -->
+                <div class="flex flex-col gap-2 w-full lg:w-auto bg-white p-3 rounded-xl border border-slate-100 shrink-0">
+                    <p class="text-[9px] font-black uppercase text-slate-400 mb-1">Ajuster Crédits</p>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="credits-${u.id}" placeholder="Montant" class="text-xs p-2 rounded-lg border border-slate-200 w-20 text-center outline-none focus:border-purple-500">
+                        <button onclick="adjustCredits('${u.id}', 1)" class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg font-black active:scale-90 transition" title="Ajouter">+</button>
+                        <button onclick="adjustCredits('${u.id}', -1)" class="w-8 h-8 bg-red-100 text-red-600 rounded-lg font-black active:scale-90 transition" title="Retirer">-</button>
+                    </div>
+                </div>
+
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// --- ACTIONS DU PROPRIÉTAIRE ---
+
+async function saveUserTags(userId) {
+    const val = document.getElementById(`tags-${userId}`).value;
+    // Transforme la chaîne "Fribourg, U15" en tableau ["Fribourg", "U15"]
+    const tagsArray = val.split(',').map(t => t.trim()).filter(t => t !== '');
+    
+    const { error } = await sb.from('profiles').update({ club_tags: tagsArray }).eq('id', userId);
+    if (error) alert("Erreur : " + error.message);
+    else alert("Tags mis à jour avec succès !");
+}
+
+async function changeUserRole(userId, newRole) {
+    if (!confirm(`Passer cet utilisateur en ${newRole.toUpperCase()} ?`)) {
+        loadOwnerUsers(); // Annule le changement visuel
+        return;
+    }
+    const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', userId);
+    if (error) alert("Erreur : " + error.message);
+    else loadOwnerUsers(); // Recharge pour griser/dégriser les cases de permissions
+}
+
+async function togglePermission(userId, perm, isGranted) {
+    // 1. On récupère les permissions actuelles
+    const { data } = await sb.from('profiles').select('permissions').eq('id', userId).single();
+    let perms = data.permissions || [];
+    
+    // 2. On ajoute ou on retire
+    if (isGranted && !perms.includes(perm)) perms.push(perm);
+    if (!isGranted && perms.includes(perm)) perms = perms.filter(p => p !== perm);
+    
+    // 3. On sauvegarde
+    const { error } = await sb.from('profiles').update({ permissions: perms }).eq('id', userId);
+    if (error) alert("Erreur : " + error.message);
+}
+
+async function adjustCredits(userId, multiplier) {
+    const input = document.getElementById(`credits-${userId}`);
+    const amount = parseInt(input.value);
+    
+    if (!amount || amount <= 0) return alert("Veuillez entrer un montant valide supérieur à 0.");
+    if (!confirm(`Voulez-vous vraiment ${multiplier > 0 ? 'AJOUTER' : 'RETIRER'} ${amount} CHF à cet utilisateur ?`)) return;
+    
+    const finalAmount = amount * multiplier;
+    
+    // 1. On récupère le solde actuel
+    const { data } = await sb.from('profiles').select('credits_balance').eq('id', userId).single();
+    const newBalance = (data.credits_balance || 0) + finalAmount;
+
+    // 2. On met à jour
+    const { error } = await sb.from('profiles').update({ credits_balance: newBalance }).eq('id', userId);
+    
+    if (error) alert("Erreur : " + error.message);
+    else {
+        input.value = '';
+        loadOwnerUsers(); // Recharge pour afficher le nouveau solde
+    }
 }
 </script>
 </body>
